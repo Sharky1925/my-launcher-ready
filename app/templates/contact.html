@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Contact Us — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Get in touch with {{ site_settings.get('company_name', 'Right On Repair') }}. Free IT consultation, quotes, and 24/7 support.{% endblock %}
+{% block og_title %}Contact — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_keywords %}contact IT support Orange County, request IT quote, schedule IT consultation, Right On Repair phone and email{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  "name": {{ ('Contact ' ~ site_settings.get('company_name', 'Right On Repair')) | tojson }},
+  "description": "Request a consultation or reach our support team."
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Contact</li>
+      </ol>
+    </nav>
+    <h1>Get in Touch</h1>
+    <p>We'd love to hear from you.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <!-- Quick Contact Icons -->
+    <div class="row g-4 mb-5">
+      <div class="col-md-4 reveal stagger-1">
+        <div class="feature-item contact-feature-card">
+          <div class="fi-icon contact-feature-icon"><i class="fa-solid fa-phone"></i></div>
+          <h4>Call Us</h4>
+          {% if site_settings.get('phone') %}
+          <p><a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ site_settings.phone }}</a></p>
+          {% else %}
+          <p>Contact us</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-md-4 reveal stagger-2">
+        <div class="feature-item contact-feature-card">
+          <div class="fi-icon contact-feature-icon"><i class="fa-solid fa-envelope"></i></div>
+          <h4>Email Us</h4>
+          {% if site_settings.get('email') %}
+          <p><a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></p>
+          {% else %}
+          <p>Contact us</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-md-4 reveal stagger-3">
+        <div class="feature-item contact-feature-card">
+          <div class="fi-icon contact-feature-icon"><i class="fa-solid fa-clock"></i></div>
+          <h4>Support Hours</h4>
+          <p>24/7 — 365 days</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-5">
+      <!-- Form -->
+      <div class="col-lg-7 reveal-left">
+        <div class="contact-form-wrap">
+          <h3 class="contact-form-title">Send Us a Message</h3>
+          <p class="contact-form-subtitle">We'll get back to you within 24 hours.</p>
+          <form method="POST" action="{{ url_for('main.contact') }}">
+            {{ csrf_input() }}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="name">Full Name</label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="John Doe" autocomplete="name" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="email">Email Address</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="john@company.com" autocomplete="email" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="phone">Phone Number</label>
+                <input type="tel" class="form-control" id="phone" name="phone" placeholder="+1 (555) 000-0000" autocomplete="tel" inputmode="tel">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="subject">Subject</label>
+                <input type="text" class="form-control" id="subject" name="subject" placeholder="How can we help?" autocomplete="off" value="{{ request.args.get('subject', '') }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="message">Message</label>
+                <textarea class="form-control" id="message" name="message" rows="5" placeholder="Tell us about your project..." minlength="10" required></textarea>
+              </div>
+              {% if turnstile_enabled %}
+              <div class="col-12">
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}"></div>
+              </div>
+              {% endif %}
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary contact-submit-btn">Send Message <i class="fa-solid fa-paper-plane"></i></button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="col-lg-5 reveal-right">
+        <div class="contact-info-card">
+          <h3>Let's Talk</h3>
+          <p>Our team is here to help with any IT challenge.</p>
+
+          {% if site_settings.get('phone') %}
+          <div class="contact-info-item">
+            <div class="icon"><i class="fa-solid fa-phone"></i></div>
+            <div>
+              <div class="label">Phone</div>
+              <div class="value"><a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ site_settings.phone }}</a></div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if site_settings.get('email') %}
+          <div class="contact-info-item">
+            <div class="icon"><i class="fa-solid fa-envelope"></i></div>
+            <div>
+              <div class="label">Email</div>
+              <div class="value"><a href="mailto:{{ site_settings.email }}">{{ site_settings.email }}</a></div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if site_settings.get('address') %}
+          <div class="contact-info-item">
+            <div class="icon"><i class="fa-solid fa-location-dot"></i></div>
+            <div>
+              <div class="label">Office</div>
+              <div class="value">{{ site_settings.address }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if site_settings.get('facebook') or site_settings.get('twitter') or site_settings.get('linkedin') %}
+          <div class="contact-social-wrap">
+            <div class="contact-social-label">Follow Us</div>
+            <div class="d-flex gap-2">
+              {% if site_settings.get('facebook') %}
+              <a href="{{ site_settings.facebook }}" target="_blank" rel="noopener" class="contact-social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+              {% endif %}
+              {% if site_settings.get('twitter') %}
+              <a href="{{ site_settings.twitter }}" target="_blank" rel="noopener" class="contact-social-link" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+              {% endif %}
+              {% if site_settings.get('linkedin') %}
+              <a href="{{ site_settings.linkedin }}" target="_blank" rel="noopener" class="contact-social-link" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if turnstile_enabled %}
+<script nonce="{{ csp_nonce }}" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
+{% endblock %}

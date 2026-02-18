@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% set profile = service_profile or {} %}
+{% set service_description = (service.description or '') %}
+{% set fallback_desc = (service_description[:155] if service_description else (service.title ~ ' service support for Orange County businesses.')) %}
+{% set meta_desc = profile.get('meta_description', fallback_desc) %}
+{% set profile_keywords = profile.get('keywords', [service.title ~ ' Orange County', service.title ~ ' service', 'business IT support']) %}
+{% set process_steps = profile.get('process', []) %}
+{% set tool_stack = profile.get('tools', []) %}
+{% set deliverables = profile.get('deliverables', []) %}
+{% set faqs = profile.get('faqs', []) %}
+
+{% block title %}{{ service.title }} — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}{{ meta_desc }}{% endblock %}
+{% block og_title %}{{ service.title }} — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block og_description %}{{ meta_desc }}{% endblock %}
+{% block meta_keywords %}{{ profile_keywords | join(', ') }}{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": {{ service.title | tojson }},
+  "description": {{ meta_desc | tojson }},
+  "serviceType": {{ service.service_type | tojson }},
+  "areaServed": "Orange County, CA",
+  "provider": {
+    "@type": "Organization",
+    "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }},
+    "telephone": {{ site_settings.get('phone', '') | tojson }},
+    "email": {{ site_settings.get('email', '') | tojson }}
+  },
+  "url": {{ request.base_url | tojson }}
+}
+</script>
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": {{ url_for('main.index', _external=True) | tojson }}
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Services",
+      "item": {{ url_for('main.services', _external=True) | tojson }}
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": {{ service.title | tojson }},
+      "item": {{ request.base_url | tojson }}
+    }
+  ]
+}
+</script>
+{% if process_steps %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": {{ (service.title ~ ' Workflow') | tojson }},
+  "description": {{ ('Step-by-step process used for ' ~ service.title) | tojson }},
+  "step": [
+    {% for step in process_steps %}
+    {
+      "@type": "HowToStep",
+      "position": {{ loop.index }},
+      "name": {{ step.title | tojson }},
+      "text": {{ step.detail | tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% if faqs %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for faq in faqs %}
+    {
+      "@type": "Question",
+      "name": {{ faq.q | tojson }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ faq.a | tojson }}
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.services') }}">Services</a></li>
+        <li class="breadcrumb-item active">{{ service.title }}</li>
+      </ol>
+    </nav>
+    <h1>{{ service.title }}</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-8 reveal-left">
+        <div class="service-detail-hero service-detail-hero--v2">
+          <div class="service-kicker-badge">{{ profile.get('intro_kicker', 'Plan • Deliver • Improve') }}</div>
+          <div class="icon-large"><i class="{{ service.icon_class }}"></i></div>
+          <h1>{{ service.title }}</h1>
+          <div class="description">{{ meta_desc }}</div>
+          <div class="service-hero-badges">
+            <span><i class="fa-solid fa-bolt"></i> Fast onboarding</span>
+            <span><i class="fa-solid fa-shield-halved"></i> Security-first execution</span>
+            <span><i class="fa-solid fa-headset"></i> Dedicated support</span>
+          </div>
+          {% if service.image %}
+          <img src="{{ url_for('admin.uploaded_file', filename=service.image) }}" alt="{{ service.title }}" class="service-img" loading="eager" fetchpriority="high" decoding="async">
+          {% endif %}
+        </div>
+
+        {% if process_steps %}
+        <div class="service-visual-panel mt-4 reveal">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-diagram-project"></i>{{ profile.get('board_title', 'Service Workflow') }}</h2>
+            <p>Clear step-by-step execution flow</p>
+          </div>
+          <div class="timeline-grid service-process-grid">
+            {% for step in process_steps %}
+            <article class="timeline-card service-process-card stagger-{{ loop.index }}">
+              <div class="process-icon"><i class="{{ step.icon }}"></i></div>
+              <div>
+                <div class="service-step-chip">Step {{ loop.index }}</div>
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.detail }}</p>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if tool_stack %}
+        <div class="service-visual-panel mt-4 reveal">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-layer-group"></i>Tools & Platforms</h2>
+            <p>Industry-standard stack used across delivery</p>
+          </div>
+          <div class="service-tool-cloud">
+            {% for tool in tool_stack %}
+            <div class="service-tool-pill stagger-{{ ((loop.index - 1) % 6) + 1 }}">
+              <i class="{{ tool.icon }}"></i>
+              <span>{{ tool.name }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if deliverables %}
+        <div class="service-visual-panel mt-4 reveal">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-chart-simple"></i>Outcomes</h2>
+            <p>Business-focused result targets</p>
+          </div>
+          <div class="row g-3">
+            {% for outcome in deliverables %}
+            <div class="col-md-4">
+              <article class="service-outcome-card stagger-{{ loop.index }}">
+                <div class="service-outcome-icon"><i class="{{ outcome.icon }}"></i></div>
+                <div class="service-outcome-label">{{ outcome.label }}</div>
+                <p>{{ outcome.value }}</p>
+              </article>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if faqs %}
+        <div class="service-visual-panel mt-4 reveal">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-circle-question"></i>Quick FAQ</h2>
+            <p>Short answers to common planning questions</p>
+          </div>
+          <div class="service-faq-list">
+            {% for faq in faqs %}
+            <details class="service-faq-item" {% if loop.first %}open{% endif %}>
+              <summary>{{ faq.q }}</summary>
+              <p>{{ faq.a }}</p>
+            </details>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-4 reveal-right">
+        <div class="sidebar-cta mb-4">
+          <div class="sidebar-cta-head">
+            <div class="sidebar-cta-orb"><i class="fa-solid fa-headset"></i></div>
+            <div>
+              <div class="sidebar-cta-kicker">Client Support</div>
+              <h4>Remote Support & Quotes</h4>
+            </div>
+          </div>
+          <p>Choose the fastest path for {{ service.title | lower }}.</p>
+          <div class="sidebar-cta-points">
+            <span><i class="fa-solid fa-circle-check"></i> Free consultation</span>
+            <span><i class="fa-solid fa-circle-check"></i> Response in under 2 hours</span>
+          </div>
+          <div class="sidebar-cta-actions">
+            <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support w-100">
+              <i class="fa-solid fa-life-ring"></i>
+              <span>Remote Support</span>
+            </a>
+            <a href="{{ url_for('main.contact') }}" class="btn btn-danger w-100" aria-label="Send a message to client support">
+              <i class="fa-solid fa-envelope"></i>
+              <span>Client Support</span>
+            </a>
+            <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote w-100">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+              <span>Request Quote</span>
+            </a>
+          </div>
+        </div>
+
+        {% if tool_stack %}
+        <div class="service-detail-sidebar service-stack-sidebar mb-4">
+          <h4>Stack Highlights</h4>
+          <div class="service-stack-list">
+            {% for tool in tool_stack[:6] %}
+            <div class="service-stack-item">
+              <i class="{{ tool.icon }}"></i>
+              <span>{{ tool.name }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if deliverables %}
+        <div class="service-detail-sidebar service-value-sidebar">
+          <h4>What You Get</h4>
+          <ul class="service-value-list">
+            {% for outcome in deliverables %}
+            <li><i class="fa-solid fa-circle-check"></i>{{ outcome.label }}: {{ outcome.value }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-sm section-bottom-spacious">
+  <div class="cta-section cta-section--services reveal-scale">
+    <div class="cta-inner">
+      <h2>Remote Support or Request a Quote</h2>
+      <p>Get live assistance or a scoped estimate for {{ service.title | lower }}.</p>
+      <div class="cta-actions cta-actions-dual">
+        <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+        <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request Quote</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

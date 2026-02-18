@@ -1,0 +1,187 @@
+# IT Services CMS
+
+A professional IT Services company website with a full built-in CMS admin panel. Powered by Python Flask + SQLite, launchable via Pinokio with 1-click install/start.
+
+## What It Does
+
+- **Public Website**: Professional IT services company site with Home, About, Services, Blog, and Contact pages
+- **Admin CMS**: Full content management system at `/admin` to manage all website content
+- **Content Types**: Services, Team Members, Blog Posts, Testimonials, Media Library, Contact Submissions, Site Settings
+
+## How to Use
+
+### Installation
+1. Click **Install** in the Pinokio sidebar to set up the virtual environment and dependencies
+2. Click **Start** to launch the Flask server
+3. The website opens automatically in Pinokio's web view
+
+### Testing
+1. From `app/`, install dev dependencies: `uv pip install -r requirements-dev.txt`
+2. Run tests: `python -m pytest -q`
+3. Or run one-click from Pinokio sidebar: **QA Tests**
+
+### Admin Credentials
+- **URL**: `http://<your-server>/admin/login`
+- **Username**: `admin`
+- **Password**:
+  - If `app/site.db` already exists, use your existing password.
+  - On first boot of a fresh database, the app generates a strong random password and prints it in the startup logs.
+  - You can set `ADMIN_PASSWORD` before first boot to use a custom initial password.
+
+### Managing Content
+
+**Services**: Add, edit, and reorder IT services displayed on the website. Mark services as "Featured" to show them on the homepage.
+
+**Team Members**: Manage your team with photos, bios, positions, and LinkedIn profiles.
+
+**Blog Posts**: Create and publish blog posts with a rich text editor (TinyMCE). Organize posts into categories.
+
+**Testimonials**: Add client reviews with ratings. Featured testimonials appear on the homepage.
+
+**Media Library**: Upload and manage images used throughout the site.
+
+**Site Settings**: Customize company name, tagline, contact info, social media links, and SEO metadata.
+
+**Contact Submissions**: View messages submitted through the public contact form.
+
+**Security Events**: Review Turnstile verification failures and rate-limited form attempts from the admin panel (`/admin/security-events`).
+
+## API Documentation
+
+### JavaScript (Fetch)
+
+```javascript
+// Read CSRF token from a page first
+const html = await (await fetch('http://127.0.0.1:<PORT>/contact')).text();
+const doc = new DOMParser().parseFromString(html, 'text/html');
+const csrf = doc.querySelector('input[name="_csrf_token"]').value;
+
+// Submit a contact form
+const response = await fetch('http://127.0.0.1:<PORT>/contact', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  body: new URLSearchParams({
+    _csrf_token: csrf,
+    name: 'John Doe',
+    email: 'john@example.com',
+    phone: '555-0123',
+    subject: 'Project Inquiry',
+    message: 'I need help with cloud migration.'
+  })
+});
+
+// Get blog posts
+const response = await fetch('http://127.0.0.1:<PORT>/blog');
+
+// Get blog posts by category
+const response = await fetch('http://127.0.0.1:<PORT>/blog?category=technology');
+
+// Search blog posts
+const response = await fetch('http://127.0.0.1:<PORT>/blog?q=cloud');
+```
+
+### Python (Requests)
+
+```python
+import requests
+import re
+
+BASE = 'http://127.0.0.1:<PORT>'
+
+# Read CSRF token from form page
+session = requests.Session()
+form_html = session.get(f'{BASE}/contact').text
+csrf = re.search(r'name=\"_csrf_token\" value=\"([^\"]+)\"', form_html).group(1)
+
+# Submit contact form
+response = session.post(f'{BASE}/contact', data={
+    '_csrf_token': csrf,
+    'name': 'Jane Smith',
+    'email': 'jane@example.com',
+    'subject': 'Service Inquiry',
+    'message': 'Interested in cybersecurity services.'
+})
+
+# Get services page
+response = requests.get(f'{BASE}/services')
+
+# Get specific blog post
+response = requests.get(f'{BASE}/blog/the-future-of-cloud-computing-in-2025')
+```
+
+### cURL
+
+```bash
+# Get homepage
+curl http://127.0.0.1:<PORT>/
+
+# Submit contact form (with CSRF)
+CSRF=$(curl -c /tmp/mylauncher.cookies -s http://127.0.0.1:<PORT>/contact | sed -n 's/.*name="_csrf_token" value="\\([^"]*\\)".*/\\1/p' | head -n1)
+curl -b /tmp/mylauncher.cookies -X POST http://127.0.0.1:<PORT>/contact \
+  -d "_csrf_token=$CSRF" \
+  -d "name=John+Doe" \
+  -d "email=john@example.com" \
+  -d "subject=Inquiry" \
+  -d "message=Hello"
+
+# Get blog listing
+curl http://127.0.0.1:<PORT>/blog
+
+# Search blog posts
+curl "http://127.0.0.1:<PORT>/blog?q=security"
+```
+
+## Tech Stack
+
+- **Backend**: Flask 3.1, Flask-SQLAlchemy, Flask-Login
+- **Database**: SQLite
+- **Frontend**: Bootstrap 5.3, Font Awesome 6, TinyMCE 6
+- **Runtime**: Pinokio (Python venv with UV package manager)
+
+## Production Deployment
+
+The app now supports production deployment with Gunicorn and env-based config:
+
+- `app/wsgi.py` (WSGI entrypoint)
+- `/healthz` endpoint for platform health checks
+- `DATABASE_URL` support (Postgres recommended for production)
+- Optional SMTP notifications for contact and ticket submissions
+
+### Example Start Command
+
+```bash
+cd app
+gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+```
+
+### Environment Setup
+
+1. Copy `app/.env.example` to your real environment config.
+2. Set at minimum:
+   - `SECRET_KEY`
+   - `DATABASE_URL`
+   - `APP_BASE_URL`
+   - `SESSION_COOKIE_SECURE=1`
+   - `TRUST_PROXY_HEADERS=1`
+3. For email delivery:
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
+   - `MAIL_FROM`
+   - `CONTACT_NOTIFICATION_EMAILS`
+   - `TICKET_NOTIFICATION_EMAILS`
+4. For anti-spam and abuse controls:
+   - `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_ENFORCED`
+   - `CONTACT_FORM_LIMIT`, `CONTACT_FORM_WINDOW_SECONDS`
+   - `QUOTE_FORM_LIMIT`, `QUOTE_FORM_WINDOW_SECONDS`
+5. For observability:
+   - `SENTRY_DSN`
+   - `SENTRY_ENVIRONMENT`
+   - `SENTRY_TRACES_SAMPLE_RATE`
+
+### Render Blueprint
+
+A starter Render blueprint is provided at `render.yaml` (web service + Postgres + health check).
+
+### Full Go-Live Checklist
+
+Use `DEPLOYMENT_TODO.md` for the prioritized launch checklist (P0/P1/P2 + launch-day validation).

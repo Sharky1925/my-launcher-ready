@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} — {{ site_settings.get('company_name', 'Right On Repair') }} Blog{% endblock %}
+{% block meta_description %}{{ post.excerpt[:160] if post.excerpt else post.title }}{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.excerpt[:160] if post.excerpt else post.title }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block meta_keywords %}{{ post.title }}, IT insights, cybersecurity, cloud, business technology{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": {{ post.title | tojson }},
+  "description": {{ (post.excerpt[:300] if post.excerpt else '') | tojson }},
+  "datePublished": {{ post.created_at.isoformat() | tojson }},
+  "dateModified": {{ (post.updated_at.isoformat() if post.updated_at else post.created_at.isoformat()) | tojson }},
+  "author": { "@type": "Organization", "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }} },
+  "publisher": { "@type": "Organization", "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }} }
+  {% if post.category %}, "articleSection": {{ post.category.name | tojson }}{% endif %}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.blog') }}">Blog</a></li>
+        <li class="breadcrumb-item active">{{ post.title }}</li>
+      </ol>
+    </nav>
+    {% if post.category %}
+    <span class="hero-badge hero-badge-spaced">{{ post.category.name }}</span>
+    {% endif %}
+    <h1>{{ post.title }}</h1>
+    <p><i class="fa-regular fa-calendar me-2"></i>{{ post.created_at.strftime('%B %d, %Y') }}</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 reveal">
+        {% if post.featured_image %}
+        <img src="{{ url_for('admin.uploaded_file', filename=post.featured_image) }}" alt="{{ post.title }}" class="post-featured-image" loading="eager" fetchpriority="high" decoding="async">
+        {% endif %}
+
+        <article class="post-content">
+          {{ post.content | safe }}
+        </article>
+
+        <!-- Share -->
+        <div class="post-share-wrap">
+          <span class="post-share-label">Share this article</span>
+          <div class="d-flex gap-2 mt-3">
+            <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ request.url|urlencode }}" target="_blank" rel="noopener" class="post-share-link" aria-label="Share on Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.url|urlencode }}" target="_blank" rel="noopener" class="post-share-link" aria-label="Share on LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Posts -->
+    {% if recent_posts %}
+    <div class="mt-5 pt-5 post-related-wrap">
+      <div class="section-heading text-center reveal">
+        <h2 class="post-related-title">Related Articles</h2>
+      </div>
+      <div class="row g-4 justify-content-center">
+        {% for rp in recent_posts %}
+        <div class="col-md-4">
+          <article class="blog-card reveal stagger-{{ loop.index }}">
+            {% if rp.featured_image %}
+            <img src="{{ url_for('admin.uploaded_file', filename=rp.featured_image) }}" alt="{{ rp.title }}" class="card-img-top" loading="lazy" decoding="async">
+            {% else %}
+            <div class="card-img-placeholder"><i class="fa-solid fa-newspaper"></i></div>
+            {% endif %}
+            <div class="card-body">
+              {% if rp.category %}<span class="badge-cat">{{ rp.category.name }}</span>{% endif %}
+              <h3><a href="{{ url_for('main.post', slug=rp.slug) }}">{{ rp.title }}</a></h3>
+              <div class="card-meta">
+                <span>{{ rp.created_at.strftime('%b %d, %Y') }}</span>
+                <a href="{{ url_for('main.post', slug=rp.slug) }}" class="blog-read-link">Read <i class="fa-solid fa-arrow-right ms-1 blog-read-icon"></i></a>
+              </div>
+            </div>
+          </article>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

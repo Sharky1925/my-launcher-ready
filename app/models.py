@@ -1,0 +1,182 @@
+from datetime import datetime, timezone
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+db = SQLAlchemy()
+
+
+def utc_now_naive():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+class Service(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    icon_class = db.Column(db.String(100), default='fa-solid fa-gear')
+    image = db.Column(db.String(300))
+    service_type = db.Column(db.String(20), default='professional')  # 'professional' or 'repair'
+    is_featured = db.Column(db.Boolean, default=False)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+class TeamMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    position = db.Column(db.String(200), nullable=False)
+    bio = db.Column(db.Text)
+    photo = db.Column(db.String(300))
+    linkedin = db.Column(db.String(300))
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+class Testimonial(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_name = db.Column(db.String(200), nullable=False)
+    company = db.Column(db.String(200))
+    content = db.Column(db.Text, nullable=False)
+    rating = db.Column(db.Integer, default=5)
+    is_featured = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(100), unique=True, nullable=False)
+    posts = db.relationship('Post', backref='category', lazy=True)
+
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(300), nullable=False)
+    slug = db.Column(db.String(300), unique=True, nullable=False)
+    excerpt = db.Column(db.Text)
+    content = db.Column(db.Text, nullable=False)
+    featured_image = db.Column(db.String(300))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    is_published = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
+
+
+class Media(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(300), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    file_size = db.Column(db.Integer)
+    mime_type = db.Column(db.String(100))
+    alt_text = db.Column(db.String(300))
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+class ContactSubmission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(200), nullable=False)
+    phone = db.Column(db.String(50))
+    subject = db.Column(db.String(300))
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+class SupportClient(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    company = db.Column(db.String(200))
+    phone = db.Column(db.String(50))
+    password_hash = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+    last_login_at = db.Column(db.DateTime)
+    tickets = db.relationship('SupportTicket', backref='client', lazy=True, cascade='all, delete-orphan')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+class SupportTicket(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_number = db.Column(db.String(24), unique=True, nullable=False, index=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('support_client.id'), nullable=False, index=True)
+    subject = db.Column(db.String(300), nullable=False)
+    service_slug = db.Column(db.String(200))
+    priority = db.Column(db.String(20), default='normal', nullable=False)  # low, normal, high, critical
+    status = db.Column(db.String(30), default='open', nullable=False)      # open, in_progress, waiting_customer, resolved, closed
+    details = db.Column(db.Text, nullable=False)
+    internal_notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
+
+
+class Industry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    icon_class = db.Column(db.String(100), default='fa-solid fa-building')
+    hero_description = db.Column(db.Text)
+    challenges = db.Column(db.Text)  # pipe-separated: "challenge1|challenge2|challenge3"
+    solutions = db.Column(db.Text)   # pipe-separated: "solution1|solution2|solution3"
+    stats = db.Column(db.Text)       # pipe-separated: "label1:value1|label2:value2"
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+class SiteSetting(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.Text, default='')
+
+
+class AuthRateLimitBucket(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    scope = db.Column(db.String(80), nullable=False, index=True)
+    ip = db.Column(db.String(64), nullable=False, index=True)
+    count = db.Column(db.Integer, nullable=False, default=0)
+    reset_at = db.Column(db.DateTime, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
+
+    __table_args__ = (
+        db.UniqueConstraint('scope', 'ip', name='uq_auth_rate_limit_scope_ip'),
+        db.Index('ix_auth_rate_limit_scope_reset_at', 'scope', 'reset_at'),
+    )
+
+
+class SecurityEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    event_type = db.Column(db.String(40), nullable=False, index=True)  # turnstile_failed, rate_limited
+    scope = db.Column(db.String(80), nullable=False, index=True)       # contact_form, quote_form, etc.
+    ip = db.Column(db.String(64), nullable=False, index=True)
+    path = db.Column(db.String(255), nullable=False)
+    method = db.Column(db.String(10), nullable=False)
+    user_agent = db.Column(db.String(300))
+    details = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    __table_args__ = (
+        db.Index('ix_security_event_scope_created_at', 'scope', 'created_at'),
+        db.Index('ix_security_event_type_created_at', 'event_type', 'created_at'),
+    )

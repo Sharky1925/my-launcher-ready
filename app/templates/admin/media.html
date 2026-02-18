@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Media Library{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <form method="post" action="{{ url_for('admin.media_upload') }}" enctype="multipart/form-data" class="d-flex gap-2">
+            {{ csrf_input() }}
+      <input type="file" name="file" class="form-control" required accept="image/*,.pdf">
+      <button class="btn btn-primary text-nowrap"><i class="fa-solid fa-upload me-1"></i>Upload</button>
+    </form>
+  </div>
+</div>
+
+{% if items %}
+<div class="row g-3">
+  {% for m in items %}
+  <div class="col-md-3 col-sm-4 col-6">
+    <div class="card border-0 shadow-sm h-100">
+      {% if m.mime_type and m.mime_type.startswith('image') %}
+      <img src="{{ url_for('admin.uploaded_file', filename=m.file_path) }}" class="card-img-top media-thumb" alt="{{ m.alt_text or m.filename }}" loading="lazy" decoding="async">
+      {% else %}
+      <div class="card-img-top d-flex align-items-center justify-content-center bg-light media-thumb-placeholder">
+        <i class="fa-solid fa-file fa-3x text-muted"></i>
+      </div>
+      {% endif %}
+      <div class="card-body p-2">
+        <small class="text-truncate d-block" title="{{ m.filename }}">{{ m.filename }}</small>
+        <small class="text-muted">{{ (m.file_size / 1024)|round(1) }} KB</small>
+        <form method="post" action="{{ url_for('admin.media_delete', id=m.id) }}" class="mt-1" onsubmit="return confirm('Delete?')">
+            {{ csrf_input() }}
+          <button class="btn btn-sm btn-outline-danger w-100"><i class="fa-solid fa-trash me-1"></i>Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="fa-solid fa-photo-film fa-3x mb-3"></i>
+  <p>No files uploaded yet</p>
+</div>
+{% endif %}
+{% endblock %}

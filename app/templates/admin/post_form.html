@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ 'Edit' if item else 'New' }} Post{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+            {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">Title *</label>
+          <input type="text" name="title" class="form-control" value="{{ item.title if item else '' }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Category</label>
+          <select name="category_id" class="form-select">
+            <option value="">-- None --</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {{ 'selected' if item and item.category_id == cat.id }}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Excerpt</label>
+          <textarea name="excerpt" class="form-control" rows="2">{{ item.excerpt if item else '' }}</textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Content *</label>
+          <textarea name="content" id="editor" class="form-control" rows="12">{{ item.content if item else '' }}</textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Featured Image</label>
+          <input type="file" name="featured_image" class="form-control" accept="image/*">
+          {% if item and item.featured_image %}<small class="text-muted">Current: {{ item.featured_image }}</small>{% endif %}
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+          <div class="form-check">
+            <input type="checkbox" name="is_published" class="form-check-input" id="published" {{ 'checked' if item and item.is_published }}>
+            <label class="form-check-label" for="published">Published</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Post</button>
+          <a href="{{ url_for('admin.posts') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}" src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script nonce="{{ csp_nonce }}">
+  tinymce.init({
+    selector: '#editor',
+    height: 400,
+    menubar: false,
+    plugins: 'lists link image code table',
+    toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
+    promotion: false
+  });
+</script>
+{% endblock %}

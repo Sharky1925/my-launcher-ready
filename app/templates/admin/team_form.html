@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ 'Edit' if item else 'Add' }} Team Member{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+            {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Name *</label>
+          <input type="text" name="name" class="form-control" value="{{ item.name if item else '' }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Position *</label>
+          <input type="text" name="position" class="form-control" value="{{ item.position if item else '' }}" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Bio</label>
+          <textarea name="bio" class="form-control" rows="4">{{ item.bio if item else '' }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Photo</label>
+          <input type="file" name="photo" class="form-control" accept="image/*">
+          {% if item and item.photo %}<small class="text-muted">Current: {{ item.photo }}</small>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">LinkedIn URL</label>
+          <input type="url" name="linkedin" class="form-control" value="{{ item.linkedin if item else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Sort Order</label>
+          <input type="number" name="sort_order" class="form-control" value="{{ item.sort_order if item else 0 }}">
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Member</button>
+          <a href="{{ url_for('admin.team') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% block title %}Remote Support Portal — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Client remote support portal with registration, sign in, ticket creation, and status tracking synchronized with internal CMS support workflows.{% endblock %}
+{% block og_title %}Remote Support Portal — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block og_description %}Create and track support tickets through the secure client portal.{% endblock %}
+{% block meta_keywords %}remote support portal, support ticket tracking, client login IT support, managed IT ticket system{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Remote Support Portal",
+  "description": "Client portal for support ticket creation and tracking.",
+  "url": {{ request.base_url | tojson }}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-header remote-page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Remote Support</li>
+      </ol>
+    </nav>
+    <h1>Remote Support Portal</h1>
+    <p>Secure registration, client sign in, CMS-synced ticket intake, and real-time status tracking.</p>
+  </div>
+</section>
+
+<section class="section section-sm remote-portal-top">
+  <div class="container">
+    <div class="service-detail-hero service-detail-hero--v2 remote-portal-hero">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-8">
+          <div class="service-kicker-badge">Latest Registry Template</div>
+          <h2>Remote Support, Registration, and Ticket Tracking</h2>
+          <p class="remote-portal-copy">
+            Register once, sign in securely, submit support tickets, and follow status updates synchronized with internal CMS workflows.
+          </p>
+          <div class="remote-hero-badges">
+            <span><i class="fa-solid fa-user-shield"></i> Secure Client Login</span>
+            <span><i class="fa-solid fa-ticket"></i> Structured Ticket Intake</span>
+            <span><i class="fa-solid fa-rotate"></i> Live Status Updates</span>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="service-visual-panel remote-stack-panel">
+            <div class="service-panel-head">
+              <h2><i class="fa-solid fa-screwdriver-wrench"></i>Support Stack</h2>
+              <p>Common remote support and security tooling.</p>
+            </div>
+            <div class="service-tool-cloud remote-tool-cloud">
+              <span class="service-tool-pill"><i class="fa-solid fa-desktop"></i>TeamViewer</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-laptop-code"></i>AnyDesk</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-shield-halved"></i>CrowdStrike</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-cloud"></i>Microsoft Intune</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-database"></i>Veeam Backup</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-network-wired"></i>NinjaOne</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section pt-0 remote-support-section">
+  <div class="container">
+    {% if portal_client %}
+    {% set counts = namespace(open=0, in_progress=0, waiting_customer=0, resolved=0, closed=0) %}
+    {% for ticket in tickets %}
+      {% if ticket.status == 'open' %}
+        {% set counts.open = counts.open + 1 %}
+      {% elif ticket.status == 'in_progress' %}
+        {% set counts.in_progress = counts.in_progress + 1 %}
+      {% elif ticket.status == 'waiting_customer' %}
+        {% set counts.waiting_customer = counts.waiting_customer + 1 %}
+      {% elif ticket.status == 'resolved' %}
+        {% set counts.resolved = counts.resolved + 1 %}
+      {% elif ticket.status == 'closed' %}
+        {% set counts.closed = counts.closed + 1 %}
+      {% endif %}
+    {% endfor %}
+    {% set active_count = counts.open + counts.in_progress + counts.waiting_customer %}
+
+    <div class="service-visual-panel remote-dashboard-top mb-4">
+      <div class="remote-dashboard-head">
+        <div>
+          <div class="service-kicker-badge">Client Workspace Active</div>
+          <h2>Welcome, {{ portal_client.full_name }}</h2>
+          <p>You are signed in as {{ portal_client.email }}.</p>
+        </div>
+      </div>
+      <div class="remote-dashboard-actions">
+        <a href="{{ url_for('main.contact') }}?subject=Support+Message" class="btn btn-cta-message"><i class="fa-solid fa-paper-plane"></i> Send Us a Message</a>
+        {% if site_settings.get('phone') %}
+        <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-cta-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+        {% endif %}
+        <form method="POST" action="{{ url_for('main.remote_support_logout') }}">
+            {{ csrf_input() }}
+          <button class="btn btn-danger" type="submit"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="remote-metric-grid mb-4">
+      <article class="remote-metric-card">
+        <span class="remote-metric-label">Open</span>
+        <strong class="remote-metric-value">{{ counts.open }}</strong>
+        <p class="remote-metric-note">New tickets awaiting triage</p>
+      </article>
+      <article class="remote-metric-card">
+        <span class="remote-metric-label">Active</span>
+        <strong class="remote-metric-value">{{ active_count }}</strong>
+        <p class="remote-metric-note">Open, in progress, waiting on client</p>
+      </article>
+      <article class="remote-metric-card">
+        <span class="remote-metric-label">Resolved</span>
+        <strong class="remote-metric-value">{{ counts.resolved }}</strong>
+        <p class="remote-metric-note">Completed tickets ready for closeout</p>
+      </article>
+      <article class="remote-metric-card">
+        <span class="remote-metric-label">Total Tickets</span>
+        <strong class="remote-metric-value">{{ tickets|length }}</strong>
+        <p class="remote-metric-note">Historical and active portal requests</p>
+      </article>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-xl-8">
+        <div class="contact-form-wrap remote-form-card">
+          <div class="remote-form-head">
+            <span class="remote-mini-kicker"><i class="fa-solid fa-clipboard-list"></i> CMS Ticket Intake</span>
+            <h3>Create Support Ticket</h3>
+            <p>Describe the issue in detail and submit it directly to internal support operations.</p>
+          </div>
+          <div class="remote-progress-strip">
+            <span><strong>01</strong> Define issue</span>
+            <span><strong>02</strong> Set priority</span>
+            <span><strong>03</strong> Submit and track</span>
+          </div>
+          <form method="POST" action="{{ url_for('main.remote_support_create_ticket') }}" class="remote-portal-form">
+            {{ csrf_input() }}
+            <div class="row g-3">
+              <div class="col-md-7">
+                <label class="form-label" for="subject">Subject</label>
+                <input class="form-control" id="subject" name="subject" placeholder="Example: VPN access issue for remote users" required autocomplete="off">
+              </div>
+              <div class="col-md-5">
+                <label class="form-label" for="service_slug">Related Service</label>
+                <select class="form-select" id="service_slug" name="service_slug">
+                  <option value="">General Support</option>
+                  {% for service in services %}
+                  <option value="{{ service.slug }}">{{ service.title }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="priority">Priority</label>
+                <select class="form-select" id="priority" name="priority">
+                  <option value="low">Low</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="details">Issue Details</label>
+                <textarea class="form-control" id="details" name="details" rows="6" placeholder="What happened, when it started, affected users/devices, and urgency." required></textarea>
+              </div>
+              <div class="col-12">
+                <div class="remote-form-actions">
+                  <button type="submit" class="btn btn-primary"><i class="fa-solid fa-ticket"></i> Submit Ticket</button>
+                  <a href="{{ url_for('main.request_quote') }}" class="btn btn-ghost"><i class="fa-solid fa-file-signature"></i> Need a Quote?</a>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="col-xl-4">
+        <div class="contact-info-card remote-aside-card h-100">
+          <h3>Account Details</h3>
+          <p>Support profile used for all ticket updates and tracking.</p>
+          <div class="contact-info-item">
+            <div class="icon"><i class="fa-solid fa-user"></i></div>
+            <div>
+              <div class="label">Name</div>
+              <div class="value">{{ portal_client.full_name }}</div>
+            </div>
+          </div>
+          <div class="contact-info-item">
+            <div class="icon"><i class="fa-solid fa-envelope"></i></div>
+            <div>
+              <div class="label">Email</div>
+              <div class="value">{{ portal_client.email }}</div>
+            </div>
+          </div>
+          {% if portal_client.company %}
+          <div class="contact-info-item">
+            <div class="icon"><i class="fa-solid fa-building"></i></div>
+            <div>
+              <div class="label">Company</div>
+              <div class="value">{{ portal_client.company }}</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if portal_client.phone %}
+          <div class="contact-info-item">
+            <div class="icon"><i class="fa-solid fa-phone"></i></div>
+            <div>
+              <div class="label">Phone</div>
+              <div class="value">{{ portal_client.phone }}</div>
+            </div>
+          </div>
+          {% endif %}
+          <div class="service-panel-head remote-guidance-head">
+            <h2><i class="fa-solid fa-circle-info"></i>Portal Guidance</h2>
+            <p>For faster resolution, include scope, user impact, and recent changes.</p>
+          </div>
+          <ul class="service-value-list remote-guidance-list">
+            <li><i class="fa-solid fa-circle-check"></i> Mention affected users, devices, and locations.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Add screenshots or exact error wording when possible.</li>
+            <li><i class="fa-solid fa-circle-check"></i> Set priority accurately for proper escalation.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="service-visual-panel remote-ticket-panel">
+      <div class="service-panel-head">
+        <h2><i class="fa-solid fa-list-check"></i>Ticket Activity</h2>
+        <p>Current and past ticket activity in your portal account.</p>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 remote-ticket-table">
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>Subject</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ticket in tickets %}
+            <tr>
+              <td><code>{{ ticket.ticket_number }}</code></td>
+              <td>
+                <div>{{ ticket.subject }}</div>
+                {% if ticket.service_slug %}
+                <small class="text-muted">{{ ticket.service_slug | replace('-', ' ') | title }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% set priority_class = 'remote-priority-normal' %}
+                {% if ticket.priority == 'critical' %}
+                {% set priority_class = 'remote-priority-critical' %}
+                {% elif ticket.priority == 'high' %}
+                {% set priority_class = 'remote-priority-high' %}
+                {% elif ticket.priority == 'low' %}
+                {% set priority_class = 'remote-priority-low' %}
+                {% endif %}
+                <span class="remote-ticket-chip {{ priority_class }}">{{ ticket_priority_labels.get(ticket.priority, ticket.priority | title) }}</span>
+              </td>
+              <td>
+                {% set status_class = 'remote-status-open' %}
+                {% if ticket.status == 'open' %}
+                {% set status_class = 'remote-status-open' %}
+                {% elif ticket.status == 'in_progress' %}
+                {% set status_class = 'remote-status-progress' %}
+                {% elif ticket.status == 'waiting_customer' %}
+                {% set status_class = 'remote-status-waiting' %}
+                {% elif ticket.status == 'resolved' %}
+                {% set status_class = 'remote-status-resolved' %}
+                {% else %}
+                {% set status_class = 'remote-status-closed' %}
+                {% endif %}
+                <span class="remote-ticket-chip {{ status_class }}">{{ ticket_status_labels.get(ticket.status, ticket.status | title) }}</span>
+              </td>
+              <td>{{ ticket.updated_at.strftime('%b %d, %Y %I:%M %p') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center py-3"><span class="remote-empty">No tickets yet. Submit your first request above.</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="row g-4 remote-auth-grid">
+      <div class="col-lg-5">
+        <div class="contact-form-wrap remote-auth-card h-100">
+          <div class="remote-mini-kicker"><i class="fa-solid fa-right-to-bracket"></i> Client Login</div>
+          <h3>Sign In</h3>
+          <p>Access your ticket history, open new requests, and monitor progress from one workspace.</p>
+          <form method="POST" action="{{ url_for('main.remote_support_login') }}">
+            {{ csrf_input() }}
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="login_email">Email</label>
+                <input type="email" class="form-control" id="login_email" name="email" required autocomplete="email">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="login_password">Password</label>
+                <input type="password" class="form-control" id="login_password" name="password" required autocomplete="current-password">
+              </div>
+              <div class="col-12">
+                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+              </div>
+            </div>
+          </form>
+          <p class="remote-form-note">No account yet? Create one in the registration panel.</p>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="contact-form-wrap remote-auth-card remote-register-card h-100">
+          <div class="remote-mini-kicker"><i class="fa-solid fa-user-plus"></i> Client Registration</div>
+          <h3>Create Account</h3>
+          <p>Register once to submit tickets, track statuses, and coordinate support updates faster.</p>
+          <form method="POST" action="{{ url_for('main.remote_support_register') }}">
+            {{ csrf_input() }}
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="reg_name">Full Name</label>
+                <input type="text" class="form-control" id="reg_name" name="full_name" required autocomplete="name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_email">Email</label>
+                <input type="email" class="form-control" id="reg_email" name="email" required autocomplete="email">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_phone">Phone</label>
+                <input type="tel" class="form-control" id="reg_phone" name="phone" autocomplete="tel">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="reg_company">Company</label>
+                <input type="text" class="form-control" id="reg_company" name="company" autocomplete="organization">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_password">Password</label>
+                <input type="password" class="form-control" id="reg_password" name="password" minlength="8" required autocomplete="new-password">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_confirm">Confirm Password</label>
+                <input type="password" class="form-control" id="reg_confirm" name="confirm_password" minlength="8" required autocomplete="new-password">
+              </div>
+              <div class="col-12">
+                <button class="btn btn-quote" type="submit"><i class="fa-solid fa-user-plus"></i> Register</button>
+              </div>
+            </div>
+          </form>
+          <p class="remote-form-note">Password minimum: 8 characters. Use a unique password for your client portal.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+      <div class="col-lg-7">
+        <div class="service-visual-panel remote-process-panel">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-list-ol"></i>How The Portal Works</h2>
+            <p>Simple workflow from account setup to ticket resolution.</p>
+          </div>
+          <div class="timeline-grid remote-process-grid">
+            <article class="timeline-card">
+              <span class="process-icon">01</span>
+              <div>
+                <h4>Create Your Account</h4>
+                <p>Register your client profile with business email and secure password.</p>
+              </div>
+            </article>
+            <article class="timeline-card">
+              <span class="process-icon">02</span>
+              <div>
+                <h4>Submit Support Request</h4>
+                <p>Describe the issue with service context, priority, and full details.</p>
+              </div>
+            </article>
+            <article class="timeline-card">
+              <span class="process-icon">03</span>
+              <div>
+                <h4>Track Status Updates</h4>
+                <p>Monitor progress from open to resolved with synchronized CMS tracking.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="service-visual-panel remote-benefit-panel h-100">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-shield-halved"></i>Client Benefits</h2>
+            <p>Designed for fast, secure support coordination.</p>
+          </div>
+          <ul class="service-value-list remote-benefit-list">
+            <li><i class="fa-solid fa-circle-check"></i>Dedicated client sign in with protected account access.</li>
+            <li><i class="fa-solid fa-circle-check"></i>Structured ticket intake for faster issue triage.</li>
+            <li><i class="fa-solid fa-circle-check"></i>Consistent ticket history for recurring incident analysis.</li>
+            <li><i class="fa-solid fa-circle-check"></i>Direct support communication without long email chains.</li>
+          </ul>
+          <div class="remote-auth-actions">
+            <a href="{{ url_for('main.contact') }}?subject=Support+Message" class="btn btn-cta-message"><i class="fa-solid fa-paper-plane"></i> Send Us a Message</a>
+            {% if site_settings.get('phone') %}
+            <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-cta-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

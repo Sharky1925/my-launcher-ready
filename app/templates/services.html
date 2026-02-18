@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}IT Services & Solutions — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Full-range IT services: cloud computing, cybersecurity, managed IT, software development, and expert hardware repair.{% endblock %}
+{% block og_title %}IT Services — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_keywords %}IT services Orange County, managed IT services, cloud solutions, cybersecurity services, software development services, technical repair services{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "IT Services",
+  "numberOfItems": {{ pro_services|length + repair_services|length }},
+  "itemListElement": [
+    {% for s in pro_services %}
+    { "@type": "ListItem", "position": {{ loop.index }}, "item": { "@type": "Service", "name": {{ s.title | tojson }} } }{% if not loop.last or repair_services %},{% endif %}
+    {% endfor %}
+    {% for s in repair_services %}
+    { "@type": "ListItem", "position": {{ pro_services|length + loop.index }}, "item": { "@type": "Service", "name": {{ s.title | tojson }} } }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Services</li>
+      </ol>
+    </nav>
+    <h1>Our Services</h1>
+    <p>End-to-end technology solutions for modern businesses.</p>
+  </div>
+</section>
+
+<!-- Professional IT Services -->
+<section class="section" id="professional">
+  <div class="container">
+    <div class="section-heading reveal">
+      <div class="section-label"><i class="fa-solid fa-cube"></i> Professional IT</div>
+      <h2>Strategic Technology Solutions</h2>
+    </div>
+    <div class="row g-4">
+      {% set colors = ['blue','purple','green','amber','rose','cyan'] %}
+      {% for service in pro_services %}
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card reveal stagger-{{ loop.index }}">
+          <div class="icon-wrap {{ colors[(loop.index0) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
+          <h3>{{ service.title }}</h3>
+          <p>{{ service.description[:120] }}...</p>
+          <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="glow-line"></div>
+
+<!-- Technical Repair -->
+<section class="section section--alt" id="repair">
+  <div class="container">
+    <div class="section-heading reveal">
+      <div class="section-label"><i class="fa-solid fa-wrench"></i> Technical Repair</div>
+      <h2>Expert Repair & Recovery</h2>
+    </div>
+    <div class="row g-4">
+      {% set rcolors = ['cyan','rose','amber','green','purple','blue'] %}
+      {% for service in repair_services %}
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card reveal stagger-{{ loop.index }}">
+          <div class="icon-wrap {{ rcolors[(loop.index0) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
+          <h3>{{ service.title }}</h3>
+          <p>{{ service.description[:120] }}...</p>
+          <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-sm section-bottom-spacious">
+  <div class="cta-section cta-section--services reveal-scale">
+    <div class="cta-inner">
+      <h2>Need Remote Support or a Quote?</h2>
+      <p>Choose remote assistance or request scoped pricing for your business.</p>
+      <div class="cta-actions cta-actions-dual">
+        <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+        <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request Quote</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+  const serviceType = new URLSearchParams(window.location.search).get('type');
+  const hash = window.location.hash;
+  if (hash === '#repair') {
+    setTimeout(() => document.getElementById('repair')?.scrollIntoView({ behavior: 'smooth' }), 300);
+  }
+  if (serviceType === 'professional') {
+    setTimeout(() => document.getElementById('professional')?.scrollIntoView({ behavior: 'smooth' }), 300);
+  }
+</script>
+{% endblock %}
+{% endblock %}

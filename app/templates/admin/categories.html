@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Categories{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white"><h6 class="mb-0">Add Category</h6></div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('admin.category_add') }}">
+            {{ csrf_input() }}
+          <div class="input-group">
+            <input type="text" name="name" class="form-control" placeholder="Category name" required>
+            <button class="btn btn-primary">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Name</th><th>Slug</th><th>Posts</th><th>Actions</th></tr></thead>
+          <tbody>
+            {% for cat in items %}
+            <tr>
+              <td>{{ cat.name }}</td>
+              <td><code>{{ cat.slug }}</code></td>
+              <td>{{ cat.posts | length }}</td>
+              <td>
+                <form method="post" action="{{ url_for('admin.category_delete', id=cat.id) }}" class="d-inline" onsubmit="return confirm('Delete?')">
+            {{ csrf_input() }}
+                  <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-3">No categories yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

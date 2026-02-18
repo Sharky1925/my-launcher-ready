@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Contact: {{ item.name }}{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Name</label>
+        <p>{{ item.name }}</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Email</label>
+        <p><a href="mailto:{{ item.email }}">{{ item.email }}</a></p>
+      </div>
+      {% if item.phone %}
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Phone</label>
+        <p>{{ item.phone }}</p>
+      </div>
+      {% endif %}
+      {% if item.subject %}
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Subject</label>
+        <p>{{ item.subject }}</p>
+      </div>
+      {% endif %}
+      <div class="col-12">
+        <label class="form-label fw-bold">Message</label>
+        <div class="p-3 bg-light rounded">{{ item.message }}</div>
+      </div>
+      <div class="col-12">
+        <small class="text-muted">Received: {{ item.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+      </div>
+      <div class="col-12">
+        <a href="{{ url_for('admin.contacts') }}" class="btn btn-outline-secondary">Back to List</a>
+        <form method="post" action="{{ url_for('admin.contact_delete', id=item.id) }}" class="d-inline" onsubmit="return confirm('Delete?')">
+            {{ csrf_input() }}
+          <button class="btn btn-outline-danger ms-2">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

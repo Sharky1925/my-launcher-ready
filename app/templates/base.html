@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ site_settings.get('meta_title', 'Right On Repair — IT Services & Computer Repair in Orange County') }}{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{{ site_settings.get('meta_description', 'Orange County IT services: managed IT, cybersecurity, cloud solutions, software and web development, surveillance camera installation, and device repairs. Same-day support.') }}{% endblock %}">
+  <meta name="author" content="{{ site_settings.get('company_name', 'Right On Repair') }}">
+  <meta name="keywords" content="{% block meta_keywords %}IT services Orange County, managed IT Orange County, cybersecurity Orange County, cloud solutions Orange County, computer repair Orange County, business IT support, software development Orange County, web development Orange County{% endblock %}">
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <link rel="canonical" href="{{ request.base_url }}">
+  {% block meta_extra %}{% endblock %}
+  <!-- Open Graph -->
+  <meta property="og:title" content="{% block og_title %}{{ site_settings.get('meta_title', 'Right On Repair') }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ site_settings.get('meta_description', '') }}{% endblock %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:url" content="{{ request.url }}">
+  <meta property="og:site_name" content="{{ site_settings.get('company_name', 'Right On Repair') }}">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="{% block og_image %}{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}{% endblock %}">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ self.og_title() }}">
+  <meta name="twitter:description" content="{{ self.og_description() }}">
+  <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}">
+  {% set asset_v = '20260217-hero-btn-compact' %}
+  <!-- Fonts & CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_v }}" rel="stylesheet">
+  {% block head_extra %}{% endblock %}
+  <!-- Structured Data -->
+  <script nonce="{{ csp_nonce }}" type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }},
+    "description": {{ site_settings.get('meta_description', '') | tojson }},
+    "telephone": {{ site_settings.get('phone', '') | tojson }},
+    "email": {{ site_settings.get('email', '') | tojson }},
+    "address": { "@type": "PostalAddress", "streetAddress": {{ site_settings.get('address', '') | tojson }}, "addressRegion": "CA", "addressCountry": "US" },
+    "areaServed": "Orange County, CA",
+    "sameAs": [
+      {{ site_settings.get('facebook', '') | tojson }},
+      {{ site_settings.get('twitter', '') | tojson }},
+      {{ site_settings.get('linkedin', '') | tojson }}
+    ]
+  }
+  </script>
+  {% block structured_data %}{% endblock %}
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<div class="scroll-progress"></div>
+
+<header class="site-header sticky-top">
+  <!-- Topbar -->
+  <div class="topbar d-none d-lg-block">
+    <div class="container">
+      <div class="topbar-inner">
+        <div class="topbar-group">
+          <div class="topbar-item">
+            <span class="topbar-stars">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <span>5-Star Rated</span>
+            </span>
+          </div>
+          {% if site_settings.get('phone') %}
+          <div class="topbar-item">
+            <a class="topbar-contact-link" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}" aria-label="Call {{ site_settings.phone }}">
+              <i class="fa-solid fa-phone"></i> {{ site_settings.phone }}
+            </a>
+          </div>
+          {% endif %}
+          {% if site_settings.get('email') %}
+          <div class="topbar-item">
+            <a class="topbar-contact-link" href="mailto:{{ site_settings.email }}" aria-label="Email {{ site_settings.email }}">
+              <i class="fa-solid fa-envelope"></i> {{ site_settings.email }}
+            </a>
+          </div>
+          {% endif %}
+        </div>
+        <div class="topbar-group">
+          {% if site_settings.get('address') %}
+          <div class="topbar-item">
+            <i class="fa-solid fa-location-dot"></i> {{ site_settings.address }}
+          </div>
+          {% endif %}
+          <div class="topbar-item">
+            <a href="{{ url_for('main.request_quote') }}">Free Consultation <i class="fa-solid fa-arrow-right topbar-arrow-icon"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-main">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('main.index') }}">{{ site_settings.get('company_name', 'Right On Repair') }}</a>
+      <div class="navbar-collapse">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+          <li class="nav-item"><a class="nav-link no-line-anim{% if request.endpoint == 'main.index' %} active{% endif %}" href="{{ url_for('main.index') }}">Home</a></li>
+          <li class="nav-item"><a class="nav-link no-line-anim{% if request.endpoint == 'main.about' %} active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle{% if request.endpoint in ['main.services', 'main.service_detail'] %} active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">IT Services <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <ul class="dropdown-menu">
+              {% for s in nav_professional %}
+              <li><a class="dropdown-item" href="{{ url_for('main.service_detail', slug=s.slug) }}"><i class="{{ s.icon_class }} me-2 dropdown-item-icon"></i>{{ s.title }}</a></li>
+              {% endfor %}
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('main.services') }}"><strong>View All Services</strong></a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Repair Services <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <ul class="dropdown-menu">
+              {% for s in nav_repair %}
+              <li><a class="dropdown-item" href="{{ url_for('main.service_detail', slug=s.slug) }}"><i class="{{ s.icon_class }} me-2 dropdown-item-icon"></i>{{ s.title }}</a></li>
+              {% endfor %}
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('main.services') }}"><strong>View All Services</strong></a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle{% if request.endpoint in ['main.industries', 'main.industry_detail'] %} active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Industries <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <ul class="dropdown-menu">
+              {% for ind in nav_industries %}
+              <li><a class="dropdown-item" href="{{ url_for('main.industry_detail', slug=ind.slug) }}"><i class="{{ ind.icon_class }} me-2 dropdown-item-icon"></i>{{ ind.title }}</a></li>
+              {% endfor %}
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('main.industries') }}"><strong>View All Industries</strong></a></li>
+            </ul>
+          </li>
+          {% if site_settings.get('phone') %}
+          <li class="nav-item ms-lg-2">
+            <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
+          </li>
+          {% endif %}
+          <li class="nav-item ms-lg-1">
+            <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+          </li>
+          <li class="nav-item ms-lg-1">
+            <a class="btn-nav-quote{% if request.endpoint == 'main.request_quote' %} active{% endif %}" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-invoice"></i> Request Quote</a>
+          </li>
+          <li class="nav-item ms-lg-1">
+            <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container flash-wrap" aria-live="polite">
+  {% for category, message in messages %}
+  <div class="alert alert-modern alert-{{ category }} alert-dismissible fade show" role="alert">
+    <i class="fa-solid {% if category == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- Main Content -->
+<main id="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-4">
+        <div class="brand-text">{{ site_settings.get('company_name', 'Right On Repair') }}</div>
+        <p>{{ site_settings.get('tagline', 'Managed IT, cybersecurity, cloud architecture, software development, and technical repairs for local businesses. Local response, transparent communication.') }}</p>
+        {% if site_settings.get('phone') or site_settings.get('email') or site_settings.get('address') %}
+        <ul class="footer-contact-list">
+          {% if site_settings.get('phone') %}<li class="footer-contact-item"><i class="fa-solid fa-phone me-2 footer-contact-icon"></i>{{ site_settings.phone }}</li>{% endif %}
+          {% if site_settings.get('email') %}<li class="footer-contact-item"><i class="fa-solid fa-envelope me-2 footer-contact-icon"></i>{{ site_settings.email }}</li>{% endif %}
+          {% if site_settings.get('address') %}<li><i class="fa-solid fa-location-dot me-2 footer-contact-icon"></i>{{ site_settings.address }}</li>{% endif %}
+        </ul>
+        {% endif %}
+        <div class="footer-social">
+          {% if site_settings.get('facebook') %}<a href="{{ site_settings.facebook }}" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>{% endif %}
+          {% if site_settings.get('twitter') %}<a href="{{ site_settings.twitter }}" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>{% endif %}
+          {% if site_settings.get('linkedin') %}<a href="{{ site_settings.linkedin }}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>{% endif %}
+        </div>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h5>Services</h5>
+        <ul>
+          {% for s in nav_professional[:5] %}
+          <li><a href="{{ url_for('main.service_detail', slug=s.slug) }}">{{ s.title }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="{{ url_for('main.about') }}">About Us</a></li>
+          <li><a href="{{ url_for('main.services') }}">All Services</a></li>
+          <li><a href="{{ url_for('main.industries') }}">Industries</a></li>
+          <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
+          <li><a href="{{ url_for('main.request_quote') }}">Request Quote</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-4">
+        <h5>Service Area</h5>
+        <p class="footer-service-note">On-site and remote support for businesses throughout Orange County.</p>
+        <div class="footer-chips">
+          <span class="footer-chip">Anaheim</span>
+          <span class="footer-chip">Irvine</span>
+          <span class="footer-chip">Santa Ana</span>
+          <span class="footer-chip">Huntington Beach</span>
+          <span class="footer-chip">Costa Mesa</span>
+          <span class="footer-chip">Fullerton</span>
+          <span class="footer-chip">Orange</span>
+          <span class="footer-chip">Mission Viejo</span>
+          <span class="footer-chip">Newport Beach</span>
+          <span class="footer-chip">Laguna Beach</span>
+          <span class="footer-chip">Tustin</span>
+          <span class="footer-chip">Lake Forest</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom d-flex flex-wrap justify-content-between align-items-center">
+      <span>{{ site_settings.get('footer_text', '© 2024 Right On Repair. All rights reserved.') | replace('&copy;', '©') }}</span>
+      <span><a href="{{ url_for('admin.login') }}" class="footer-admin-link">Admin</a></span>
+    </div>
+  </div>
+</footer>
+
+<!-- Mobile Call Button -->
+{% if site_settings.get('phone') %}
+<a class="mobile-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}">
+  <i class="fa-solid fa-phone"></i> Call Now
+</a>
+{% endif %}
+
+<script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/main.js') }}?v={{ asset_v }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

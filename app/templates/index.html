@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block title %}Managed IT Services & Technical Repair Services in Orange County | {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Managed IT services and technical repair services in Orange County. One all-in-one tech and repair shop for business IT support, cybersecurity, cloud, development, and fast device repair.{% endblock %}
+{% block meta_keywords %}managed IT services Orange County, technical repair services Orange County, business IT support Orange County, cybersecurity Orange County, cloud solutions Orange County, computer repair Orange County{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }},
+  "description": "Managed IT services and technical repair services in Orange County from one all-in-one tech and repair shop.",
+  "provider": { "@type": "Organization", "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }} }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero — Command Center -->
+<section class="hero hero--command">
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-6 hero-content">
+        <div class="signal-strip" aria-hidden="true">
+          <span class="signal-pill">OC RESPONSE &lt; 2H</span>
+          <span class="signal-pill">24/7 MONITORING</span>
+          <span class="signal-pill">SECURITY-FIRST</span>
+        </div>
+        <div class="hero-badge"><span class="pulse-dot"></span> Managed IT + Technical Repair for Orange County</div>
+        <h1>Managed IT Services &amp; Technical Repair Services <span class="gradient-text">in Orange County</span></h1>
+        <p class="lead">One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.</p>
+        <div class="hero-buttons">
+          <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Book Free Consultation</a>
+          <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+          <a href="{{ url_for('main.contact') }}" class="btn btn-danger" aria-label="Contact client support"><i class="fa-solid fa-envelope"></i> Client Support</a>
+          {% if site_settings.get('phone') %}
+          <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-call" aria-label="Call support at {{ site_settings.get('phone', 'our office') }}"><i class="fa-solid fa-phone"></i> Call Support</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-12 col-lg-5 offset-lg-1 hero-visual">
+        <div class="hero-visual-grid">
+          {% for card in hero_cards %}
+          <a class="hero-icon-card" href="{{ card.href }}" aria-label="{{ card.aria_label }}">
+            <div class="hic-icon {{ card.color }}"><i class="{{ card.icon }}"></i></div>
+            <h4>{{ card.title }}</h4>
+            <p>{{ card.subtitle }}</p>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Trust Signal Ticker -->
+    <div class="hero-service-crossing reveal" aria-label="Trust and compliance signals">
+      <div class="hero-service-lane hero-service-lane--forward">
+        <div class="hero-service-track">
+          {% set trust_signals = [
+            ('Microsoft Partner', 'fa-brands fa-microsoft'),
+            ('Google Workspace', 'fa-brands fa-google'),
+            ('Microsoft 365', 'fa-brands fa-microsoft'),
+            ('AWS Cloud', 'fa-brands fa-aws'),
+            ('Microsoft Azure', 'fa-solid fa-cloud'),
+            ('Google Cloud', 'fa-brands fa-google'),
+            ('Hybrid Cloud', 'fa-solid fa-cloud'),
+            ('Disaster Recovery', 'fa-solid fa-cloud'),
+            ('SOC 2 Compliant', 'fa-solid fa-shield-halved'),
+            ('Identity & MFA', 'fa-solid fa-shield-halved'),
+            ('Microsoft Intune', 'fa-solid fa-server'),
+            ('Microsoft Entra ID', 'fa-solid fa-shield-halved'),
+            ('Patch Management', 'fa-solid fa-server'),
+            ('Datto RMM', 'fa-solid fa-server'),
+            ('Veeam Backup', 'fa-solid fa-server'),
+            ('Cloudflare Security', 'fa-solid fa-shield-halved'),
+            ('Fortinet Firewall', 'fa-solid fa-shield-halved'),
+            ('SentinelOne EDR', 'fa-solid fa-shield-halved'),
+            ('CrowdStrike Falcon', 'fa-solid fa-shield-halved'),
+            ('Cisco Meraki', 'fa-solid fa-server'),
+            ('Ubiquiti UniFi', 'fa-solid fa-server'),
+            ('VMware vSphere', 'fa-solid fa-server'),
+            ('Compliance Audits', 'fa-solid fa-shield-halved'),
+            ('5-Star Rated', 'fa-solid fa-star'),
+            ('Certified Team', 'fa-solid fa-circle-check')
+          ] %}
+          {% for label, icon in trust_signals %}
+          <span class="hero-service-pill" data-pill-delay="{{ loop.index0 * 170 }}">
+            <i class="{{ icon }}"></i> {{ label }}
+          </span>
+          {% endfor %}
+          {% for label, icon in trust_signals %}
+          <span class="hero-service-pill" data-pill-delay="{{ loop.index0 * 170 }}">
+            <i class="{{ icon }}"></i> {{ label }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Services Grid -->
+<section class="section" id="services">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-cube"></i> Services</div>
+      <h2>Everything Your Business Needs Under One Roof</h2>
+      <p>From proactive IT management to hands-on device repairs, we handle every layer of your technology.</p>
+    </div>
+    <div class="row g-4">
+      {% set colors = ['blue','purple','green','amber','rose','cyan'] %}
+      {% for service in pro_services %}
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card reveal" data-delay="{{ loop.index0 * 60 }}">
+          <div class="icon-wrap {{ colors[(loop.index0) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
+          <h3>{{ service.title }}</h3>
+          <p>{{ service.description[:120] }}...</p>
+          <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      {% endfor %}
+      {% for service in repair_services %}
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card reveal" data-delay="{{ (pro_services|length + loop.index0) * 60 }}">
+          <div class="icon-wrap {{ colors[((pro_services|length + loop.index0)) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
+          <h3>{{ service.title }}</h3>
+          <p>{{ service.description[:120] }}...</p>
+          <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center section-cta-spacer">
+      <a href="{{ url_for('main.services') }}" class="btn btn-ghost">View All Services <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- Industries -->
+<section class="section section--alt" id="industries">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-building"></i> Industries</div>
+      <h2>Industry-Specific IT Support</h2>
+      <p>We tailor security, support, and technology strategy to how your industry works.</p>
+    </div>
+    <div class="row g-4">
+      {% for ind in nav_industries[:8] %}
+      <div class="col-md-6 col-lg-3">
+        <div class="service-card reveal" data-delay="{{ loop.index0 * 60 }}">
+          <div class="icon-wrap {{ colors[(loop.index0) % 6] }}"><i class="{{ ind.icon_class }}"></i></div>
+          <h3>{{ ind.title }}</h3>
+          <p>{{ ind.description[:100] }}...</p>
+          <a href="{{ url_for('main.industry_detail', slug=ind.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ ind.title }}">Industry Page <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="text-center section-cta-spacer">
+      <a href="{{ url_for('main.industries') }}" class="btn btn-ghost">View All Industries <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-chart-line"></i> Results</div>
+      <h2>Measurable Impact for Local Businesses</h2>
+    </div>
+    <div class="stat-grid reveal">
+      <div class="stat-card">
+        <span class="stat-value">500+</span>
+        <h4>Devices Managed</h4>
+        <p class="stat-note">Across Orange County businesses</p>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">99.9%</span>
+        <h4>Uptime Target</h4>
+        <p class="stat-note">Proactive monitoring & patching</p>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">&lt;2hr</span>
+        <h4>Response Time</h4>
+        <p class="stat-note">For critical support requests</p>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">100%</span>
+        <h4>Local Focus</h4>
+        <p class="stat-note">Orange County businesses only</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works — 3 Steps -->
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-diagram-project"></i> How It Works</div>
+      <h2>Get Started in Three Steps</h2>
+      <p>From first call to full coverage, we make the process simple and transparent.</p>
+    </div>
+    <div class="timeline-grid reveal">
+      <div class="timeline-card" data-delay="0">
+        <span class="process-icon">01</span>
+        <div>
+          <h4>Free Assessment</h4>
+          <p>We review your current systems, devices, and pain points in a 30-minute call.</p>
+        </div>
+      </div>
+      <div class="timeline-card" data-delay="80">
+        <span class="process-icon">02</span>
+        <div>
+          <h4>Custom Plan</h4>
+          <p>You get a clear proposal with scope, pricing, and timeline — no guessing.</p>
+        </div>
+      </div>
+      <div class="timeline-card" data-delay="160">
+        <span class="process-icon">03</span>
+        <div>
+          <h4>Ongoing Support</h4>
+          <p>We onboard your team, start monitoring, and provide proactive support.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+{% if testimonials %}
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-star"></i> Testimonials</div>
+      <h2>Client Success Stories</h2>
+    </div>
+    <div class="row g-4">
+      {% for t in testimonials %}
+      <div class="col-md-6 col-lg-3">
+        <div class="testimonial-card reveal" data-delay="{{ loop.index0 * 80 }}">
+          <i class="fa-solid fa-quote-right quote-icon"></i>
+          <div class="stars">{% for i in range(t.rating) %}<i class="fa-solid fa-star"></i> {% endfor %}</div>
+          <div class="content">"{{ t.content }}"</div>
+          <div class="author">
+            <div class="author-avatar">{{ t.client_name[0] }}</div>
+            <div>
+              <div class="author-name">{{ t.client_name }}</div>
+              <div class="author-role">{{ t.company }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Service Area / Local SEO -->
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-location-dot"></i> Service Area</div>
+      <h2>IT Services Across Orange County</h2>
+      <p>On-site and remote support for businesses throughout the region.</p>
+    </div>
+    <div class="chip-list chip-list-centered reveal">
+      {% set cities = ['Anaheim', 'Irvine', 'Santa Ana', 'Huntington Beach', 'Costa Mesa', 'Fullerton', 'Orange', 'Mission Viejo', 'Newport Beach', 'Laguna Beach', 'Tustin', 'Lake Forest', 'Buena Park', 'Garden Grove', 'Westminster', 'Yorba Linda', 'San Clemente', 'Dana Point', 'Rancho Santa Margarita', 'Aliso Viejo'] %}
+      {% for city in cities %}
+      <span class="chip"><i class="fa-solid fa-location-dot"></i> {{ city }}</span>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="section">
+  <div class="container">
+    <div class="cta-strip reveal">
+      <div class="cta-inner">
+        <h2>Ready To Fix Your IT?</h2>
+        <p>Schedule a free consultation or call us directly. No obligations, no pressure — just a clear plan for better IT.</p>
+        <div class="cta-actions">
+          <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-secondary"><i class="fa-solid fa-calendar-check"></i> Schedule a Meeting</a>
+          {% if site_settings.get('phone') %}
+          <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-ghost btn-ghost-light"><i class="fa-solid fa-phone"></i> {{ site_settings.phone }}</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

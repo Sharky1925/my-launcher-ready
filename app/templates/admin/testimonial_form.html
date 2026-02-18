@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ 'Edit' if item else 'Add' }} Testimonial{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="post">
+            {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Client Name *</label>
+          <input type="text" name="client_name" class="form-control" value="{{ item.client_name if item else '' }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Company</label>
+          <input type="text" name="company" class="form-control" value="{{ item.company if item else '' }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Content *</label>
+          <textarea name="content" class="form-control" rows="4" required>{{ item.content if item else '' }}</textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Rating</label>
+          <select name="rating" class="form-select">
+            {% for i in range(1, 6) %}
+            <option value="{{ i }}" {{ 'selected' if item and item.rating == i }}>{{ i }} Star{{ 's' if i > 1 }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+          <div class="form-check">
+            <input type="checkbox" name="is_featured" class="form-check-input" id="featured" {{ 'checked' if item and item.is_featured }}>
+            <label class="form-check-label" for="featured">Featured on homepage</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Testimonial</button>
+          <a href="{{ url_for('admin.testimonials') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

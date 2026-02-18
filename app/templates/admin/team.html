@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Team Members{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <span></span>
+  <a href="{{ url_for('admin.team_add') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i>Add Member</a>
+</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Position</th><th>Order</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for m in items %}
+        <tr>
+          <td>{{ m.name }}</td>
+          <td>{{ m.position }}</td>
+          <td>{{ m.sort_order }}</td>
+          <td>
+            <a href="{{ url_for('admin.team_edit', id=m.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+            <form method="post" action="{{ url_for('admin.team_delete', id=m.id) }}" class="d-inline" onsubmit="return confirm('Delete?')">
+            {{ csrf_input() }}
+              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-3">No team members yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

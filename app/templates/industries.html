@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Industries We Serve — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}{{ site_settings.get('company_name', 'Right On Repair') }} delivers tailored IT solutions for healthcare clinics, law firms, construction and field services, manufacturing, retail and eCommerce, professional services, nonprofits, and property management teams.{% endblock %}
+{% block og_title %}Industries — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_keywords %}industry IT services Orange County, healthcare IT support, law firm IT services, manufacturing IT support, retail IT support, property management IT{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Industries We Serve",
+  "numberOfItems": {{ industries|length }},
+  "itemListElement": [
+    {% for ind in industries %}
+    { "@type": "ListItem", "position": {{ loop.index }}, "item": { "@type": "Service", "name": {{ (ind.title ~ ' IT Solutions') | tojson }}, "url": {{ url_for('main.industry_detail', slug=ind.slug, _external=True) | tojson }} } }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Industries</li>
+      </ol>
+    </nav>
+    <h1>Industries We Serve</h1>
+    <p>Tailored technology solutions for every sector.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-building"></i> Sectors</div>
+      <h2>Technology Built for Your Industry</h2>
+      <p>We understand the unique challenges of your sector and deliver solutions that drive results.</p>
+    </div>
+    <div class="row g-4">
+      {% set colors = ['blue','purple','green','amber','rose','cyan','blue','purple'] %}
+      {% for ind in industries %}
+      <div class="col-md-6 col-lg-3">
+        <a href="{{ url_for('main.industry_detail', slug=ind.slug) }}" class="industry-card reveal stagger-{{ loop.index }}">
+          <div class="ind-icon {{ colors[(loop.index0) % 8] }}"><i class="{{ ind.icon_class }}"></i></div>
+          <h3>{{ ind.title }}</h3>
+          <p>{{ ind.description[:90] }}...</p>
+          <span class="ind-link">Explore <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Why Industry Expertise Matters -->
+<section class="section section--alt">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-5 reveal-left">
+        <div class="section-label"><i class="fa-solid fa-bullseye"></i> Why It Matters</div>
+        <h2 class="content-section-title">Industry-Specific Expertise</h2>
+        <p class="content-section-text">
+          Generic IT fails. We build solutions shaped by deep industry knowledge — compliance, workflows, and growth patterns unique to your sector.
+        </p>
+      </div>
+      <div class="col-lg-7 reveal-right">
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="feature-item">
+              <div class="fi-icon"><i class="fa-solid fa-shield-halved"></i></div>
+              <div>
+                <h4>Compliance-First</h4>
+                <p>HIPAA, PCI DSS, FERPA — built in, not bolted on.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="feature-item">
+              <div class="fi-icon"><i class="fa-solid fa-chart-line"></i></div>
+              <div>
+                <h4>Data-Driven</h4>
+                <p>Analytics tailored to your industry KPIs.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="feature-item">
+              <div class="fi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+              <div>
+                <h4>Scalable</h4>
+                <p>Architecture that grows with your business.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="feature-item">
+              <div class="fi-icon"><i class="fa-solid fa-headset"></i></div>
+              <div>
+                <h4>24/7 Support</h4>
+                <p>Round-the-clock expert assistance.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-sm section-bottom-spacious">
+  <div class="cta-section reveal-scale">
+    <div class="cta-inner">
+      <h2>Don't See Your Industry?</h2>
+      <p>We work across all sectors. Let's discuss your unique technology needs.</p>
+      <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Get a Free Consultation <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}{{ industry.title }} IT Solutions — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Expert IT solutions for the {{ industry.title }} industry. {{ industry.description }}{% endblock %}
+{% block og_title %}{{ industry.title }} IT Solutions — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_keywords %}{{ industry.title }} IT support, {{ industry.title }} cybersecurity, industry IT services Orange County, Right On Repair{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": {{ (industry.title ~ ' IT Solutions') | tojson }},
+  "description": {{ industry.description | tojson }},
+  "provider": {
+    "@type": "Organization",
+    "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }}
+  },
+  "areaServed": "Orange County, CA",
+  "serviceType": {{ ('IT Solutions for ' ~ industry.title) | tojson }}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="page-header section-bottom-spacious">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.industries') }}">Industries</a></li>
+        <li class="breadcrumb-item active">{{ industry.title }}</li>
+      </ol>
+    </nav>
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7 reveal-left">
+        <div class="ind-hero-icon"><i class="{{ industry.icon_class }}"></i></div>
+        <h1>{{ industry.title }} <span class="gradient-text">IT Solutions</span></h1>
+        <p class="industry-hero-description">{{ industry.hero_description }}</p>
+        <div class="hero-buttons industry-hero-actions">
+          <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Get Started <i class="fa-solid fa-arrow-right"></i></a>
+          <a href="{{ url_for('main.services') }}" class="btn btn-ghost">Our Services <i class="fa-solid fa-cube"></i></a>
+        </div>
+      </div>
+      <div class="col-lg-5 reveal-right">
+        {% set stat_items = industry.stats.split('|') if industry.stats else [] %}
+        {% if stat_items %}
+        <div class="row g-3">
+          {% for stat in stat_items %}
+          {% set parts = stat.split(':') %}
+          <div class="col-6">
+            <div class="metric-card">
+              <div class="mc-value">{{ parts[1] if parts|length > 1 else '' }}</div>
+              <div class="mc-label">{{ parts[0] }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="glow-line"></div>
+
+<!-- Challenges -->
+{% set challenge_items = industry.challenges.split('|') if industry.challenges else [] %}
+{% if challenge_items %}
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-triangle-exclamation"></i> Industry Challenges</div>
+      <h2>Challenges in {{ industry.title }}</h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% set challenge_icons = ['fa-solid fa-lock', 'fa-solid fa-plug', 'fa-solid fa-clock', 'fa-solid fa-expand', 'fa-solid fa-bug'] %}
+      {% set challenge_colors = ['blue', 'purple', 'amber', 'green', 'rose'] %}
+      {% for ch in challenge_items %}
+      <div class="col-md-6 col-lg-4">
+        <div class="challenge-card reveal stagger-{{ loop.index }}">
+          <div class="ch-icon {{ challenge_colors[(loop.index0) % 5] }}"><i class="{{ challenge_icons[(loop.index0) % 5] }}"></i></div>
+          <h4>{{ ch }}</h4>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<div class="glow-line"></div>
+
+<!-- Solutions -->
+{% set solution_items = industry.solutions.split('|') if industry.solutions else [] %}
+{% if solution_items %}
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-check-double"></i> Our Solutions</div>
+      <h2>How We Solve It</h2>
+    </div>
+    <div class="row g-4">
+      {% set sol_icons = ['fa-solid fa-shield-halved', 'fa-solid fa-link', 'fa-solid fa-server', 'fa-solid fa-cloud', 'fa-solid fa-chart-line'] %}
+      {% for sol in solution_items %}
+      <div class="col-md-6">
+        <div class="feature-item reveal stagger-{{ loop.index }}">
+          <div class="fi-icon"><i class="{{ sol_icons[(loop.index0) % 5] }}"></i></div>
+          <div>
+            <h4>{{ sol }}</h4>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Related Services -->
+{% if services %}
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-cube"></i> Related Services</div>
+      <h2>Services for {{ industry.title }}</h2>
+    </div>
+    <div class="row g-4">
+      {% set colors = ['blue','purple','green','amber','rose','cyan'] %}
+      {% for service in services[:6] %}
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card reveal stagger-{{ loop.index }}">
+          <div class="icon-wrap {{ colors[(loop.index0) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
+          <h3>{{ service.title }}</h3>
+          <p>{{ service.description[:100] }}...</p>
+          <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- CTA -->
+<section class="section-sm section-bottom-spacious">
+  <div class="cta-section reveal-scale">
+    <div class="cta-inner">
+      <h2>Ready to Transform Your {{ industry.title }} IT?</h2>
+      <p>Let's build a technology strategy tailored to your industry.</p>
+      <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Request a Proposal <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+{% endblock %}

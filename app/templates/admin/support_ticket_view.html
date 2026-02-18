@@ -1,0 +1,85 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Ticket {{ item.ticket_number }}{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Ticket Number</label>
+        <p><code>{{ item.ticket_number }}</code></p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Ticket Type</label>
+        <p>
+          {% if is_quote_ticket %}
+          <span class="badge rounded-pill bg-info text-dark">Quote Request</span>
+          {% else %}
+          <span class="badge rounded-pill bg-secondary">Support</span>
+          {% endif %}
+        </p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Client</label>
+        <p>{{ item.client.full_name }}<br><small class="text-muted">{{ item.client.email }}</small></p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Subject</label>
+        <p>{{ item.subject }}</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Service</label>
+        <p>{{ item.service_slug or '-' }}</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Created</label>
+        <p>{{ item.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Last Updated</label>
+        <p>{{ item.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-bold">Client Request</label>
+        <div class="p-3 bg-light rounded ticket-details-text">{{ item.details }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="post" action="{{ url_for('admin.support_ticket_view', id=item.id) }}">
+            {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="open" {% if item.status == 'open' %}selected{% endif %}>Open</option>
+            <option value="in_progress" {% if item.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+            <option value="waiting_customer" {% if item.status == 'waiting_customer' %}selected{% endif %}>Waiting on Client</option>
+            <option value="resolved" {% if item.status == 'resolved' %}selected{% endif %}>Resolved</option>
+            <option value="closed" {% if item.status == 'closed' %}selected{% endif %}>Closed</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Priority</label>
+          <select name="priority" class="form-select">
+            <option value="low" {% if item.priority == 'low' %}selected{% endif %}>Low</option>
+            <option value="normal" {% if item.priority == 'normal' %}selected{% endif %}>Normal</option>
+            <option value="high" {% if item.priority == 'high' %}selected{% endif %}>High</option>
+            <option value="critical" {% if item.priority == 'critical' %}selected{% endif %}>Critical</option>
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Internal Notes</label>
+          <textarea name="internal_notes" rows="6" class="form-control" placeholder="Visible only in admin">{{ item.internal_notes or '' }}</textarea>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-outline-secondary">Back to Tickets</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

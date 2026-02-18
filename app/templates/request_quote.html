@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Request a Quote - {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Request a detailed IT services quote. Submit project scope, priorities, timeline, and technical requirements directly into our CMS ticket workflow.{% endblock %}
+{% block og_title %}Request a Quote - {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block og_description %}Submit a detailed project intake form and route it directly into the CMS support ticket queue.{% endblock %}
+{% block meta_keywords %}request IT quote Orange County, managed IT quote, cybersecurity quote, web development quote, cloud services quote{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Request a Quote",
+  "description": "Detailed quote intake form for managed IT, cybersecurity, cloud, development, and technical repair services.",
+  "url": {{ request.base_url | tojson }}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+{% set selected_additional = request.form.getlist('additional_services') %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">Request Quote</li>
+      </ol>
+    </nav>
+    <h1>Request a Detailed Quote</h1>
+    <p>Share your environment, priorities, and project goals. We turn this intake into a CMS ticket and respond with a scoped proposal.</p>
+  </div>
+</section>
+
+<section class="section quote-section">
+  <div class="container">
+    <div class="service-detail-hero service-detail-hero--v2 quote-hero-card reveal">
+      <div class="service-kicker-badge">Quote Intake Workflow</div>
+      <h2>Business Scope, Technical Detail, and Clear Next Steps</h2>
+      <p>Every submission creates a structured internal ticket so our team can review faster, prioritize correctly, and deliver an accurate quote.</p>
+      <div class="quote-hero-chips">
+        <span><i class="fa-solid fa-ticket"></i> CMS Ticket Created</span>
+        <span><i class="fa-solid fa-list-check"></i> Structured Intake</span>
+        <span><i class="fa-solid fa-clock"></i> Rapid Follow-Up</span>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+      <div class="col-xl-8 reveal-left">
+        <div class="contact-form-wrap quote-form-wrap">
+          <div class="quote-form-head">
+            <h3><i class="fa-solid fa-file-invoice-dollar"></i> Quote Request Form</h3>
+            <p>Fields marked with <strong>*</strong> are required.</p>
+          </div>
+          <form method="POST" action="{{ url_for('main.request_quote') }}">
+            {{ csrf_input() }}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="full_name">Full Name *</label>
+                <input type="text" class="form-control" id="full_name" name="full_name" autocomplete="name" required value="{{ request.form.get('full_name', '') }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="email">Business Email *</label>
+                <input type="email" class="form-control" id="email" name="email" autocomplete="email" required value="{{ request.form.get('email', '') }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="phone">Phone</label>
+                <input type="tel" class="form-control" id="phone" name="phone" autocomplete="tel" inputmode="tel" value="{{ request.form.get('phone', '') }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="company">Company (optional)</label>
+                <input type="text" class="form-control" id="company" name="company" autocomplete="organization" value="{{ request.form.get('company', '') }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="website">Website</label>
+                <input type="url" class="form-control" id="website" name="website" placeholder="https://example.com" value="{{ request.form.get('website', '') }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="project_title">Project Title</label>
+                <input type="text" class="form-control" id="project_title" name="project_title" placeholder="Example: Branch Network Upgrade" value="{{ request.form.get('project_title', '') }}">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="primary_service_slug">Primary Service *</label>
+                <select class="form-select" id="primary_service_slug" name="primary_service_slug" required>
+                  <option value="">Select primary service</option>
+                  <optgroup label="Professional IT Services">
+                    {% for service in professional_services %}
+                    <option value="{{ service.slug }}" {% if request.form.get('primary_service_slug') == service.slug %}selected{% endif %}>{{ service.title }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  <optgroup label="Technical Repair Services">
+                    {% for service in repair_services %}
+                    <option value="{{ service.slug }}" {% if request.form.get('primary_service_slug') == service.slug %}selected{% endif %}>{{ service.title }}</option>
+                    {% endfor %}
+                  </optgroup>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="preferred_contact">Preferred Contact *</label>
+                <select class="form-select" id="preferred_contact" name="preferred_contact" required>
+                  {% for value, label in contact_options.items() %}
+                  <option value="{{ value }}" {% if request.form.get('preferred_contact', 'either') == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="budget_range">Budget Range</label>
+                <select class="form-select" id="budget_range" name="budget_range">
+                  {% for value, label in budget_options.items() %}
+                  <option value="{{ value }}" {% if request.form.get('budget_range', 'not_sure') == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="timeline">Target Timeline</label>
+                <select class="form-select" id="timeline" name="timeline">
+                  {% for value, label in timeline_options.items() %}
+                  <option value="{{ value }}" {% if request.form.get('timeline', 'planning') == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="urgency">Urgency</label>
+                <select class="form-select" id="urgency" name="urgency">
+                  {% for value, label in urgency_options.items() %}
+                  <option value="{{ value }}" {% if request.form.get('urgency', 'normal') == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="team_size">Estimated Team Size</label>
+                <input type="text" class="form-control" id="team_size" name="team_size" placeholder="Example: 25 employees" value="{{ request.form.get('team_size', '') }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="location_count">Locations / Sites</label>
+                <input type="text" class="form-control" id="location_count" name="location_count" placeholder="Example: 3 offices + remote staff" value="{{ request.form.get('location_count', '') }}">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="compliance">Compliance Requirements</label>
+                <select class="form-select" id="compliance" name="compliance">
+                  {% for value, label in compliance_options.items() %}
+                  <option value="{{ value }}" {% if request.form.get('compliance', 'none') == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="integrations">Key Integrations</label>
+                <input type="text" class="form-control" id="integrations" name="integrations" placeholder="Example: Microsoft 365, QuickBooks, HubSpot" value="{{ request.form.get('integrations', '') }}">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Additional Related Services</label>
+                <div class="quote-service-picker">
+                  {% for service in professional_services + repair_services %}
+                  <label class="quote-service-option">
+                    <input type="checkbox" name="additional_services" value="{{ service.slug }}" {% if service.slug in selected_additional %}checked{% endif %}>
+                    <span class="quote-service-option-body">
+                      <i class="{{ service.icon_class }}"></i>
+                      <span>{{ service.title }}</span>
+                    </span>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="business_goals">Business Goals *</label>
+                <textarea class="form-control" id="business_goals" name="business_goals" rows="4" minlength="20" required placeholder="What business outcomes are you targeting?">{{ request.form.get('business_goals', '') }}</textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="pain_points">Current Challenges *</label>
+                <textarea class="form-control" id="pain_points" name="pain_points" rows="4" minlength="20" required placeholder="What technical issues, bottlenecks, or risks are you facing?">{{ request.form.get('pain_points', '') }}</textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="current_environment">Current Environment</label>
+                <textarea class="form-control" id="current_environment" name="current_environment" rows="3" placeholder="Current stack, vendors, infrastructure, and tools.">{{ request.form.get('current_environment', '') }}</textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="additional_notes">Additional Notes</label>
+                <textarea class="form-control" id="additional_notes" name="additional_notes" rows="3" placeholder="Anything else we should factor into scope, sequencing, or rollout?">{{ request.form.get('additional_notes', '') }}</textarea>
+              </div>
+
+              {% if turnstile_enabled %}
+              <div class="col-12">
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}"></div>
+              </div>
+              {% endif %}
+              <div class="col-12">
+                <button type="submit" class="btn btn-quote-submit">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  Submit Quote Request
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-xl-4 reveal-right">
+        <div class="service-visual-panel quote-side-panel">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-route"></i>What Happens Next</h2>
+            <p>Clear process from intake to final quote.</p>
+          </div>
+          <ul class="service-value-list quote-next-list">
+            <li><i class="fa-solid fa-ticket"></i> A CMS ticket is created instantly with your intake details.</li>
+            <li><i class="fa-solid fa-magnifying-glass-chart"></i> We review scope, complexity, and dependencies.</li>
+            <li><i class="fa-solid fa-people-group"></i> You receive follow-up for clarification if needed.</li>
+            <li><i class="fa-solid fa-file-signature"></i> We send a scoped quote with timeline and deliverables.</li>
+          </ul>
+        </div>
+
+        <div class="service-visual-panel quote-side-panel mt-4">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-layer-group"></i>Related Services</h2>
+            <p>Common service combinations requested by clients.</p>
+          </div>
+          <div class="quote-service-list">
+            {% for service in professional_services %}
+            <a class="quote-service-link" href="{{ url_for('main.service_detail', slug=service.slug) }}">
+              <i class="{{ service.icon_class }}"></i>
+              <span>{{ service.title }}</span>
+            </a>
+            {% endfor %}
+            {% for service in repair_services %}
+            <a class="quote-service-link" href="{{ url_for('main.service_detail', slug=service.slug) }}">
+              <i class="{{ service.icon_class }}"></i>
+              <span>{{ service.title }}</span>
+            </a>
+            {% endfor %}
+          </div>
+          <div class="quote-side-actions">
+            <a href="{{ url_for('main.services') }}" class="btn btn-ghost"><i class="fa-solid fa-arrow-right"></i> Browse Services</a>
+            <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Need Immediate Help?</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if turnstile_enabled %}
+<script nonce="{{ csp_nonce }}" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
+{% endblock %}

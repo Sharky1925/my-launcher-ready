@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ 'Edit' if item else 'Add' }} Service{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+            {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">Title *</label>
+          <input type="text" name="title" class="form-control" value="{{ item.title if item else '' }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Icon Class</label>
+          <input type="text" name="icon_class" class="form-control" value="{{ item.icon_class if item else 'fa-solid fa-gear' }}">
+          <small class="text-muted">Font Awesome class</small>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Description *</label>
+          <textarea name="description" class="form-control" rows="5" required>{{ item.description if item else '' }}</textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Service Type</label>
+          <select name="service_type" class="form-select">
+            <option value="professional" {{ 'selected' if not item or item.service_type == 'professional' }}>Professional IT Services</option>
+            <option value="repair" {{ 'selected' if item and item.service_type == 'repair' }}>Technical Repair Services</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Image</label>
+          <input type="file" name="image" class="form-control" accept="image/*">
+          {% if item and item.image %}<small class="text-muted">Current: {{ item.image }}</small>{% endif %}
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Sort Order</label>
+          <input type="number" name="sort_order" class="form-control" value="{{ item.sort_order if item else 0 }}">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <div class="form-check">
+            <input type="checkbox" name="is_featured" class="form-check-input" id="featured" {{ 'checked' if item and item.is_featured }}>
+            <label class="form-check-label" for="featured">Featured</label>
+          </div>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Service</button>
+          <a href="{{ url_for('admin.services') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

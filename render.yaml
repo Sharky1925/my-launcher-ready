@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: mylauncher-cms
+    env: python
+    rootDir: app
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    healthCheckPath: /healthz
+    autoDeploy: false
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mylauncher-db
+          property: connectionString
+      - key: SESSION_COOKIE_SECURE
+        value: "1"
+      - key: TRUST_PROXY_HEADERS
+        value: "1"
+      - key: APP_BASE_URL
+        value: https://example.com
+      - key: CONTACT_NOTIFICATION_EMAILS
+        value: ops@example.com
+      - key: TICKET_NOTIFICATION_EMAILS
+        value: support@example.com
+      - key: SMTP_HOST
+        value: smtp.example.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        value: ""
+      - key: SMTP_PASSWORD
+        value: ""
+      - key: SMTP_USE_TLS
+        value: "1"
+      - key: MAIL_FROM
+        value: no-reply@example.com
+      - key: TURNSTILE_SITE_KEY
+        value: ""
+      - key: TURNSTILE_SECRET_KEY
+        value: ""
+      - key: TURNSTILE_ENFORCED
+        value: "1"
+      - key: CONTACT_FORM_LIMIT
+        value: "12"
+      - key: CONTACT_FORM_WINDOW_SECONDS
+        value: "3600"
+      - key: QUOTE_FORM_LIMIT
+        value: "8"
+      - key: QUOTE_FORM_WINDOW_SECONDS
+        value: "3600"
+      - key: SENTRY_DSN
+        value: ""
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.1"
+
+databases:
+  - name: mylauncher-db
