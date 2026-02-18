@@ -3,6 +3,10 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
+def _is_vercel_runtime():
+    return bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
+
+
 def _as_bool(value, default=False):
     if value is None:
         return default
@@ -29,6 +33,8 @@ def _database_url():
         raw = raw.replace('postgres://', 'postgresql://', 1)
     if raw:
         return raw
+    if _is_vercel_runtime():
+        return 'sqlite:////tmp/site.db'
     return 'sqlite:///' + os.path.join(basedir, 'site.db')
 
 
@@ -40,7 +46,9 @@ class Config:
         'pool_recycle': 300,
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
+    UPLOAD_FOLDER = (os.environ.get('UPLOAD_FOLDER') or '').strip() or (
+        '/tmp/uploads' if _is_vercel_runtime() else os.path.join(basedir, 'uploads')
+    )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'ico'}
     ALLOWED_UPLOAD_MIME_TYPES = {
