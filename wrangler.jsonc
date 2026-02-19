@@ -1,9 +1,24 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "mylauncher-cms",
-  "main": "worker.py",
-  "compatibility_date": "2026-02-18",
-  "compatibility_flags": [
-    "python_workers"
-  ]
+  "name": "right",
+  "main": "src/index.js",
+  "compatibility_date": "2026-02-19",
+  "workers_dev": true,
+  "vars": {
+    "APP_NAME": "Right On IT Services"
+  }
+  // Optional bindings for full production mode:
+  // "d1_databases": [
+  //   {
+  //     "binding": "DB",
+  //     "database_name": "right-db",
+  //     "database_id": "<D1_DATABASE_ID>"
+  //   }
+  // ],
+  // "r2_buckets": [
+  //   {
+  //     "binding": "UPLOADS",
+  //     "bucket_name": "right-uploads"
+  //   }
+  // ]
 }

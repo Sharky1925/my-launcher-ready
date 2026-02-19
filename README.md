@@ -178,6 +178,44 @@ gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
    - `SENTRY_ENVIRONMENT`
    - `SENTRY_TRACES_SAMPLE_RATE`
 
+### Cloudflare (JS Worker + D1/R2)
+
+Due to current Cloudflare Python Worker package restrictions, this repository now includes a JavaScript Worker rewrite entrypoint for Cloudflare deploys:
+
+- Worker entry: `src/index.js`
+- Wrangler config: `wrangler.jsonc`
+- D1 bootstrap schema: `sql/bootstrap.sql`
+
+#### Deploy Commands
+
+```bash
+# 1) Create D1 database (one-time)
+npx wrangler d1 create right-db
+
+# 2) Put returned database_id into wrangler.jsonc d1_databases block
+
+# 3) Initialize schema/data
+npx wrangler d1 execute right-db --remote --file=sql/bootstrap.sql
+
+# 4) Deploy Worker
+npx wrangler deploy --config wrangler.jsonc
+```
+
+Optional R2 bucket for uploads:
+
+```bash
+npx wrangler r2 bucket create right-uploads
+# Then set wrangler.jsonc r2_buckets binding (UPLOADS)
+```
+
+#### Cloudflare API Endpoints
+
+- `GET /healthz`
+- `GET /api/services`
+- `GET /api/posts`
+- `POST /api/contact`
+- `POST /api/quote`
+
 ### Render Blueprint
 
 A starter Render blueprint is provided at `render.yaml` (web service + Postgres + health check).
