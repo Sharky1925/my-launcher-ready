@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+asgiref
+Werkzeug
+python-slugify
+Pillow
+bleach
+sentry-sdk
