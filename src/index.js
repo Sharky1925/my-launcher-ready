@@ -41,29 +41,35 @@ const EPHEMERAL_STATE = {
   quotes: [],
 };
 
+const RELEASE_ID = "2026-02-19-fix2";
+
 const STATIC_ALIASES = {
   "/request_quote": "/request-quote",
   "/remote_support": "/remote-support",
 };
 
 function json(payload, status = 200) {
-  return new Response(JSON.stringify(payload, null, 2), {
+  const response = new Response(JSON.stringify(payload, null, 2), {
     status,
     headers: { "content-type": "application/json; charset=utf-8" },
   });
+  response.headers.set("x-release", RELEASE_ID);
+  return response;
 }
 
 function redirect(location, status = 303) {
-  return new Response(null, {
+  const response = new Response(null, {
     status,
     headers: { location },
   });
+  response.headers.set("x-release", RELEASE_ID);
+  return response;
 }
 
 function formErrorPage(title, detail, status = 400) {
   const safeTitle = String(title || "Form Error");
   const safeDetail = String(detail || "Invalid request");
-  return new Response(
+  const response = new Response(
     `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${safeTitle}</title></head>
@@ -77,6 +83,9 @@ function formErrorPage(title, detail, status = 400) {
       headers: { "content-type": "text/html; charset=utf-8" },
     }
   );
+  response.headers.set("x-release", RELEASE_ID);
+  response.headers.set("cache-control", "no-store, no-cache, must-revalidate");
+  return response;
 }
 
 function normalizeText(value, max = 2000) {
@@ -327,10 +336,28 @@ async function serveStatic(request, env) {
     const assetUrl = new URL(request.url);
     assetUrl.pathname = candidate;
     const response = await env.ASSETS.fetch(new Request(assetUrl.toString(), request));
-    if (response.status !== 404) return response;
+    if (response.status !== 404) {
+      const headers = new Headers(response.headers);
+      headers.set("x-release", RELEASE_ID);
+      if (candidate.endsWith(".html") || candidate.endsWith("/index.html")) {
+        headers.set("cache-control", "no-store, no-cache, must-revalidate");
+      }
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    }
   }
 
-  return new Response("Not found", { status: 404 });
+  return new Response("Not found", {
+    status: 404,
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "x-release": RELEASE_ID,
+      "cache-control": "no-store, no-cache, must-revalidate",
+    },
+  });
 }
 
 export default {
@@ -340,8 +367,21 @@ export default {
     const method = request.method.toUpperCase();
 
     try {
+      if (method === "GET" && pathname === "/version") {
+        return json({
+          release: RELEASE_ID,
+          app: env.APP_NAME || "Right On IT Services",
+          mode: env.DB ? "d1" : "memory",
+          timestamp: new Date().toISOString(),
+        });
+      }
       if (method === "GET" && pathname === "/healthz") {
-        return json({ ok: true, runtime: "cloudflare-worker-js", timestamp: new Date().toISOString() });
+        return json({
+          ok: true,
+          runtime: "cloudflare-worker-js",
+          release: RELEASE_ID,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       if (method === "GET" && pathname === "/api/services") {
