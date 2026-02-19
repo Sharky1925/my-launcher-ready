@@ -2,10 +2,11 @@ import os
 import re
 import secrets
 from urllib.parse import urlparse
-from flask import Flask, abort, flash, g, redirect, request, session, url_for
+from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
 from flask_login import LoginManager
 from markupsafe import Markup
 from sqlalchemy import text
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     from .config import Config
@@ -152,6 +153,10 @@ def create_app(config_overrides=None):
     if config_overrides:
         app.config.update(config_overrides)
 
+    if app.config.get('TRUST_PROXY_HEADERS'):
+        # Only trust one proxy hop (the platform edge) when explicitly enabled.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+
     init_sentry(app)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -196,10 +201,8 @@ def create_app(config_overrides=None):
 
     @app.after_request
     def add_security_headers(response):
-        allow_iframe_embed = bool(app.config.get('ALLOW_IFRAME_EMBED'))
         response.headers.setdefault('X-Content-Type-Options', 'nosniff')
-        if not allow_iframe_embed:
-            response.headers.setdefault('X-Frame-Options', 'DENY')
+        response.headers.setdefault('X-Frame-Options', 'DENY')
         response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
         response.headers.setdefault('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
         if request.is_secure:
@@ -229,8 +232,7 @@ def create_app(config_overrides=None):
                 "connect-src 'self' https://cdn.tiny.cloud https://challenges.cloudflare.com",
                 "frame-src 'self' https://challenges.cloudflare.com",
             ]
-            if not allow_iframe_embed:
-                csp_parts.insert(2, "frame-ancestors 'none'")
+            csp_parts.insert(2, "frame-ancestors 'none'")
             response.headers['Content-Security-Policy'] = "; ".join(csp_parts)
         return response
 
@@ -241,6 +243,14 @@ def create_app(config_overrides=None):
             flash('Your form session expired. Please retry your action.', 'danger')
             return redirect(safe_referrer_path(url_for('main.index')))
         return error
+
+    @app.errorhandler(404)
+    def handle_not_found(error):
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(500)
+    def handle_server_error(error):
+        return render_template('errors/500.html'), 500
 
     @app.get('/healthz')
     def healthz():

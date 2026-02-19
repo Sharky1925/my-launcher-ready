@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+
+# Python cache/build
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+app/venv/
+
+# Local databases/uploads/runtime
+*.db
+*.sqlite
+*.sqlite3
+app/site.db
+app/uploads/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# Node (if used locally)
+node_modules/
+
+# Keep nested accidental repo out of this repo
+mylauncher/

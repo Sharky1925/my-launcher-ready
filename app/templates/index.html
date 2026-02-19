@@ -34,7 +34,7 @@
         <div class="hero-buttons">
           <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Book Free Consultation</a>
           <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
-          <a href="{{ url_for('main.contact') }}" class="btn btn-danger" aria-label="Contact client support"><i class="fa-solid fa-envelope"></i> Client Support</a>
+          <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger" aria-label="Send a support message"><i class="fa-solid fa-envelope"></i> Send Message</a>
           {% if site_settings.get('phone') %}
           <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-call" aria-label="Call support at {{ site_settings.get('phone', 'our office') }}"><i class="fa-solid fa-phone"></i> Call Support</a>
           {% endif %}

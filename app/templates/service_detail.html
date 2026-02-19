@@ -229,9 +229,9 @@
               <i class="fa-solid fa-life-ring"></i>
               <span>Remote Support</span>
             </a>
-            <a href="{{ url_for('main.contact') }}" class="btn btn-danger w-100" aria-label="Send a message to client support">
+            <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger w-100" aria-label="Send a support message">
               <i class="fa-solid fa-envelope"></i>
-              <span>Client Support</span>
+              <span>Send Message</span>
             </a>
             <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote w-100">
               <i class="fa-solid fa-file-invoice-dollar"></i>

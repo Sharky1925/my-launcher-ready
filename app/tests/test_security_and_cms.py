@@ -42,26 +42,31 @@ def extract_csrf_token(html):
     return match.group(1) if match else None
 
 
-@pytest.fixture()
-def app(tmp_path, monkeypatch):
-    db_path = tmp_path / "site_test.db"
-    upload_path = tmp_path / "uploads"
+def build_test_app(tmp_path, monkeypatch, overrides=None):
+    db_path = tmp_path / f"site_test_{uuid.uuid4().hex[:8]}.db"
+    upload_path = tmp_path / f"uploads_{uuid.uuid4().hex[:8]}"
 
     monkeypatch.setenv("ADMIN_PASSWORD", "admin123")
 
-    app = create_app(
-        {
-            "TESTING": True,
-            "SECRET_KEY": "test-secret-key",
-            "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
-            "UPLOAD_FOLDER": str(upload_path),
-        }
-    )
+    config = {
+        "TESTING": True,
+        "SECRET_KEY": "test-secret-key",
+        "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
+        "UPLOAD_FOLDER": str(upload_path),
+    }
+    if overrides:
+        config.update(overrides)
 
+    app = create_app(config)
     with app.app_context():
         AuthRateLimitBucket.query.delete()
         db.session.commit()
     return app
+
+
+@pytest.fixture()
+def app(tmp_path, monkeypatch):
+    return build_test_app(tmp_path, monkeypatch)
 
 
 @pytest.fixture()
@@ -118,6 +123,14 @@ def test_public_pages_and_security_headers(client):
 
 def test_hsts_header_on_https_requests(client):
     response = client.get("/", base_url="https://example.com")
+    assert response.status_code == 200
+    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
+
+
+def test_hsts_header_on_trusted_forwarded_proto(tmp_path, monkeypatch):
+    proxied_app = build_test_app(tmp_path, monkeypatch, {"TRUST_PROXY_HEADERS": True})
+    proxied_client = proxied_app.test_client()
+    response = proxied_client.get("/", base_url="http://example.com", headers={"X-Forwarded-Proto": "https"})
     assert response.status_code == 200
     assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
 
@@ -704,6 +717,33 @@ def test_admin_login_rate_limit_not_bypassable_with_spoofed_xff(client):
         "/admin/login",
         data={"_csrf_token": blocked_token, "username": "admin", "password": "wrong-password"},
         headers={"X-Forwarded-For": "198.51.100.77"},
+        follow_redirects=False,
+    )
+    assert blocked.status_code == 429
+
+
+def test_admin_login_rate_limit_not_bypassable_with_trusted_proxy_xff(tmp_path, monkeypatch):
+    proxied_app = build_test_app(tmp_path, monkeypatch, {"TRUST_PROXY_HEADERS": True})
+    proxied_client = proxied_app.test_client()
+
+    # ProxyFix trusts one proxy hop, so the right-most entry is used as client IP.
+    for i in range(5):
+        page = proxied_client.get("/admin/login")
+        csrf_token = extract_csrf_token(page.get_data(as_text=True))
+        response = proxied_client.post(
+            "/admin/login",
+            data={"_csrf_token": csrf_token, "username": "admin", "password": "wrong-password"},
+            headers={"X-Forwarded-For": f"203.0.113.{i + 1}, 198.51.100.20"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 200
+
+    blocked_page = proxied_client.get("/admin/login")
+    blocked_token = extract_csrf_token(blocked_page.get_data(as_text=True))
+    blocked = proxied_client.post(
+        "/admin/login",
+        data={"_csrf_token": blocked_token, "username": "admin", "password": "wrong-password"},
+        headers={"X-Forwarded-For": "198.18.0.33, 198.51.100.20"},
         follow_redirects=False,
     )
     assert blocked.status_code == 429
