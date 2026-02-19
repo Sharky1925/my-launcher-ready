@@ -216,32 +216,43 @@ async function storeContact(env, request, payload) {
 }
 
 async function storeQuote(env, request, payload) {
+  const fullName = firstNonEmpty(payload.full_name, payload.name);
+  const email = firstNonEmpty(payload.email);
+  const primaryService = firstNonEmpty(payload.primary_service_slug, payload.primary_service);
+  const businessGoals = firstNonEmpty(payload.business_goals);
+  const painPoints = firstNonEmpty(payload.pain_points);
+
+  const detailsBlob = [
+    `Project Title: ${firstNonEmpty(payload.project_title) || "Not provided"}`,
+    `Primary Service: ${primaryService || "Not provided"}`,
+    `Additional Services: ${firstNonEmpty(payload.additional_services) || "None"}`,
+    `Business Goals: ${businessGoals || "Not provided"}`,
+    `Current Challenges: ${painPoints || "Not provided"}`,
+    `Current Environment: ${firstNonEmpty(payload.current_environment) || "Not provided"}`,
+    `Integrations: ${firstNonEmpty(payload.integrations) || "Not provided"}`,
+    `Additional Notes: ${firstNonEmpty(payload.additional_notes) || "Not provided"}`,
+  ].join("\n");
+
   const record = {
     ticket_number: createTicketNumber(),
-    name: firstNonEmpty(payload.name, payload.full_name),
-    email: firstNonEmpty(payload.email),
+    name: fullName,
+    email,
     phone: firstNonEmpty(payload.phone),
     company: firstNonEmpty(payload.company),
-    primary_service: firstNonEmpty(payload.primary_service, payload.primary_service_slug),
+    primary_service: primaryService,
     budget: firstNonEmpty(payload.budget, payload.budget_range),
     timeline: firstNonEmpty(payload.timeline),
-    details: firstNonEmpty(
-      payload.details,
-      payload.message,
-      payload.project_scope,
-      payload.project_title,
-      payload.additional_services
-    ),
+    details: detailsBlob,
     ip: normalizeText(request.headers.get("CF-Connecting-IP") || "", 80),
     user_agent: normalizeText(request.headers.get("User-Agent") || "", 500),
     created_at: new Date().toISOString(),
   };
 
-  if (!record.name || !record.email || !record.primary_service || !record.details) {
+  if (!record.name || !record.email || !record.primary_service || !businessGoals || !painPoints) {
     return {
       ok: false,
       status: 400,
-      error: "name, email, primary service, and project details are required.",
+      error: "full name, email, primary service, business goals, and current challenges are required.",
     };
   }
   if (!isEmail(record.email)) {
