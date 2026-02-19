@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote Support Portal — Right On Repair</title>
+  <meta name="description" content="Client remote support portal with registration, sign in, ticket creation, and status tracking synchronized with internal CMS support workflows.">
+  <meta name="author" content="Right On Repair">
+  <meta name="keywords" content="remote support portal, support ticket tracking, client login IT support, managed IT ticket system">
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1">
+  <meta name="format-detection" content="telephone=no, email=no">
+  <link rel="canonical" href="http://localhost/remote-support">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="Remote Support Portal — Right On Repair">
+  <meta property="og:description" content="Create and track support tickets through the secure client portal.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="http://localhost/remote-support">
+  <meta property="og:site_name" content="Right On Repair">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="http://localhost/static/icon.png">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Remote Support Portal — Right On Repair">
+  <meta name="twitter:description" content="Create and track support tickets through the secure client portal.">
+  <meta name="twitter:image" content="http://localhost/static/icon.png">
+  
+  <!-- Fonts & CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="shortcut icon" href="/static/favicon.svg">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="/static/css/style.css?v=20260217-hero-btn-compact" rel="stylesheet">
+  
+  <!-- Structured Data -->
+  <script nonce="W-9ISrrRvVPMZjEucM9wlw" type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Right On Repair",
+    "description": "Orange County IT services and technical repair: managed IT, cybersecurity, cloud migration, software and web development, surveillance setup, and same-day device repair support for local businesses.",
+    "telephone": "+1 (562) 542-5899",
+    "email": "info@rightonphonerepair.com",
+    "address": { "@type": "PostalAddress", "streetAddress": "9092 Talbert Ave. Ste 4, Fountain Valley, CA 92708", "addressRegion": "CA", "addressCountry": "US" },
+    "areaServed": "Orange County, CA",
+    "sameAs": [
+      "https://facebook.com",
+      "https://twitter.com",
+      "https://linkedin.com"
+    ]
+  }
+  </script>
+  
+<script nonce="W-9ISrrRvVPMZjEucM9wlw" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Remote Support Portal",
+  "description": "Client portal for support ticket creation and tracking.",
+  "url": "http://localhost/remote-support"
+}
+</script>
+
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+<div class="scroll-progress"></div>
+
+<header class="site-header sticky-top">
+  <!-- Topbar -->
+  <div class="topbar d-none d-lg-block">
+    <div class="container">
+      <div class="topbar-inner">
+        <div class="topbar-group">
+          <div class="topbar-item">
+            <span class="topbar-stars">
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <i class="fa-solid fa-star"></i>
+              <span>5-Star Rated</span>
+            </span>
+          </div>
+          
+          <div class="topbar-item">
+            <a class="topbar-contact-link" href="tel:+15625425899" aria-label="Call +1 (562) 542-5899">
+              <i class="fa-solid fa-phone"></i> +1 (562) 542-5899
+            </a>
+          </div>
+          
+          
+          <div class="topbar-item">
+            <a class="topbar-contact-link" href="mailto:info@rightonphonerepair.com" aria-label="Email info@rightonphonerepair.com">
+              <i class="fa-solid fa-envelope"></i> info@rightonphonerepair.com
+            </a>
+          </div>
+          
+        </div>
+        <div class="topbar-group">
+          
+          <div class="topbar-item">
+            <i class="fa-solid fa-location-dot"></i> 9092 Talbert Ave. Ste 4, Fountain Valley, CA 92708
+          </div>
+          
+          <div class="topbar-item">
+            <a href="/request-quote">Free Consultation <i class="fa-solid fa-arrow-right topbar-arrow-icon"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-main">
+    <div class="container">
+      <a class="navbar-brand" href="/">Right On Repair</a>
+      <div class="navbar-collapse">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+          <li class="nav-item"><a class="nav-link no-line-anim" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link no-line-anim" href="/about">About</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">IT Services <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <ul class="dropdown-menu">
+              
+              <li><a class="dropdown-item" href="/services/software-development"><i class="fa-solid fa-code me-2 dropdown-item-icon"></i>Software Development</a></li>
+              
+              <li><a class="dropdown-item" href="/services/web-development"><i class="fa-solid fa-globe me-2 dropdown-item-icon"></i>Web Development</a></li>
+              
+              <li><a class="dropdown-item" href="/services/managed-it-services"><i class="fa-solid fa-server me-2 dropdown-item-icon"></i>Managed IT Services</a></li>
+              
+              <li><a class="dropdown-item" href="/services/cybersecurity"><i class="fa-solid fa-shield-halved me-2 dropdown-item-icon"></i>Cybersecurity</a></li>
+              
+              <li><a class="dropdown-item" href="/services/cloud-solutions"><i class="fa-solid fa-cloud me-2 dropdown-item-icon"></i>Cloud Solutions</a></li>
+              
+              <li><a class="dropdown-item" href="/services/surveillance-camera-installation"><i class="fa-solid fa-video me-2 dropdown-item-icon"></i>Surveillance Camera Installation</a></li>
+              
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/services"><strong>View All Services</strong></a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Repair Services <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <ul class="dropdown-menu">
+              
+              <li><a class="dropdown-item" href="/services/data-recovery"><i class="fa-solid fa-database me-2 dropdown-item-icon"></i>Data Recovery</a></li>
+              
+              <li><a class="dropdown-item" href="/services/computer-repair"><i class="fa-solid fa-laptop-medical me-2 dropdown-item-icon"></i>Computer Repair</a></li>
+              
+              <li><a class="dropdown-item" href="/services/mobile-phone-repair"><i class="fa-solid fa-mobile-screen-button me-2 dropdown-item-icon"></i>Mobile Phone Repair</a></li>
+              
+              <li><a class="dropdown-item" href="/services/game-console-repair"><i class="fa-solid fa-gamepad me-2 dropdown-item-icon"></i>Game Console Repair</a></li>
+              
+              <li><a class="dropdown-item" href="/services/device-diagnostics"><i class="fa-solid fa-stethoscope me-2 dropdown-item-icon"></i>Device Diagnostics</a></li>
+              
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/services"><strong>View All Services</strong></a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Industries <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <ul class="dropdown-menu">
+              
+              <li><a class="dropdown-item" href="/industries/healthcare-clinics"><i class="fa-solid fa-heart-pulse me-2 dropdown-item-icon"></i>Healthcare Clinics</a></li>
+              
+              <li><a class="dropdown-item" href="/industries/law-firms"><i class="fa-solid fa-scale-balanced me-2 dropdown-item-icon"></i>Law Firms</a></li>
+              
+              <li><a class="dropdown-item" href="/industries/construction-field-services"><i class="fa-solid fa-hard-hat me-2 dropdown-item-icon"></i>Construction &amp; Field Services</a></li>
+              
+              <li><a class="dropdown-item" href="/industries/manufacturing"><i class="fa-solid fa-industry me-2 dropdown-item-icon"></i>Manufacturing</a></li>
+              
+              <li><a class="dropdown-item" href="/industries/retail-ecommerce"><i class="fa-solid fa-cart-shopping me-2 dropdown-item-icon"></i>Retail &amp; eCommerce</a></li>
+              
+              <li><a class="dropdown-item" href="/industries/professional-services"><i class="fa-solid fa-briefcase me-2 dropdown-item-icon"></i>Professional Services</a></li>
+              
+              <li><a class="dropdown-item" href="/industries/nonprofits"><i class="fa-solid fa-hand-holding-heart me-2 dropdown-item-icon"></i>Nonprofits</a></li>
+              
+              <li><a class="dropdown-item" href="/industries/real-estate-property-management"><i class="fa-solid fa-building me-2 dropdown-item-icon"></i>Real Estate &amp; Property Management</a></li>
+              
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/industries"><strong>View All Industries</strong></a></li>
+            </ul>
+          </li>
+          
+          <li class="nav-item ms-lg-2">
+            <a class="btn-nav-call" href="tel:+1562542-5899"><i class="fa-solid fa-phone"></i> Call Now</a>
+          </li>
+          
+          <li class="nav-item ms-lg-1">
+            <a class="btn-nav-remote" href="/remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+          </li>
+          <li class="nav-item ms-lg-1">
+            <a class="btn-nav-quote" href="/request-quote"><i class="fa-solid fa-file-invoice"></i> Request Quote</a>
+          </li>
+          <li class="nav-item ms-lg-1">
+            <a class="btn-nav-cta" href="/contact">Get in Touch</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- Flash Messages -->
+
+
+
+
+<!-- Main Content -->
+<main id="main-content">
+  
+<section class="page-header remote-page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active">Remote Support</li>
+      </ol>
+    </nav>
+    <h1>Remote Support Portal</h1>
+    <p>Secure registration, client sign in, CMS-synced ticket intake, and real-time status tracking.</p>
+  </div>
+</section>
+
+<section class="section section-sm remote-portal-top">
+  <div class="container">
+    <div class="service-detail-hero service-detail-hero--v2 remote-portal-hero">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-8">
+          <div class="service-kicker-badge">Latest Registry Template</div>
+          <h2>Remote Support, Registration, and Ticket Tracking</h2>
+          <p class="remote-portal-copy">
+            Register once, sign in securely, submit support tickets, and follow status updates synchronized with internal CMS workflows.
+          </p>
+          <div class="remote-hero-badges">
+            <span><i class="fa-solid fa-user-shield"></i> Secure Client Login</span>
+            <span><i class="fa-solid fa-ticket"></i> Structured Ticket Intake</span>
+            <span><i class="fa-solid fa-rotate"></i> Live Status Updates</span>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="service-visual-panel remote-stack-panel">
+            <div class="service-panel-head">
+              <h2><i class="fa-solid fa-screwdriver-wrench"></i>Support Stack</h2>
+              <p>Common remote support and security tooling.</p>
+            </div>
+            <div class="service-tool-cloud remote-tool-cloud">
+              <span class="service-tool-pill"><i class="fa-solid fa-desktop"></i>TeamViewer</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-laptop-code"></i>AnyDesk</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-shield-halved"></i>CrowdStrike</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-cloud"></i>Microsoft Intune</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-database"></i>Veeam Backup</span>
+              <span class="service-tool-pill"><i class="fa-solid fa-network-wired"></i>NinjaOne</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section pt-0 remote-support-section">
+  <div class="container">
+    
+    <div class="row g-4 remote-auth-grid">
+      <div class="col-lg-5">
+        <div class="contact-form-wrap remote-auth-card h-100">
+          <div class="remote-mini-kicker"><i class="fa-solid fa-right-to-bracket"></i> Client Login</div>
+          <h3>Sign In</h3>
+          <p>Access your ticket history, open new requests, and monitor progress from one workspace.</p>
+          <form method="POST" action="/remote-support/login">
+            <input type="hidden" name="_csrf_token" value="PvHUot1tZHzFb6eKxv83GiyzTFJao2tGNDhe6B0INCg">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="login_email">Email</label>
+                <input type="email" class="form-control" id="login_email" name="email" required autocomplete="email">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="login_password">Password</label>
+                <input type="password" class="form-control" id="login_password" name="password" required autocomplete="current-password">
+              </div>
+              <div class="col-12">
+                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+              </div>
+            </div>
+          </form>
+          <p class="remote-form-note">No account yet? Create one in the registration panel.</p>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="contact-form-wrap remote-auth-card remote-register-card h-100">
+          <div class="remote-mini-kicker"><i class="fa-solid fa-user-plus"></i> Client Registration</div>
+          <h3>Create Account</h3>
+          <p>Register once to submit tickets, track statuses, and coordinate support updates faster.</p>
+          <form method="POST" action="/remote-support/register">
+            <input type="hidden" name="_csrf_token" value="PvHUot1tZHzFb6eKxv83GiyzTFJao2tGNDhe6B0INCg">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="reg_name">Full Name</label>
+                <input type="text" class="form-control" id="reg_name" name="full_name" required autocomplete="name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_email">Email</label>
+                <input type="email" class="form-control" id="reg_email" name="email" required autocomplete="email">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_phone">Phone</label>
+                <input type="tel" class="form-control" id="reg_phone" name="phone" autocomplete="tel">
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="reg_company">Company</label>
+                <input type="text" class="form-control" id="reg_company" name="company" autocomplete="organization">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_password">Password</label>
+                <input type="password" class="form-control" id="reg_password" name="password" minlength="8" required autocomplete="new-password">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reg_confirm">Confirm Password</label>
+                <input type="password" class="form-control" id="reg_confirm" name="confirm_password" minlength="8" required autocomplete="new-password">
+              </div>
+              <div class="col-12">
+                <button class="btn btn-quote" type="submit"><i class="fa-solid fa-user-plus"></i> Register</button>
+              </div>
+            </div>
+          </form>
+          <p class="remote-form-note">Password minimum: 8 characters. Use a unique password for your client portal.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+      <div class="col-lg-7">
+        <div class="service-visual-panel remote-process-panel">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-list-ol"></i>How The Portal Works</h2>
+            <p>Simple workflow from account setup to ticket resolution.</p>
+          </div>
+          <div class="timeline-grid remote-process-grid">
+            <article class="timeline-card">
+              <span class="process-icon">01</span>
+              <div>
+                <h4>Create Your Account</h4>
+                <p>Register your client profile with business email and secure password.</p>
+              </div>
+            </article>
+            <article class="timeline-card">
+              <span class="process-icon">02</span>
+              <div>
+                <h4>Submit Support Request</h4>
+                <p>Describe the issue with service context, priority, and full details.</p>
+              </div>
+            </article>
+            <article class="timeline-card">
+              <span class="process-icon">03</span>
+              <div>
+                <h4>Track Status Updates</h4>
+                <p>Monitor progress from open to resolved with synchronized CMS tracking.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="service-visual-panel remote-benefit-panel h-100">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-shield-halved"></i>Client Benefits</h2>
+            <p>Designed for fast, secure support coordination.</p>
+          </div>
+          <ul class="service-value-list remote-benefit-list">
+            <li><i class="fa-solid fa-circle-check"></i>Dedicated client sign in with protected account access.</li>
+            <li><i class="fa-solid fa-circle-check"></i>Structured ticket intake for faster issue triage.</li>
+            <li><i class="fa-solid fa-circle-check"></i>Consistent ticket history for recurring incident analysis.</li>
+            <li><i class="fa-solid fa-circle-check"></i>Direct support communication without long email chains.</li>
+          </ul>
+          <div class="remote-auth-actions">
+            <a href="/contact?subject=Support+Message" class="btn btn-cta-message"><i class="fa-solid fa-paper-plane"></i> Send Us a Message</a>
+            
+            <a href="tel:+1562542-5899" class="btn btn-cta-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-4">
+        <div class="brand-text">Right On Repair</div>
+        <p>Orange County managed IT, cybersecurity, cloud, software, web, and technical repair services</p>
+        
+        <ul class="footer-contact-list">
+          <li class="footer-contact-item"><i class="fa-solid fa-phone me-2 footer-contact-icon"></i>+1 (562) 542-5899</li>
+          <li class="footer-contact-item"><i class="fa-solid fa-envelope me-2 footer-contact-icon"></i>info@rightonphonerepair.com</li>
+          <li><i class="fa-solid fa-location-dot me-2 footer-contact-icon"></i>9092 Talbert Ave. Ste 4, Fountain Valley, CA 92708</li>
+        </ul>
+        
+        <div class="footer-social">
+          <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h5>Services</h5>
+        <ul>
+          
+          <li><a href="/services/software-development">Software Development</a></li>
+          
+          <li><a href="/services/web-development">Web Development</a></li>
+          
+          <li><a href="/services/managed-it-services">Managed IT Services</a></li>
+          
+          <li><a href="/services/cybersecurity">Cybersecurity</a></li>
+          
+          <li><a href="/services/cloud-solutions">Cloud Solutions</a></li>
+          
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="/about">About Us</a></li>
+          <li><a href="/services">All Services</a></li>
+          <li><a href="/industries">Industries</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/request-quote">Request Quote</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-4">
+        <h5>Service Area</h5>
+        <p class="footer-service-note">On-site and remote support for businesses throughout Orange County.</p>
+        <div class="footer-chips">
+          <span class="footer-chip">Anaheim</span>
+          <span class="footer-chip">Irvine</span>
+          <span class="footer-chip">Santa Ana</span>
+          <span class="footer-chip">Huntington Beach</span>
+          <span class="footer-chip">Costa Mesa</span>
+          <span class="footer-chip">Fullerton</span>
+          <span class="footer-chip">Orange</span>
+          <span class="footer-chip">Mission Viejo</span>
+          <span class="footer-chip">Newport Beach</span>
+          <span class="footer-chip">Laguna Beach</span>
+          <span class="footer-chip">Tustin</span>
+          <span class="footer-chip">Lake Forest</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom d-flex flex-wrap justify-content-between align-items-center">
+      <span>© 2026 Right On Repair. All rights reserved.</span>
+      <span><a href="/admin/login" class="footer-admin-link">Admin</a></span>
+    </div>
+  </div>
+</footer>
+
+<!-- Mobile Call Button -->
+
+<a class="mobile-call" href="tel:+1562542-5899">
+  <i class="fa-solid fa-phone"></i> Call Now
+</a>
+
+
+<script nonce="W-9ISrrRvVPMZjEucM9wlw" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script nonce="W-9ISrrRvVPMZjEucM9wlw" src="/static/js/main.js?v=20260217-hero-btn-compact"></script>
+
+</body>
+</html>

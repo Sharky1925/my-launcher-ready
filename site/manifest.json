@@ -1,0 +1,40 @@
+{
+  "html_paths": [
+    "/",
+    "/about",
+    "/blog",
+    "/blog/essential-cybersecurity-practices-for-small-businesses",
+    "/blog/how-digital-transformation-drives-business-growth",
+    "/blog/signs-your-computer-needs-professional-repair",
+    "/blog/the-future-of-cloud-computing-in-2025",
+    "/contact",
+    "/industries",
+    "/industries/construction-field-services",
+    "/industries/healthcare-clinics",
+    "/industries/law-firms",
+    "/industries/manufacturing",
+    "/industries/nonprofits",
+    "/industries/professional-services",
+    "/industries/real-estate-property-management",
+    "/industries/retail-ecommerce",
+    "/remote-support",
+    "/request-quote",
+    "/services",
+    "/services/cloud-solutions",
+    "/services/computer-repair",
+    "/services/cybersecurity",
+    "/services/data-recovery",
+    "/services/device-diagnostics",
+    "/services/game-console-repair",
+    "/services/managed-it-services",
+    "/services/mobile-phone-repair",
+    "/services/software-development",
+    "/services/surveillance-camera-installation",
+    "/services/web-development"
+  ],
+  "assets_found": [
+    "/static/css/style.css?v=20260217-hero-btn-compact",
+    "/static/favicon.svg",
+    "/static/js/main.js?v=20260217-hero-btn-compact"
+  ]
+}
