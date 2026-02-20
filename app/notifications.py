@@ -1,4 +1,8 @@
+import base64
 import smtplib
+import urllib.error
+import urllib.parse
+import urllib.request
 from email.message import EmailMessage
 
 from flask import current_app
@@ -15,14 +19,45 @@ def _ticket_admin_url(ticket_id):
     return f"{base}/admin/support-tickets/{ticket_id}"
 
 
-def _send_email(subject, body, recipients):
-    if not recipients:
+def _send_via_mailgun(subject, body, recipients, mail_from):
+    """Send email via Mailgun HTTP API (no SMTP needed)."""
+    api_key = (current_app.config.get('MAILGUN_API_KEY') or '').strip()
+    domain = (current_app.config.get('MAILGUN_DOMAIN') or '').strip()
+    if not api_key or not domain:
+        return None  # Not configured, fall through to SMTP
+
+    url = f"https://api.mailgun.net/v3/{domain}/messages"
+    data = urllib.parse.urlencode({
+        'from': mail_from,
+        'to': ', '.join(recipients),
+        'subject': subject,
+        'text': body,
+    }).encode('utf-8')
+
+    auth = base64.b64encode(f"api:{api_key}".encode()).decode()
+
+    req = urllib.request.Request(url, data=data, method='POST')
+    req.add_header('Authorization', f'Basic {auth}')
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            current_app.logger.info('Mailgun email sent successfully.')
+            return True
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8', errors='replace')
+        current_app.logger.error(f'Mailgun API error {e.code}: {error_body}')
+        return False
+    except Exception:
+        current_app.logger.exception('Mailgun email delivery failed.')
         return False
 
+
+def _send_via_smtp(subject, body, recipients, mail_from):
+    """Send email via SMTP (traditional method)."""
     host = (current_app.config.get('SMTP_HOST') or '').strip()
     if not host:
-        current_app.logger.info('SMTP_HOST is not configured; skipping email notification.')
-        return False
+        current_app.logger.info('SMTP_HOST is not configured; skipping SMTP.')
+        return None  # Not configured
 
     port = int(current_app.config.get('SMTP_PORT') or 587)
     username = current_app.config.get('SMTP_USERNAME') or ''
@@ -32,7 +67,7 @@ def _send_email(subject, body, recipients):
 
     message = EmailMessage()
     message['Subject'] = subject
-    message['From'] = current_app.config.get('MAIL_FROM') or 'no-reply@localhost'
+    message['From'] = mail_from
     message['To'] = ', '.join(recipients)
     message.set_content(body)
 
@@ -50,8 +85,27 @@ def _send_email(subject, body, recipients):
             smtp.send_message(message)
         return True
     except Exception:
-        current_app.logger.exception('Email notification delivery failed.')
+        current_app.logger.exception('SMTP email delivery failed.')
         return False
+
+
+def _send_email(subject, body, recipients):
+    if not recipients:
+        return False
+
+    mail_from = current_app.config.get('MAIL_FROM') or 'no-reply@localhost'
+
+    # Try Mailgun first (works on Railway), fall back to SMTP
+    result = _send_via_mailgun(subject, body, recipients, mail_from)
+    if result is not None:
+        return result
+
+    result = _send_via_smtp(subject, body, recipients, mail_from)
+    if result is not None:
+        return result
+
+    current_app.logger.info('No email provider configured (set MAILGUN_API_KEY+MAILGUN_DOMAIN or SMTP_HOST).')
+    return False
 
 
 def send_contact_notification(submission):

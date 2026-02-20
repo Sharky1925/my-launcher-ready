@@ -82,6 +82,9 @@ class Config:
     CONTACT_NOTIFICATION_EMAILS = os.environ.get('CONTACT_NOTIFICATION_EMAILS') or ''
     TICKET_NOTIFICATION_EMAILS = os.environ.get('TICKET_NOTIFICATION_EMAILS') or ''
 
+    MAILGUN_API_KEY = (os.environ.get('MAILGUN_API_KEY') or '').strip()
+    MAILGUN_DOMAIN = (os.environ.get('MAILGUN_DOMAIN') or '').strip()
+
     TURNSTILE_SITE_KEY = (os.environ.get('TURNSTILE_SITE_KEY') or '').strip()
     TURNSTILE_SECRET_KEY = (os.environ.get('TURNSTILE_SECRET_KEY') or '').strip()
     TURNSTILE_ENFORCED = _as_bool(os.environ.get('TURNSTILE_ENFORCED'), True)
