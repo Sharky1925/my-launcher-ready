@@ -852,16 +852,18 @@ p { margin: 0 0 16px; }
   transform: translateY(-1px);
 }
 .hero-icon-card .hic-icon {
-  width: clamp(48px, 5vw, 56px); height: clamp(48px, 5vw, 56px); border-radius: 12px;
+  width: clamp(52px, 5.5vw, 62px); height: clamp(52px, 5.5vw, 62px); border-radius: 14px;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: clamp(1.1rem, 1.6vw, 1.3rem); margin-bottom: 14px;
+  font-size: clamp(1.25rem, 1.8vw, 1.5rem); margin-bottom: 14px;
+  transition: box-shadow .4s var(--ease-soft), transform .4s var(--ease-soft);
 }
-.hero-icon-card .hic-icon.blue { background: rgba(79, 123, 255, 0.18); color: #7ba6ff; }
-.hero-icon-card .hic-icon.purple { background: rgba(164, 93, 255, 0.18); color: #c4a5ff; }
-.hero-icon-card .hic-icon.green { background: rgba(16, 185, 129, 0.18); color: #34D399; }
-.hero-icon-card .hic-icon.amber { background: rgba(245, 158, 11, 0.18); color: #FBBF24; }
-.hero-icon-card .hic-icon.cyan { background: rgba(6, 182, 212, 0.18); color: #22D3EE; }
-.hero-icon-card .hic-icon.rose { background: rgba(244, 63, 94, 0.18); color: #FB7185; }
+.hero-icon-card:hover .hic-icon { transform: scale(1.1); }
+.hero-icon-card .hic-icon.blue { background: rgba(79, 123, 255, 0.35); color: #5B9AFF; box-shadow: 0 0 18px rgba(79, 123, 255, 0.3); }
+.hero-icon-card .hic-icon.purple { background: rgba(164, 93, 255, 0.35); color: #B794FF; box-shadow: 0 0 18px rgba(164, 93, 255, 0.3); }
+.hero-icon-card .hic-icon.green { background: rgba(16, 185, 129, 0.35); color: #34D399; box-shadow: 0 0 18px rgba(16, 185, 129, 0.3); }
+.hero-icon-card .hic-icon.amber { background: rgba(245, 158, 11, 0.35); color: #FBBF24; box-shadow: 0 0 18px rgba(245, 158, 11, 0.3); }
+.hero-icon-card .hic-icon.cyan { background: rgba(6, 182, 212, 0.35); color: #22D3EE; box-shadow: 0 0 18px rgba(6, 182, 212, 0.3); }
+.hero-icon-card .hic-icon.rose { background: rgba(244, 63, 94, 0.35); color: #FB7185; box-shadow: 0 0 18px rgba(244, 63, 94, 0.3); }
 .hero-icon-card h4 { font-size: clamp(.95rem, 1.4vw, 1.15rem); font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .hero-icon-card p { font-size: clamp(.82rem, 1.1vw, .92rem); color: var(--text-muted); margin: 0; line-height: 1.45; }
 
