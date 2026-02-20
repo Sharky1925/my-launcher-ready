@@ -47,6 +47,7 @@ def seed_database():
         ('Cybersecurity', 'Business-aligned cybersecurity with layered controls across endpoints, identity, email, and response planning. We reduce risk exposure while keeping teams productive and operations resilient.', 'fa-solid fa-shield-halved', True),
         ('Cloud Solutions', 'Cloud architecture, migration, and optimization for secure collaboration, performance, and long-term scale. We modernize your stack with measurable improvements in reliability, security, and cost control.', 'fa-solid fa-cloud', True),
         ('Surveillance Camera Installation', 'Commercial CCTV design and installation for offices, retail, warehouse, and multi-site operations. We deliver secure remote visibility, retention planning, and dependable incident-ready coverage.', 'fa-solid fa-video', True),
+        ('Enterprise Consultancy', 'Strategic IT advisory for growing businesses: technology roadmaps, vendor evaluation, infrastructure audits, digital transformation planning, and executive-level guidance to align IT investments with business outcomes.', 'fa-solid fa-handshake', True),
     ]
     for i, (title, desc, icon, featured) in enumerate(professional_services):
         db.session.add(Service(
@@ -225,7 +226,7 @@ def seed_database():
                 {'title': 'Software & Web Development', 'subtitle': 'Full-Stack Solutions', 'icon': 'fa-solid fa-code', 'color': 'green', 'service_slug': 'software-development'},
                 {'title': 'Technical Repair', 'subtitle': 'Certified Technicians', 'icon': 'fa-solid fa-laptop-medical', 'color': 'amber', 'service_slug': ''},
                 {'title': 'Managed IT Solutions', 'subtitle': 'Proactive Support', 'icon': 'fa-solid fa-network-wired', 'color': 'cyan', 'service_slug': 'managed-it-services'},
-                {'title': 'Enterprise Consultancy', 'subtitle': 'Strategic Advisory', 'icon': 'fa-solid fa-handshake', 'color': 'rose', 'service_slug': ''},
+                {'title': 'Enterprise Consultancy', 'subtitle': 'Strategic Advisory', 'icon': 'fa-solid fa-handshake', 'color': 'rose', 'service_slug': 'enterprise-consultancy'},
             ],
         },
         ('home', 'trust_signals'): {

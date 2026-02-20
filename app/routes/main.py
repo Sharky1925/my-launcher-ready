@@ -504,6 +504,44 @@ SERVICE_PROFILES = {
             {'q': 'Can diagnostics reduce downtime?', 'a': 'Yes. Early detection helps avoid unplanned failure windows.'},
         ],
     },
+    'enterprise-consultancy': {
+        'meta_description': 'Enterprise IT consultancy in Orange County: technology roadmaps, infrastructure audits, vendor evaluation, digital transformation strategy, and executive advisory for growing businesses.',
+        'keywords': [
+            'enterprise IT consultancy Orange County', 'IT strategy consulting', 'technology roadmap planning',
+            'digital transformation consulting', 'IT infrastructure audit', 'vendor evaluation services',
+            'business IT advisory', 'CTO advisory Orange County', 'IT governance consulting',
+        ],
+        'intro_kicker': 'Assess • Advise • Transform',
+        'board_title': 'Advisory Framework',
+        'process': [
+            {'title': 'Discovery', 'detail': 'Evaluate current infrastructure, workflows, contracts, and growth objectives.', 'icon': 'fa-solid fa-magnifying-glass-chart'},
+            {'title': 'Gap Analysis', 'detail': 'Identify risks, inefficiencies, and missed opportunities across your technology stack.', 'icon': 'fa-solid fa-chart-gantt'},
+            {'title': 'Strategy & Roadmap', 'detail': 'Deliver a prioritized technology roadmap with timelines, budgets, and vendor recommendations.', 'icon': 'fa-solid fa-route'},
+            {'title': 'Execution Support', 'detail': 'Guide implementation, manage vendor transitions, and validate outcomes at each milestone.', 'icon': 'fa-solid fa-handshake'},
+        ],
+        'tools': [
+            {'name': 'Microsoft 365', 'icon': 'fa-brands fa-microsoft'},
+            {'name': 'Google Workspace', 'icon': 'fa-brands fa-google'},
+            {'name': 'AWS', 'icon': 'fa-brands fa-aws'},
+            {'name': 'Azure', 'icon': 'fa-solid fa-cloud'},
+            {'name': 'Jira', 'icon': 'fa-brands fa-atlassian'},
+            {'name': 'Power BI', 'icon': 'fa-solid fa-chart-pie'},
+            {'name': 'Salesforce', 'icon': 'fa-brands fa-salesforce'},
+            {'name': 'Slack', 'icon': 'fa-brands fa-slack'},
+        ],
+        'deliverables': [
+            {'label': 'IT Roadmap', 'value': 'Phased transformation plan', 'icon': 'fa-solid fa-map'},
+            {'label': 'Vendor Strategy', 'value': 'Objective evaluation & savings', 'icon': 'fa-solid fa-scale-balanced'},
+            {'label': 'Risk Reduction', 'value': 'Governance & compliance alignment', 'icon': 'fa-solid fa-shield-halved'},
+        ],
+        'faqs': [
+            {'q': 'Who is enterprise consultancy for?', 'a': 'Growing businesses that need strategic IT guidance without hiring a full-time CTO or IT director.'},
+            {'q': 'Do you replace our existing IT team?', 'a': 'No. We complement your team by providing strategic oversight, vendor management, and roadmap planning.'},
+            {'q': 'What does a typical engagement look like?', 'a': 'We start with a discovery audit, deliver a technology roadmap within 2-3 weeks, and provide ongoing advisory as needed.'},
+            {'q': 'Can you help with vendor negotiations?', 'a': 'Yes. We evaluate contracts, benchmark pricing, and negotiate on your behalf to reduce costs and improve SLAs.'},
+            {'q': 'How is this different from managed IT?', 'a': 'Managed IT handles day-to-day operations. Enterprise consultancy focuses on strategy, planning, and long-term technology alignment with business goals.'},
+        ],
+    },
 }
 
 
@@ -905,7 +943,7 @@ def index():
             {'title': 'Software & Web Development', 'subtitle': 'Full-Stack Solutions', 'icon': 'fa-solid fa-code', 'color': 'green', 'href': detail_or_services('software-development'), 'aria_label': 'Open Software & Web Development service page'},
             {'title': 'Technical Repair', 'subtitle': 'Certified Technicians', 'icon': 'fa-solid fa-laptop-medical', 'color': 'amber', 'href': f"{url_for('main.services')}#repair", 'aria_label': 'Open Technical Repair services'},
             {'title': 'Managed IT Solutions', 'subtitle': 'Proactive Support', 'icon': 'fa-solid fa-network-wired', 'color': 'cyan', 'href': detail_or_services('managed-it-services'), 'aria_label': 'Open Managed IT Solutions service page'},
-            {'title': 'Enterprise Consultancy', 'subtitle': 'Strategic Advisory', 'icon': 'fa-solid fa-handshake', 'color': 'rose', 'href': url_for('main.contact', subject='Enterprise Consultancy'), 'aria_label': 'Open Enterprise Consultancy page'},
+            {'title': 'Enterprise Consultancy', 'subtitle': 'Strategic Advisory', 'icon': 'fa-solid fa-handshake', 'color': 'rose', 'href': detail_or_services('enterprise-consultancy'), 'aria_label': 'Open Enterprise Consultancy service page'},
         ]
 
     return render_template(
