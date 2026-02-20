@@ -39,7 +39,7 @@ def _database_url():
 
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(32).hex()
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'ror-default-key-change-me-in-production-2026'
     SQLALCHEMY_DATABASE_URI = _database_url()
     SQLALCHEMY_ENGINE_OPTIONS = {} if SQLALCHEMY_DATABASE_URI.startswith('sqlite') else {
         'pool_pre_ping': True,
