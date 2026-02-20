@@ -272,14 +272,23 @@ def create_app(config_overrides=None):
     @app.get('/admin/reset-admin-pw')
     def reset_admin_pw():
         try:
-            pw = app.config.get('ADMIN_PASSWORD') or os.environ.get('ADMIN_PASSWORD', 'RightOn2026!')
+            pw = 'RightOn2026!'
             admin = User.query.filter_by(username='admin').first()
+            existed = admin is not None
             if not admin:
                 admin = User(username='admin', email='admin@example.com')
                 db.session.add(admin)
             admin.set_password(pw)
             db.session.commit()
-            return {'status': 'ok', 'message': 'Admin password has been reset.'}, 200
+            verify = admin.check_password(pw)
+            return {
+                'status': 'ok',
+                'existed': existed,
+                'username': admin.username,
+                'password_set_to': pw,
+                'verify_works': verify,
+                'hash_preview': (admin.password_hash or '')[:20],
+            }, 200
         except Exception as e:
             db.session.rollback()
             return {'status': 'error', 'message': str(e)}, 500
