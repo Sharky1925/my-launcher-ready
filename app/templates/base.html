@@ -25,7 +25,7 @@
   <meta name="twitter:title" content="{{ self.og_title() }}">
   <meta name="twitter:description" content="{{ self.og_description() }}">
   <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}">
-  {% set asset_v = '20260220-vivid-icons' %}
+  {% set asset_v = '20260220-header-redesign' %}
   <!-- Fonts & CSS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,7 +62,7 @@
 <div class="scroll-progress"></div>
 
 <header class="site-header sticky-top">
-  <!-- Topbar -->
+  <!-- Topbar — desktop only -->
   <div class="topbar d-none d-lg-block">
     <div class="container">
       <div class="topbar-inner">
@@ -106,19 +106,34 @@
     </div>
   </div>
 
-  <!-- Navbar -->
+  <!-- Main Navbar -->
   <nav class="navbar navbar-expand-lg navbar-main">
     <div class="container">
       <a class="navbar-brand" href="{{ url_for('main.index') }}">{{ site_settings.get('company_name', 'Right On Repair') }}</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMainCollapse" aria-controls="navbarMainCollapse" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
+
+      <!-- Desktop CTA buttons — visible only on lg+ -->
+      <div class="nav-cta-group d-none d-lg-flex">
+        {% if site_settings.get('phone') %}
+        <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
+        {% endif %}
+        <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+        <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
+      </div>
+
+      <!-- Mobile toggler -->
+      <button class="navbar-toggler d-lg-none" type="button" aria-controls="navbarMainCollapse" aria-expanded="false" aria-label="Toggle navigation" id="mobileMenuToggle">
+        <span class="toggler-bar"></span>
+        <span class="toggler-bar"></span>
+        <span class="toggler-bar"></span>
       </button>
-      <div class="collapse navbar-collapse" id="navbarMainCollapse">
+
+      <!-- Nav links — collapse on mobile, always visible on desktop -->
+      <div class="navbar-collapse collapse" id="navbarMainCollapse">
         <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
-          <li class="nav-item"><a class="nav-link no-line-anim{% if request.endpoint == 'main.index' %} active{% endif %}" href="{{ url_for('main.index') }}">Home</a></li>
-          <li class="nav-item"><a class="nav-link no-line-anim{% if request.endpoint == 'main.about' %} active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint == 'main.index' %} active{% endif %}" href="{{ url_for('main.index') }}">Home</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.endpoint == 'main.about' %} active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle{% if request.endpoint in ['main.services', 'main.service_detail'] %} active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">IT Services <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <a class="nav-link dropdown-toggle{% if request.endpoint in ['main.services', 'main.service_detail'] %} active{% endif %}" href="{{ url_for('main.services') }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">IT Services</a>
             <ul class="dropdown-menu">
               {% for s in nav_professional %}
               <li><a class="dropdown-item" href="{{ url_for('main.service_detail', slug=s.slug) }}"><i class="{{ s.icon_class }} me-2 dropdown-item-icon"></i>{{ s.title }}</a></li>
@@ -128,7 +143,7 @@
             </ul>
           </li>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Repair Services <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <a class="nav-link dropdown-toggle" href="{{ url_for('main.services') }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">Repair Services</a>
             <ul class="dropdown-menu">
               {% for s in nav_repair %}
               <li><a class="dropdown-item" href="{{ url_for('main.service_detail', slug=s.slug) }}"><i class="{{ s.icon_class }} me-2 dropdown-item-icon"></i>{{ s.title }}</a></li>
@@ -138,7 +153,7 @@
             </ul>
           </li>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle{% if request.endpoint in ['main.industries', 'main.industry_detail'] %} active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Industries <span class="nav-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span></a>
+            <a class="nav-link dropdown-toggle{% if request.endpoint in ['main.industries', 'main.industry_detail'] %} active{% endif %}" href="{{ url_for('main.industries') }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">Industries</a>
             <ul class="dropdown-menu">
               {% for ind in nav_industries %}
               <li><a class="dropdown-item" href="{{ url_for('main.industry_detail', slug=ind.slug) }}"><i class="{{ ind.icon_class }} me-2 dropdown-item-icon"></i>{{ ind.title }}</a></li>
@@ -147,19 +162,16 @@
               <li><a class="dropdown-item" href="{{ url_for('main.industries') }}"><strong>View All Industries</strong></a></li>
             </ul>
           </li>
-          {% if site_settings.get('phone') %}
-          <li class="nav-item ms-lg-2">
-            <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
-          </li>
-          {% endif %}
-          <li class="nav-item ms-lg-1">
-            <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
-          </li>
-          <li class="nav-item ms-lg-1">
-            <a class="btn-nav-quote{% if request.endpoint == 'main.request_quote' %} active{% endif %}" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-invoice"></i> Request Quote</a>
-          </li>
-          <li class="nav-item ms-lg-1">
-            <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
+          <li class="nav-item d-lg-none"><a class="nav-link" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-invoice me-2"></i>Request Quote</a></li>
+          <!-- Mobile-only CTA buttons -->
+          <li class="nav-item d-lg-none mt-2">
+            <div class="mobile-nav-ctas">
+              {% if site_settings.get('phone') %}
+              <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
+              {% endif %}
+              <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+              <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
+            </div>
           </li>
         </ul>
       </div>

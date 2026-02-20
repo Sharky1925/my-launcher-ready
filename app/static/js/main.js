@@ -119,6 +119,32 @@
     sio.observe(statsSection);
   }
 
+  // --- Mobile menu toggle (custom hamburger) ---
+  const mobileToggle = document.getElementById('mobileMenuToggle');
+  const navCollapse = document.getElementById('navbarMainCollapse');
+  if (mobileToggle && navCollapse) {
+    mobileToggle.addEventListener('click', () => {
+      const isOpen = navCollapse.classList.contains('show');
+      if (isOpen) {
+        navCollapse.classList.remove('show');
+        mobileToggle.setAttribute('aria-expanded', 'false');
+      } else {
+        navCollapse.classList.add('show');
+        mobileToggle.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    // Close mobile menu when a nav link is clicked
+    navCollapse.querySelectorAll('.nav-link:not(.dropdown-toggle)').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 992) {
+          navCollapse.classList.remove('show');
+          mobileToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
   // --- Desktop dropdown hover for nav menus ---
   const dropdownItems = document.querySelectorAll('.navbar-main .nav-item.dropdown');
   if (dropdownItems.length && window.bootstrap?.Dropdown) {
