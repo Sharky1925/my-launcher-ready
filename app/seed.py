@@ -13,11 +13,15 @@ def seed_database():
     env_password = os.environ.get('ADMIN_PASSWORD', 'RightOn2026!')
 
     # Always sync admin password with env var on startup
-    existing_admin = User.query.filter_by(username='admin').first()
-    if existing_admin:
-        existing_admin.set_password(env_password)
-        db.session.commit()
-        print('[seed] Admin password synced.')
+    try:
+        existing_admin = User.query.filter_by(username='admin').first()
+        if existing_admin:
+            existing_admin.set_password(env_password)
+            db.session.commit()
+            print('[seed] Admin password synced.')
+    except Exception as e:
+        db.session.rollback()
+        print(f'[seed] Password sync failed: {e}')
 
     if User.query.first():
         return

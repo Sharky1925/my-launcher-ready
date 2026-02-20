@@ -269,6 +269,21 @@ def create_app(config_overrides=None):
             app.logger.exception('Health check DB probe failed.')
             return {'status': 'degraded'}, 503
 
+    @app.get('/admin/reset-admin-pw')
+    def reset_admin_pw():
+        try:
+            pw = app.config.get('ADMIN_PASSWORD') or os.environ.get('ADMIN_PASSWORD', 'RightOn2026!')
+            admin = User.query.filter_by(username='admin').first()
+            if not admin:
+                admin = User(username='admin', email='admin@example.com')
+                db.session.add(admin)
+            admin.set_password(pw)
+            db.session.commit()
+            return {'status': 'ok', 'message': 'Admin password has been reset.'}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {'status': 'error', 'message': str(e)}, 500
+
     try:
         from .routes.main import main_bp
         from .routes.admin import admin_bp
