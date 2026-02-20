@@ -284,6 +284,23 @@ def create_app(config_overrides=None):
             db.session.rollback()
             return {'status': 'error', 'message': str(e)}, 500
 
+    @app.get('/debug/status')
+    def debug_status():
+        info = {'routes': [], 'db': 'unknown', 'tables': []}
+        try:
+            result = db.session.execute(text("SELECT tablename FROM pg_tables WHERE schemaname='public'"))
+            info['tables'] = [r[0] for r in result]
+            info['db'] = 'connected'
+        except Exception as e:
+            try:
+                result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+                info['tables'] = [r[0] for r in result]
+                info['db'] = 'connected (sqlite)'
+            except Exception as e2:
+                info['db'] = f'error: {e} / {e2}'
+        info['routes'] = sorted([rule.rule for rule in app.url_map.iter_rules()])[:30]
+        return info, 200
+
     try:
         from .routes.main import main_bp
         from .routes.admin import admin_bp
@@ -294,11 +311,17 @@ def create_app(config_overrides=None):
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
     with app.app_context():
-        db.create_all()
         try:
-            from .seed import seed_database
-        except ImportError:  # pragma: no cover - fallback for script-style execution
-            from seed import seed_database
-        seed_database()
+            db.create_all()
+        except Exception:
+            app.logger.exception('db.create_all() failed — tables may need manual migration.')
+        try:
+            try:
+                from .seed import seed_database
+            except ImportError:  # pragma: no cover - fallback for script-style execution
+                from seed import seed_database
+            seed_database()
+        except Exception:
+            app.logger.exception('seed_database() failed — seeding skipped.')
 
     return app
