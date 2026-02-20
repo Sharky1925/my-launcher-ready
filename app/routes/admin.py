@@ -1,9 +1,9 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
+import json
 import os
 import re
 import uuid
 import bleach
-import ipaddress
 from sqlalchemy import func, or_
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, session
 from flask_login import login_user, logout_user, login_required, current_user
@@ -27,7 +27,11 @@ try:
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        Industry,
+        ContentBlock,
     )
+    from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
+    from ..content_schemas import CONTENT_SCHEMAS
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     from models import (
         db,
@@ -44,12 +48,15 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        Industry,
+        ContentBlock,
     )
+    from utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
+    from content_schemas import CONTENT_SCHEMAS
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates/admin')
 ADMIN_LOGIN_LIMIT = 5
 ADMIN_LOGIN_WINDOW_SECONDS = 300
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'}
 QUOTE_INTAKE_EMAIL = 'quote-intake@rightonrepair.local'
 QUOTE_SUBJECT_PREFIX = 'quote request:'
@@ -67,16 +74,8 @@ ALLOWED_RICH_TEXT_ATTRIBUTES = {
 ALLOWED_RICH_TEXT_PROTOCOLS = ['http', 'https', 'mailto']
 
 
-def utc_now_naive():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
-
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
-
-
-def clean_text(value, max_length=255):
-    return (value or '').strip()[:max_length]
 
 
 def parse_int(value, default=0, min_value=None, max_value=None):
@@ -99,29 +98,6 @@ def parse_positive_int(value):
     if parsed <= 0:
         return None
     return parsed
-
-
-def normalized_ip(value):
-    candidate = (value or '').split(',', 1)[0].strip()
-    if not candidate:
-        return ''
-    try:
-        return str(ipaddress.ip_address(candidate))
-    except ValueError:
-        return ''
-
-
-def get_request_ip():
-    remote_ip = normalized_ip(request.remote_addr)
-    if current_app.config.get('TRUST_PROXY_HEADERS'):
-        forwarded_ip = normalized_ip(request.headers.get('X-Forwarded-For'))
-        if forwarded_ip:
-            return forwarded_ip
-    return remote_ip or 'unknown'
-
-
-def is_valid_email(value):
-    return bool(EMAIL_RE.match(value or ''))
 
 
 def is_valid_url(value):
@@ -288,7 +264,7 @@ def login():
     return render_template('admin/login.html')
 
 
-@admin_bp.route('/logout')
+@admin_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
@@ -356,6 +332,14 @@ def service_add():
             flash('A service with that title already exists.', 'danger')
             return render_template('admin/service_form.html', item=None)
 
+        profile_json_raw = request.form.get('profile_json', '').strip()
+        if profile_json_raw:
+            try:
+                json.loads(profile_json_raw)
+            except (json.JSONDecodeError, TypeError):
+                flash('Invalid JSON in service profile.', 'danger')
+                return render_template('admin/service_form.html', item=None)
+
         image = save_upload(request.files.get('image')) if request.files.get('image') else None
         item = Service(
             title=title,
@@ -365,7 +349,8 @@ def service_add():
             image=image,
             service_type=service_type,
             is_featured='is_featured' in request.form,
-            sort_order=sort_order
+            sort_order=sort_order,
+            profile_json=profile_json_raw or None,
         )
         db.session.add(item)
         try:
@@ -404,6 +389,14 @@ def service_edit(id):
             flash('Another service already uses this title/slug.', 'danger')
             return render_template('admin/service_form.html', item=item)
 
+        profile_json_raw = request.form.get('profile_json', '').strip()
+        if profile_json_raw:
+            try:
+                json.loads(profile_json_raw)
+            except (json.JSONDecodeError, TypeError):
+                flash('Invalid JSON in service profile.', 'danger')
+                return render_template('admin/service_form.html', item=item)
+
         item.title = title
         item.slug = slug
         item.description = description
@@ -411,6 +404,7 @@ def service_edit(id):
         item.service_type = service_type
         item.is_featured = 'is_featured' in request.form
         item.sort_order = sort_order
+        item.profile_json = profile_json_raw or None
         if request.files.get('image') and request.files['image'].filename:
             uploaded_image = save_upload(request.files['image'])
             if not uploaded_image:
@@ -925,11 +919,12 @@ def security_events():
     if scope_filter != 'all':
         query = query.filter(SecurityEvent.scope == scope_filter)
     if search:
+        safe_search = escape_like(search)
         query = query.filter(
             or_(
-                func.lower(SecurityEvent.ip).like(f'%{search}%'),
-                func.lower(SecurityEvent.path).like(f'%{search}%'),
-                func.lower(SecurityEvent.details).like(f'%{search}%'),
+                func.lower(SecurityEvent.ip).like(f'%{safe_search}%'),
+                func.lower(SecurityEvent.path).like(f'%{safe_search}%'),
+                func.lower(SecurityEvent.details).like(f'%{safe_search}%'),
             )
         )
 
@@ -974,3 +969,198 @@ def support_ticket_view(id):
         flash('Support ticket updated.', 'success')
         return redirect(url_for('admin.support_ticket_view', id=item.id))
     return render_template('admin/support_ticket_view.html', item=item, is_quote_ticket=is_quote_ticket(item))
+
+
+# Industry CRUD
+@admin_bp.route('/industries')
+@login_required
+def industries():
+    items = Industry.query.order_by(Industry.sort_order).all()
+    return render_template('admin/industries.html', items=items)
+
+
+@admin_bp.route('/industries/add', methods=['GET', 'POST'])
+@login_required
+def industry_add():
+    if request.method == 'POST':
+        title = clean_text(request.form.get('title'), 200)
+        description = clean_text(request.form.get('description'), 10000)
+        icon_class = clean_text(request.form.get('icon_class', 'fa-solid fa-building'), 100)
+        hero_description = clean_text(request.form.get('hero_description', ''), 10000)
+        challenges = clean_text(request.form.get('challenges', ''), 5000)
+        solutions = clean_text(request.form.get('solutions', ''), 5000)
+        stats = clean_text(request.form.get('stats', ''), 5000)
+        sort_order = parse_int(request.form.get('sort_order', 0), default=0, min_value=-100000, max_value=100000)
+
+        if not title or not description:
+            flash('Title and description are required.', 'danger')
+            return render_template('admin/industry_form.html', item=None)
+
+        slug = slugify(title)
+        if not slug:
+            flash('Unable to generate a valid slug from title.', 'danger')
+            return render_template('admin/industry_form.html', item=None)
+        if Industry.query.filter_by(slug=slug).first():
+            flash('An industry with that title already exists.', 'danger')
+            return render_template('admin/industry_form.html', item=None)
+
+        item = Industry(
+            title=title, slug=slug, description=description,
+            icon_class=icon_class, hero_description=hero_description,
+            challenges=challenges, solutions=solutions,
+            stats=stats, sort_order=sort_order,
+        )
+        db.session.add(item)
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash('Unable to save industry due to duplicate data.', 'danger')
+            return render_template('admin/industry_form.html', item=None)
+        flash('Industry added.', 'success')
+        return redirect(url_for('admin.industries'))
+    return render_template('admin/industry_form.html', item=None)
+
+
+@admin_bp.route('/industries/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def industry_edit(id):
+    item = Industry.query.get_or_404(id)
+    if request.method == 'POST':
+        title = clean_text(request.form.get('title'), 200)
+        description = clean_text(request.form.get('description'), 10000)
+        icon_class = clean_text(request.form.get('icon_class', 'fa-solid fa-building'), 100)
+        hero_description = clean_text(request.form.get('hero_description', ''), 10000)
+        challenges = clean_text(request.form.get('challenges', ''), 5000)
+        solutions = clean_text(request.form.get('solutions', ''), 5000)
+        stats = clean_text(request.form.get('stats', ''), 5000)
+        sort_order = parse_int(request.form.get('sort_order', 0), default=0, min_value=-100000, max_value=100000)
+
+        if not title or not description:
+            flash('Title and description are required.', 'danger')
+            return render_template('admin/industry_form.html', item=item)
+
+        slug = slugify(title)
+        if not slug:
+            flash('Unable to generate a valid slug from title.', 'danger')
+            return render_template('admin/industry_form.html', item=item)
+        slug_exists = Industry.query.filter(Industry.slug == slug, Industry.id != item.id).first()
+        if slug_exists:
+            flash('Another industry already uses this title/slug.', 'danger')
+            return render_template('admin/industry_form.html', item=item)
+
+        item.title = title
+        item.slug = slug
+        item.description = description
+        item.icon_class = icon_class
+        item.hero_description = hero_description
+        item.challenges = challenges
+        item.solutions = solutions
+        item.stats = stats
+        item.sort_order = sort_order
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash('Unable to update industry due to duplicate data.', 'danger')
+            return render_template('admin/industry_form.html', item=item)
+        flash('Industry updated.', 'success')
+        return redirect(url_for('admin.industries'))
+    return render_template('admin/industry_form.html', item=item)
+
+
+@admin_bp.route('/industries/<int:id>/delete', methods=['POST'])
+@login_required
+def industry_delete(id):
+    db.session.delete(Industry.query.get_or_404(id))
+    db.session.commit()
+    flash('Industry deleted.', 'success')
+    return redirect(url_for('admin.industries'))
+
+
+# Category Edit
+@admin_bp.route('/categories/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def category_edit(id):
+    cat = Category.query.get_or_404(id)
+    if request.method == 'POST':
+        name = clean_text(request.form.get('name'), 100)
+        if not name:
+            flash('Category name is required.', 'danger')
+            return render_template('admin/category_form.html', item=cat)
+
+        slug = slugify(name)
+        if not slug:
+            flash('Unable to generate a valid category slug.', 'danger')
+            return render_template('admin/category_form.html', item=cat)
+        slug_exists = Category.query.filter(Category.slug == slug, Category.id != cat.id).first()
+        if slug_exists:
+            flash('Another category already uses this name/slug.', 'danger')
+            return render_template('admin/category_form.html', item=cat)
+
+        cat.name = name
+        cat.slug = slug
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash('Unable to update category due to duplicate data.', 'danger')
+            return render_template('admin/category_form.html', item=cat)
+        flash('Category updated.', 'success')
+        return redirect(url_for('admin.categories'))
+    return render_template('admin/category_form.html', item=cat)
+
+
+# Content Block Management
+@admin_bp.route('/content')
+@login_required
+def content_list():
+    pages = {}
+    for (page, section), schema in CONTENT_SCHEMAS.items():
+        if page not in pages:
+            pages[page] = []
+        pages[page].append({'section': section, 'label': schema['label']})
+    return render_template('admin/content_list.html', pages=pages)
+
+
+@admin_bp.route('/content/<page>/<section>', methods=['GET', 'POST'])
+@login_required
+def content_edit(page, section):
+    schema = CONTENT_SCHEMAS.get((page, section))
+    if not schema:
+        flash('Unknown content section.', 'danger')
+        return redirect(url_for('admin.content_list'))
+
+    block = ContentBlock.query.filter_by(page=page, section=section).first()
+    current_data = {}
+    if block:
+        try:
+            current_data = json.loads(block.content)
+        except (json.JSONDecodeError, TypeError):
+            current_data = {}
+
+    if request.method == 'POST':
+        new_data = {}
+        for field in schema['fields']:
+            key = field['key']
+            raw_value = request.form.get(key, '')
+            if field['type'] == 'lines':
+                new_data[key] = [line.strip() for line in raw_value.split('\n') if line.strip()]
+            elif field['type'] == 'json':
+                try:
+                    new_data[key] = json.loads(raw_value)
+                except (json.JSONDecodeError, TypeError):
+                    flash(f'Invalid JSON for field "{field["label"]}".', 'danger')
+                    return render_template('admin/content_edit.html', schema=schema, page=page, section=section, current_data=current_data)
+            else:
+                new_data[key] = raw_value.strip()
+
+        if not block:
+            block = ContentBlock(page=page, section=section)
+            db.session.add(block)
+        block.content = json.dumps(new_data, ensure_ascii=False)
+        db.session.commit()
+        flash('Content updated.', 'success')
+        return redirect(url_for('admin.content_edit', page=page, section=section))
+
+    return render_template('admin/content_edit.html', schema=schema, page=page, section=section, current_data=current_data)

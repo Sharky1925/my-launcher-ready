@@ -32,8 +32,8 @@
         <li class="breadcrumb-item active">Services</li>
       </ol>
     </nav>
-    <h1>Our Services</h1>
-    <p>End-to-end technology solutions for modern businesses.</p>
+    <h1>{{ cb.get('header', {}).get('title', 'Our Services') }}</h1>
+    <p>{{ cb.get('header', {}).get('subtitle', 'End-to-end technology solutions for modern businesses.') }}</p>
   </div>
 </section>
 
@@ -41,8 +41,8 @@
 <section class="section" id="professional">
   <div class="container">
     <div class="section-heading reveal">
-      <div class="section-label"><i class="fa-solid fa-cube"></i> Professional IT</div>
-      <h2>Strategic Technology Solutions</h2>
+      <div class="section-label"><i class="fa-solid fa-cube"></i> {{ cb.get('professional_heading', {}).get('label', 'Professional IT') }}</div>
+      <h2>{{ cb.get('professional_heading', {}).get('title', 'Strategic Technology Solutions') }}</h2>
     </div>
     <div class="row g-4">
       {% set colors = ['blue','purple','green','amber','rose','cyan'] %}
@@ -66,8 +66,8 @@
 <section class="section section--alt" id="repair">
   <div class="container">
     <div class="section-heading reveal">
-      <div class="section-label"><i class="fa-solid fa-wrench"></i> Technical Repair</div>
-      <h2>Expert Repair & Recovery</h2>
+      <div class="section-label"><i class="fa-solid fa-wrench"></i> {{ cb.get('repair_heading', {}).get('label', 'Technical Repair') }}</div>
+      <h2>{{ cb.get('repair_heading', {}).get('title', 'Expert Repair & Recovery') }}</h2>
     </div>
     <div class="row g-4">
       {% set rcolors = ['cyan','rose','amber','green','purple','blue'] %}
@@ -89,8 +89,8 @@
 <section class="section-sm section-bottom-spacious">
   <div class="cta-section cta-section--services reveal-scale">
     <div class="cta-inner">
-      <h2>Need Remote Support or a Quote?</h2>
-      <p>Choose remote assistance or request scoped pricing for your business.</p>
+      <h2>{{ cb.get('cta', {}).get('title', 'Need Remote Support or a Quote?') }}</h2>
+      <p>{{ cb.get('cta', {}).get('subtitle', 'Choose remote assistance or request scoped pricing for your business.') }}</p>
       <div class="cta-actions cta-actions-dual">
         <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
         <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request Quote</a>
@@ -99,7 +99,10 @@
   </div>
 </section>
 
+{% endblock %}
+
 {% block scripts %}
+{{ super() }}
 <script nonce="{{ csp_nonce }}">
   const serviceType = new URLSearchParams(window.location.search).get('type');
   const hash = window.location.hash;
@@ -110,5 +113,4 @@
     setTimeout(() => document.getElementById('professional')?.scrollIntoView({ behavior: 'smooth' }), 300);
   }
 </script>
-{% endblock %}
 {% endblock %}

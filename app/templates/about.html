@@ -16,6 +16,11 @@
 {% endblock %}
 
 {% block content %}
+{% set hdr = cb.get('header', {}) %}
+{% set story = cb.get('story', {}) %}
+{% set metrics = cb.get('metrics', {}) %}
+{% set ms = cb.get('milestones', {}) %}
+{% set vals = cb.get('values', {}) %}
 <section class="page-header">
   <div class="container">
     <nav aria-label="breadcrumb">
@@ -24,8 +29,8 @@
         <li class="breadcrumb-item active">About</li>
       </ol>
     </nav>
-    <h1>About Us</h1>
-    <p>Pioneering IT excellence since 2015.</p>
+    <h1>{{ hdr.get('title', 'About Us') }}</h1>
+    <p>{{ hdr.get('subtitle', 'Pioneering IT excellence since 2015.') }}</p>
   </div>
 </section>
 
@@ -34,18 +39,17 @@
   <div class="container">
     <div class="row align-items-center g-5">
       <div class="col-lg-6 reveal-left">
-        <div class="section-label"><i class="fa-solid fa-book-open"></i> Our Story</div>
-        <h2 class="content-section-title">Building the Future of IT</h2>
+        <div class="section-label"><i class="fa-solid fa-book-open"></i> {{ story.get('label', 'Our Story') }}</div>
+        <h2 class="content-section-title">{{ story.get('title', 'Building the Future of IT') }}</h2>
         <p class="content-section-text">
-          Founded in 2015, {{ site_settings.get('company_name', 'Right On Repair') }} began with a simple belief: every business deserves world-class technology. Today, we serve 500+ clients with a team of 50+ certified professionals.
+          {{ story.get('text', 'Founded in 2015, ' ~ site_settings.get('company_name', 'Right On Repair') ~ ' began with a simple belief: every business deserves world-class technology. Today, we serve 500+ clients with a team of 50+ certified professionals.') }}
         </p>
       </div>
       <div class="col-lg-6 reveal-right">
         <div class="row g-3">
-          <div class="col-6"><div class="metric-card"><div class="mc-value">500+</div><div class="mc-label">Local Clients</div></div></div>
-          <div class="col-6"><div class="metric-card"><div class="mc-value">50+</div><div class="mc-label">IT Specialists</div></div></div>
-          <div class="col-6"><div class="metric-card"><div class="mc-value">99.9%</div><div class="mc-label">Uptime SLA</div></div></div>
-          <div class="col-6"><div class="metric-card"><div class="mc-value">24/7</div><div class="mc-label">Expert Support</div></div></div>
+          {% for m in metrics.get('items', [{'value': '500+', 'label': 'Local Clients'}, {'value': '50+', 'label': 'IT Specialists'}, {'value': '99.9%', 'label': 'Uptime SLA'}, {'value': '24/7', 'label': 'Expert Support'}]) %}
+          <div class="col-6"><div class="metric-card"><div class="mc-value">{{ m.value }}</div><div class="mc-label">{{ m.label }}</div></div></div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -57,80 +61,43 @@
   <div class="container">
     <div class="row g-5">
       <div class="col-lg-5 reveal-left">
-        <div class="section-label"><i class="fa-solid fa-timeline"></i> Milestones</div>
-        <h2 class="content-section-title">Our Journey</h2>
-        <p class="content-section-subtext">Key moments that shaped who we are today.</p>
+        <div class="section-label"><i class="fa-solid fa-timeline"></i> {{ ms.get('label', 'Milestones') }}</div>
+        <h2 class="content-section-title">{{ ms.get('title', 'Our Journey') }}</h2>
+        <p class="content-section-subtext">{{ ms.get('subtitle', 'Key moments that shaped who we are today.') }}</p>
       </div>
       <div class="col-lg-7 reveal-right">
+        {% for milestone in ms.get('items', [{'year': '2015', 'title': 'Founded', 'description': 'Started as a small IT consultancy with a vision to make enterprise technology accessible.', 'icon': 'fa-solid fa-rocket'}, {'year': '2018', 'title': '100 Clients', 'description': 'Expanded to managed services and cybersecurity, reaching our first 100 clients.', 'icon': 'fa-solid fa-users'}, {'year': '2021', 'title': 'Repair Division', 'description': 'Launched certified hardware repair and data recovery services.', 'icon': 'fa-solid fa-award'}, {'year': '2024', 'title': '500+ Clients', 'description': 'Serving Orange County businesses with a team of 50+ certified professionals.', 'icon': 'fa-solid fa-globe'}]) %}
         <div class="timeline-item">
-          <div class="tl-dot"><i class="fa-solid fa-rocket"></i></div>
+          <div class="tl-dot"><i class="{{ milestone.icon }}"></i></div>
           <div>
-            <h4>2015 — Founded</h4>
-            <p>Started as a small IT consultancy with a vision to make enterprise technology accessible.</p>
+            <h4>{{ milestone.year }} — {{ milestone.title }}</h4>
+            <p>{{ milestone.description }}</p>
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="tl-dot"><i class="fa-solid fa-users"></i></div>
-          <div>
-            <h4>2018 — 100 Clients</h4>
-            <p>Expanded to managed services and cybersecurity, reaching our first 100 clients.</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="tl-dot"><i class="fa-solid fa-award"></i></div>
-          <div>
-            <h4>2021 — Repair Division</h4>
-            <p>Launched certified hardware repair and data recovery services.</p>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="tl-dot"><i class="fa-solid fa-globe"></i></div>
-          <div>
-            <h4>2024 — 500+ Clients</h4>
-            <p>Serving Orange County businesses with a team of 50+ certified professionals.</p>
-          </div>
-        </div>
+        {% endfor %}
       </div>
     </div>
   </div>
 </section>
 
 <!-- Values -->
+{% set color_classes = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
 <section class="section">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-compass"></i> Our Values</div>
-      <h2>What Drives Us</h2>
+      <div class="section-label"><i class="fa-solid fa-compass"></i> {{ vals.get('label', 'Our Values') }}</div>
+      <h2>{{ vals.get('title', 'What Drives Us') }}</h2>
     </div>
     <div class="row g-4">
+      {% for v in vals.get('items', [{'title': 'Innovation', 'description': 'Cutting-edge solutions for a competitive edge.', 'icon': 'fa-solid fa-lightbulb', 'color': 'blue'}, {'title': 'Security', 'description': 'Protection embedded in every layer.', 'icon': 'fa-solid fa-shield-halved', 'color': 'purple'}, {'title': 'Partnership', 'description': 'Long-term relationships aligned with your goals.', 'icon': 'fa-solid fa-handshake', 'color': 'green'}, {'title': 'Excellence', 'description': 'Highest standards of quality and professionalism.', 'icon': 'fa-solid fa-medal', 'color': 'amber'}]) %}
       <div class="col-md-6 col-lg-3">
-        <div class="value-card reveal stagger-1">
-          <div class="icon-circle icon-circle-blue"><i class="fa-solid fa-lightbulb"></i></div>
-          <h4>Innovation</h4>
-          <p>Cutting-edge solutions for a competitive edge.</p>
+        <div class="value-card reveal stagger-{{ loop.index }}">
+          <div class="icon-circle icon-circle-{{ v.get('color', color_classes[loop.index0 % 6]) }}"><i class="{{ v.icon }}"></i></div>
+          <h4>{{ v.title }}</h4>
+          <p>{{ v.description }}</p>
         </div>
       </div>
-      <div class="col-md-6 col-lg-3">
-        <div class="value-card reveal stagger-2">
-          <div class="icon-circle icon-circle-purple"><i class="fa-solid fa-shield-halved"></i></div>
-          <h4>Security</h4>
-          <p>Protection embedded in every layer.</p>
-        </div>
-      </div>
-      <div class="col-md-6 col-lg-3">
-        <div class="value-card reveal stagger-3">
-          <div class="icon-circle icon-circle-green"><i class="fa-solid fa-handshake"></i></div>
-          <h4>Partnership</h4>
-          <p>Long-term relationships aligned with your goals.</p>
-        </div>
-      </div>
-      <div class="col-md-6 col-lg-3">
-        <div class="value-card reveal stagger-4">
-          <div class="icon-circle icon-circle-amber"><i class="fa-solid fa-medal"></i></div>
-          <h4>Excellence</h4>
-          <p>Highest standards of quality and professionalism.</p>
-        </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
 </section>
@@ -162,11 +129,12 @@
 </section>
 
 <!-- CTA -->
+{% set about_cta = cb.get('cta', {}) %}
 <section class="section-sm section-bottom-spacious">
   <div class="cta-section reveal-scale">
     <div class="cta-inner">
-      <h2>Want to Join Our Team?</h2>
-      <p>We're looking for talented people who share our passion for technology.</p>
+      <h2>{{ about_cta.get('title', 'Want to Join Our Team?') }}</h2>
+      <p>{{ about_cta.get('subtitle', "We're looking for talented people who share our passion for technology.") }}</p>
       <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Get in Touch <i class="fa-solid fa-arrow-right"></i></a>
     </div>
   </div>

@@ -29,17 +29,17 @@
         <li class="breadcrumb-item active">Industries</li>
       </ol>
     </nav>
-    <h1>Industries We Serve</h1>
-    <p>Tailored technology solutions for every sector.</p>
+    <h1>{{ cb.get('header', {}).get('title', 'Industries We Serve') }}</h1>
+    <p>{{ cb.get('header', {}).get('subtitle', 'Tailored technology solutions for every sector.') }}</p>
   </div>
 </section>
 
 <section class="section">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-building"></i> Sectors</div>
-      <h2>Technology Built for Your Industry</h2>
-      <p>We understand the unique challenges of your sector and deliver solutions that drive results.</p>
+      <div class="section-label"><i class="fa-solid fa-building"></i> {{ cb.get('grid_heading', {}).get('label', 'Sectors') }}</div>
+      <h2>{{ cb.get('grid_heading', {}).get('title', 'Technology Built for Your Industry') }}</h2>
+      <p>{{ cb.get('grid_heading', {}).get('subtitle', 'We understand the unique challenges of your sector and deliver solutions that drive results.') }}</p>
     </div>
     <div class="row g-4">
       {% set colors = ['blue','purple','green','amber','rose','cyan','blue','purple'] %}
@@ -58,54 +58,30 @@
 </section>
 
 <!-- Why Industry Expertise Matters -->
+{% set exp = cb.get('expertise', {}) %}
 <section class="section section--alt">
   <div class="container">
     <div class="row align-items-center g-5">
       <div class="col-lg-5 reveal-left">
-        <div class="section-label"><i class="fa-solid fa-bullseye"></i> Why It Matters</div>
-        <h2 class="content-section-title">Industry-Specific Expertise</h2>
+        <div class="section-label"><i class="fa-solid fa-bullseye"></i> {{ exp.get('label', 'Why It Matters') }}</div>
+        <h2 class="content-section-title">{{ exp.get('title', 'Industry-Specific Expertise') }}</h2>
         <p class="content-section-text">
-          Generic IT fails. We build solutions shaped by deep industry knowledge — compliance, workflows, and growth patterns unique to your sector.
+          {{ exp.get('text', 'Generic IT fails. We build solutions shaped by deep industry knowledge — compliance, workflows, and growth patterns unique to your sector.') }}
         </p>
       </div>
       <div class="col-lg-7 reveal-right">
         <div class="row g-3">
+          {% for feat in exp.get('items', [{'title': 'Compliance-First', 'description': 'HIPAA, PCI DSS, FERPA — built in, not bolted on.', 'icon': 'fa-solid fa-shield-halved'}, {'title': 'Data-Driven', 'description': 'Analytics tailored to your industry KPIs.', 'icon': 'fa-solid fa-chart-line'}, {'title': 'Scalable', 'description': 'Architecture that grows with your business.', 'icon': 'fa-solid fa-arrows-rotate'}, {'title': '24/7 Support', 'description': 'Round-the-clock expert assistance.', 'icon': 'fa-solid fa-headset'}]) %}
           <div class="col-6">
             <div class="feature-item">
-              <div class="fi-icon"><i class="fa-solid fa-shield-halved"></i></div>
+              <div class="fi-icon"><i class="{{ feat.icon }}"></i></div>
               <div>
-                <h4>Compliance-First</h4>
-                <p>HIPAA, PCI DSS, FERPA — built in, not bolted on.</p>
+                <h4>{{ feat.title }}</h4>
+                <p>{{ feat.description }}</p>
               </div>
             </div>
           </div>
-          <div class="col-6">
-            <div class="feature-item">
-              <div class="fi-icon"><i class="fa-solid fa-chart-line"></i></div>
-              <div>
-                <h4>Data-Driven</h4>
-                <p>Analytics tailored to your industry KPIs.</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="feature-item">
-              <div class="fi-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
-              <div>
-                <h4>Scalable</h4>
-                <p>Architecture that grows with your business.</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="feature-item">
-              <div class="fi-icon"><i class="fa-solid fa-headset"></i></div>
-              <div>
-                <h4>24/7 Support</h4>
-                <p>Round-the-clock expert assistance.</p>
-              </div>
-            </div>
-          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -113,11 +89,12 @@
 </section>
 
 <!-- CTA -->
+{% set ind_cta = cb.get('cta', {}) %}
 <section class="section-sm section-bottom-spacious">
   <div class="cta-section reveal-scale">
     <div class="cta-inner">
-      <h2>Don't See Your Industry?</h2>
-      <p>We work across all sectors. Let's discuss your unique technology needs.</p>
+      <h2>{{ ind_cta.get('title', "Don't See Your Industry?") }}</h2>
+      <p>{{ ind_cta.get('subtitle', "We work across all sectors. Let's discuss your unique technology needs.") }}</p>
       <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Get a Free Consultation <i class="fa-solid fa-arrow-right"></i></a>
     </div>
   </div>

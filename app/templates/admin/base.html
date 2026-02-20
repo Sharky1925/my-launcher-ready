@@ -452,20 +452,26 @@
       <a class="nav-link {% if request.endpoint in ['admin.posts', 'admin.post_add', 'admin.post_edit'] %}active{% endif %}" href="{{ url_for('admin.posts') }}"><i class="fa-solid fa-newspaper"></i>Blog Posts</a>
       <a class="nav-link {% if request.endpoint in ['admin.categories', 'admin.category_add'] %}active{% endif %}" href="{{ url_for('admin.categories') }}"><i class="fa-solid fa-tags"></i>Categories</a>
       <a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}"><i class="fa-solid fa-photo-film"></i>Media</a>
+      <a class="nav-link {% if request.endpoint in ['admin.industries', 'admin.industry_add', 'admin.industry_edit'] %}active{% endif %}" href="{{ url_for('admin.industries') }}"><i class="fa-solid fa-building"></i>Industries</a>
       <a class="nav-link {% if request.endpoint in ['admin.contacts', 'admin.contact_view'] %}active{% endif %}" href="{{ url_for('admin.contacts') }}"><i class="fa-solid fa-envelope"></i>Contacts</a>
       <a class="nav-link {% if request.endpoint in ['admin.support_tickets', 'admin.support_ticket_view'] %}active{% endif %}" href="{{ url_for('admin.support_tickets') }}"><i class="fa-solid fa-ticket"></i>Support Tickets</a>
       <a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}"><i class="fa-solid fa-shield-halved"></i>Security Events</a>
+      <div class="sidebar-sep"></div>
+      <a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}"><i class="fa-solid fa-file-pen"></i>Page Content</a>
       <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}"><i class="fa-solid fa-sliders"></i>Settings</a>
       <div class="sidebar-sep"></div>
       <a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i>View Site</a>
-      <a class="nav-link" href="{{ url_for('admin.logout') }}"><i class="fa-solid fa-right-from-bracket"></i>Logout</a>
+      <form method="POST" action="{{ url_for('admin.logout') }}" style="display:contents">{{ csrf_input() }}<button type="submit" class="nav-link" style="border:none;background:none;cursor:pointer;width:100%;text-align:left;"><i class="fa-solid fa-right-from-bracket"></i>Logout</button></form>
     </nav>
   </aside>
 
   <nav class="navbar navbar-expand-lg mobile-admin-nav">
     <div class="container-fluid px-3 py-2">
       <a class="navbar-brand" href="{{ url_for('admin.dashboard') }}">{{ site_settings.get('company_name', 'Right On Repair') }} Admin</a>
-      <div class="navbar-collapse">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminMobileNav" aria-controls="adminMobileNav" aria-expanded="false" aria-label="Toggle admin navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="adminMobileNav">
         <ul class="navbar-nav pt-2">
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.services', 'admin.service_add', 'admin.service_edit'] %}active{% endif %}" href="{{ url_for('admin.services') }}">Services</a></li>
@@ -474,12 +480,14 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.posts', 'admin.post_add', 'admin.post_edit'] %}active{% endif %}" href="{{ url_for('admin.posts') }}">Blog Posts</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.categories', 'admin.category_add'] %}active{% endif %}" href="{{ url_for('admin.categories') }}">Categories</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}">Media</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.industries', 'admin.industry_add', 'admin.industry_edit'] %}active{% endif %}" href="{{ url_for('admin.industries') }}">Industries</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.contacts', 'admin.contact_view'] %}active{% endif %}" href="{{ url_for('admin.contacts') }}">Contacts</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.support_tickets', 'admin.support_ticket_view'] %}active{% endif %}" href="{{ url_for('admin.support_tickets') }}">Support Tickets</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}">Security Events</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}">Page Content</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Settings</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener">View Site</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.logout') }}">Logout</a></li>
+          <li class="nav-item"><form method="POST" action="{{ url_for('admin.logout') }}" style="display:contents">{{ csrf_input() }}<button type="submit" class="nav-link" style="border:none;background:none;cursor:pointer;width:100%;text-align:left;">Logout</button></form></li>
         </ul>
       </div>
     </div>
@@ -491,7 +499,7 @@
       <div class="top-actions">
         <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square me-1"></i>View Site</a>
         <span class="user-pill">{{ current_user.username }}</span>
-        <a href="{{ url_for('admin.logout') }}" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</a>
+        <form method="POST" action="{{ url_for('admin.logout') }}" style="display:inline">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button></form>
       </div>
     </div>
 

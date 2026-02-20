@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}The page you are looking for could not be found.{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">404</li>
+      </ol>
+    </nav>
+    <h1>Page Not Found</h1>
+    <p>The page you are looking for doesn't exist or has been moved.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container text-center">
+    <div class="stat-card" style="max-width:540px;margin:0 auto;">
+      <span class="stat-value">404</span>
+      <h4>Nothing Here</h4>
+      <p class="stat-note mb-4">The URL may be incorrect, or the page may have been removed.</p>
+      <div class="d-flex gap-3 justify-content-center flex-wrap">
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary"><i class="fa-solid fa-house"></i> Back to Home</a>
+        <a href="{{ url_for('main.services') }}" class="btn btn-ghost"><i class="fa-solid fa-cube"></i> View Services</a>
+        <a href="{{ url_for('main.contact') }}" class="btn btn-ghost"><i class="fa-solid fa-envelope"></i> Contact Us</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

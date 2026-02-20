@@ -10,10 +10,12 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     from .config import Config
-    from .models import db, User, Service, SiteSetting, Industry
+    from .models import db, User, Service, SiteSetting, Industry, ContentBlock
+    from .utils import get_page_content
 except ImportError:  # pragma: no cover - fallback when running from app/ as script root
     from config import Config
-    from models import db, User, Service, SiteSetting, Industry
+    from models import db, User, Service, SiteSetting, Industry, ContentBlock
+    from utils import get_page_content
 
 login_manager = LoginManager()
 login_manager.login_view = 'admin.login'
@@ -187,11 +189,16 @@ def create_app(config_overrides=None):
             nav_industries = _normalize_icon_attr(nav_industries, 'fa-solid fa-building')
         except Exception:
             nav_professional, nav_repair, nav_industries = [], [], []
+        try:
+            footer_content = get_page_content('footer')
+        except Exception:
+            footer_content = {}
         return dict(
             site_settings=get_site_settings(),
             nav_professional=nav_professional,
             nav_repair=nav_repair,
             nav_industries=nav_industries,
+            footer_content=footer_content,
             csrf_token=get_csrf_token,
             csrf_input=csrf_input,
             csp_nonce=get_csp_nonce(),

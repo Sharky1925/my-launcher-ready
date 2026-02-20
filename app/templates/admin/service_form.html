@@ -42,6 +42,11 @@
           </div>
         </div>
         <div class="col-12">
+          <label class="form-label">Service Profile (JSON)</label>
+          <textarea name="profile_json" class="form-control font-monospace" rows="10" style="font-size:.82rem">{{ item.profile_json if item and item.profile_json else '' }}</textarea>
+          <small class="text-muted">Optional JSON with: meta_description, keywords, intro_kicker, board_title, process, tools, deliverables, faqs. Leave empty for defaults.</small>
+        </div>
+        <div class="col-12">
           <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Service</button>
           <a href="{{ url_for('admin.services') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
         </div>

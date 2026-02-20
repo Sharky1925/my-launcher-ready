@@ -1,6 +1,6 @@
 # IT Services CMS
 
-A professional IT Services company website with a full built-in CMS admin panel. Powered by Python Flask + SQLite, launchable via Pinokio with 1-click install/start.
+A professional IT Services company website with a full built-in CMS admin panel. Powered by Python Flask + SQLite.
 
 ## What It Does
 
@@ -8,27 +8,36 @@ A professional IT Services company website with a full built-in CMS admin panel.
 - **Admin CMS**: Full content management system at `/admin` to manage all website content
 - **Content Types**: Services, Team Members, Blog Posts, Testimonials, Media Library, Contact Submissions, Site Settings
 
-## How to Use
+## Quick Start (Local Development)
 
-### Installation
-1. Click **Install** in the Pinokio sidebar to set up the virtual environment and dependencies
-2. Click **Start** to launch the Flask server
-3. The website opens automatically in Pinokio's web view
+```bash
+cd app
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python run.py
+```
 
-### Testing
-1. From `app/`, install dev dependencies: `uv pip install -r requirements-dev.txt`
-2. Run tests: `python -m pytest -q`
-3. Or run one-click from Pinokio sidebar: **QA Tests**
+The site will be available at `http://127.0.0.1:5000`.
 
 ### Admin Credentials
-- **URL**: `http://<your-server>/admin/login`
+- **URL**: `http://127.0.0.1:5000/admin/login`
 - **Username**: `admin`
 - **Password**:
   - If `app/site.db` already exists, use your existing password.
   - On first boot of a fresh database, the app generates a strong random password and prints it in the startup logs.
   - You can set `ADMIN_PASSWORD` before first boot to use a custom initial password.
 
-### Managing Content
+### Running Tests
+
+```bash
+cd app
+source venv/bin/activate
+pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+## Managing Content
 
 **Services**: Add, edit, and reorder IT services displayed on the website. Mark services as "Featured" to show them on the homepage.
 
@@ -52,12 +61,12 @@ A professional IT Services company website with a full built-in CMS admin panel.
 
 ```javascript
 // Read CSRF token from a page first
-const html = await (await fetch('http://127.0.0.1:<PORT>/contact')).text();
+const html = await (await fetch('http://127.0.0.1:5000/contact')).text();
 const doc = new DOMParser().parseFromString(html, 'text/html');
 const csrf = doc.querySelector('input[name="_csrf_token"]').value;
 
 // Submit a contact form
-const response = await fetch('http://127.0.0.1:<PORT>/contact', {
+const response = await fetch('http://127.0.0.1:5000/contact', {
   method: 'POST',
   credentials: 'include',
   headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -72,13 +81,13 @@ const response = await fetch('http://127.0.0.1:<PORT>/contact', {
 });
 
 // Get blog posts
-const response = await fetch('http://127.0.0.1:<PORT>/blog');
+const response = await fetch('http://127.0.0.1:5000/blog');
 
 // Get blog posts by category
-const response = await fetch('http://127.0.0.1:<PORT>/blog?category=technology');
+const response = await fetch('http://127.0.0.1:5000/blog?category=technology');
 
 // Search blog posts
-const response = await fetch('http://127.0.0.1:<PORT>/blog?q=cloud');
+const response = await fetch('http://127.0.0.1:5000/blog?q=cloud');
 ```
 
 ### Python (Requests)
@@ -87,7 +96,7 @@ const response = await fetch('http://127.0.0.1:<PORT>/blog?q=cloud');
 import requests
 import re
 
-BASE = 'http://127.0.0.1:<PORT>'
+BASE = 'http://127.0.0.1:5000'
 
 # Read CSRF token from form page
 session = requests.Session()
@@ -114,11 +123,11 @@ response = requests.get(f'{BASE}/blog/the-future-of-cloud-computing-in-2025')
 
 ```bash
 # Get homepage
-curl http://127.0.0.1:<PORT>/
+curl http://127.0.0.1:5000/
 
 # Submit contact form (with CSRF)
-CSRF=$(curl -c /tmp/mylauncher.cookies -s http://127.0.0.1:<PORT>/contact | sed -n 's/.*name="_csrf_token" value="\\([^"]*\\)".*/\\1/p' | head -n1)
-curl -b /tmp/mylauncher.cookies -X POST http://127.0.0.1:<PORT>/contact \
+CSRF=$(curl -c /tmp/mylauncher.cookies -s http://127.0.0.1:5000/contact | sed -n 's/.*name="_csrf_token" value="\\([^"]*\\)".*/\\1/p' | head -n1)
+curl -b /tmp/mylauncher.cookies -X POST http://127.0.0.1:5000/contact \
   -d "_csrf_token=$CSRF" \
   -d "name=John+Doe" \
   -d "email=john@example.com" \
@@ -126,22 +135,21 @@ curl -b /tmp/mylauncher.cookies -X POST http://127.0.0.1:<PORT>/contact \
   -d "message=Hello"
 
 # Get blog listing
-curl http://127.0.0.1:<PORT>/blog
+curl http://127.0.0.1:5000/blog
 
 # Search blog posts
-curl "http://127.0.0.1:<PORT>/blog?q=security"
+curl "http://127.0.0.1:5000/blog?q=security"
 ```
 
 ## Tech Stack
 
 - **Backend**: Flask 3.1, Flask-SQLAlchemy, Flask-Login
-- **Database**: SQLite
+- **Database**: SQLite (local), PostgreSQL (production)
 - **Frontend**: Bootstrap 5.3, Font Awesome 6, TinyMCE 6
-- **Runtime**: Pinokio (Python venv with UV package manager)
 
 ## Production Deployment
 
-The app now supports production deployment with Gunicorn and env-based config:
+The app supports production deployment with Gunicorn and env-based config:
 
 - `app/wsgi.py` (WSGI entrypoint)
 - `/healthz` endpoint for platform health checks
@@ -157,30 +165,29 @@ gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
 
 ### Environment Setup
 
-1. Copy `app/.env.example` to your real environment config.
-2. Set at minimum:
+1. Set at minimum:
    - `SECRET_KEY`
    - `DATABASE_URL`
    - `APP_BASE_URL`
    - `SESSION_COOKIE_SECURE=1`
    - `TRUST_PROXY_HEADERS=1`
-3. For email delivery:
+2. For email delivery:
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
    - `MAIL_FROM`
    - `CONTACT_NOTIFICATION_EMAILS`
    - `TICKET_NOTIFICATION_EMAILS`
-4. For anti-spam and abuse controls:
+3. For anti-spam and abuse controls:
    - `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_ENFORCED`
    - `CONTACT_FORM_LIMIT`, `CONTACT_FORM_WINDOW_SECONDS`
    - `QUOTE_FORM_LIMIT`, `QUOTE_FORM_WINDOW_SECONDS`
-5. For observability:
+4. For observability:
    - `SENTRY_DSN`
    - `SENTRY_ENVIRONMENT`
    - `SENTRY_TRACES_SAMPLE_RATE`
 
 ### Cloudflare (JS Worker + D1/R2)
 
-Due to current Cloudflare Python Worker package restrictions, this repository now includes a JavaScript Worker rewrite entrypoint for Cloudflare deploys:
+A JavaScript Worker rewrite is included for Cloudflare deploys:
 
 - Worker entry: `src/index.js`
 - Wrangler config: `wrangler.jsonc`
@@ -199,13 +206,6 @@ npx wrangler d1 execute right-db --remote --file=sql/bootstrap.sql
 
 # 4) Deploy Worker
 npx wrangler deploy --config wrangler.jsonc
-```
-
-Optional R2 bucket for uploads:
-
-```bash
-npx wrangler r2 bucket create right-uploads
-# Then set wrangler.jsonc r2_buckets binding (UPLOADS)
 ```
 
 #### Cloudflare API Endpoints

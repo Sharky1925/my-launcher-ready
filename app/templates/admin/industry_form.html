@@ -1,0 +1,54 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ 'Edit' if item else 'Add' }} Industry{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="post">
+      {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">Title *</label>
+          <input type="text" name="title" class="form-control" value="{{ item.title if item else '' }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Icon Class</label>
+          <input type="text" name="icon_class" class="form-control" value="{{ item.icon_class if item else 'fa-solid fa-building' }}">
+          <small class="text-muted">Font Awesome class</small>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Description *</label>
+          <textarea name="description" class="form-control" rows="3" required>{{ item.description if item else '' }}</textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Hero Description</label>
+          <textarea name="hero_description" class="form-control" rows="3">{{ item.hero_description if item else '' }}</textarea>
+          <small class="text-muted">Detailed description shown on the industry detail page.</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Challenges</label>
+          <textarea name="challenges" class="form-control" rows="4">{{ item.challenges if item else '' }}</textarea>
+          <small class="text-muted">Pipe-separated: challenge1|challenge2|challenge3</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Solutions</label>
+          <textarea name="solutions" class="form-control" rows="4">{{ item.solutions if item else '' }}</textarea>
+          <small class="text-muted">Pipe-separated: solution1|solution2|solution3</small>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Stats</label>
+          <textarea name="stats" class="form-control" rows="2">{{ item.stats if item else '' }}</textarea>
+          <small class="text-muted">Pipe-separated: label1:value1|label2:value2</small>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Sort Order</label>
+          <input type="number" name="sort_order" class="form-control" value="{{ item.sort_order if item else 0 }}">
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Industry</button>
+          <a href="{{ url_for('admin.industries') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

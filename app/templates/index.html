@@ -24,13 +24,13 @@
     <div class="row align-items-center">
       <div class="col-lg-6 hero-content">
         <div class="signal-strip" aria-hidden="true">
-          <span class="signal-pill">OC RESPONSE &lt; 2H</span>
-          <span class="signal-pill">24/7 MONITORING</span>
-          <span class="signal-pill">SECURITY-FIRST</span>
+          {% for pill in cb.get('signal_pills', {}).get('items', ['OC RESPONSE < 2H', '24/7 MONITORING', 'SECURITY-FIRST']) %}
+          <span class="signal-pill">{{ pill }}</span>
+          {% endfor %}
         </div>
-        <div class="hero-badge"><span class="pulse-dot"></span> Managed IT + Technical Repair for Orange County</div>
-        <h1>Managed IT Services &amp; Technical Repair Services <span class="gradient-text">in Orange County</span></h1>
-        <p class="lead">One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.</p>
+        <div class="hero-badge"><span class="pulse-dot"></span> {{ cb.get('hero', {}).get('badge', 'Managed IT + Technical Repair for Orange County') }}</div>
+        <h1>{{ cb.get('hero', {}).get('title', 'Managed IT Services & Technical Repair Services in Orange County') }}</h1>
+        <p class="lead">{{ cb.get('hero', {}).get('lead', 'One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.') }}</p>
         <div class="hero-buttons">
           <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Book Free Consultation</a>
           <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
@@ -54,49 +54,25 @@
     </div>
 
     <!-- Trust Signal Ticker -->
+    {% set trust_signals = cb.get('trust_signals', {}).get('items', []) %}
+    {% if trust_signals %}
     <div class="hero-service-crossing reveal" aria-label="Trust and compliance signals">
       <div class="hero-service-lane hero-service-lane--forward">
         <div class="hero-service-track">
-          {% set trust_signals = [
-            ('Microsoft Partner', 'fa-brands fa-microsoft'),
-            ('Google Workspace', 'fa-brands fa-google'),
-            ('Microsoft 365', 'fa-brands fa-microsoft'),
-            ('AWS Cloud', 'fa-brands fa-aws'),
-            ('Microsoft Azure', 'fa-solid fa-cloud'),
-            ('Google Cloud', 'fa-brands fa-google'),
-            ('Hybrid Cloud', 'fa-solid fa-cloud'),
-            ('Disaster Recovery', 'fa-solid fa-cloud'),
-            ('SOC 2 Compliant', 'fa-solid fa-shield-halved'),
-            ('Identity & MFA', 'fa-solid fa-shield-halved'),
-            ('Microsoft Intune', 'fa-solid fa-server'),
-            ('Microsoft Entra ID', 'fa-solid fa-shield-halved'),
-            ('Patch Management', 'fa-solid fa-server'),
-            ('Datto RMM', 'fa-solid fa-server'),
-            ('Veeam Backup', 'fa-solid fa-server'),
-            ('Cloudflare Security', 'fa-solid fa-shield-halved'),
-            ('Fortinet Firewall', 'fa-solid fa-shield-halved'),
-            ('SentinelOne EDR', 'fa-solid fa-shield-halved'),
-            ('CrowdStrike Falcon', 'fa-solid fa-shield-halved'),
-            ('Cisco Meraki', 'fa-solid fa-server'),
-            ('Ubiquiti UniFi', 'fa-solid fa-server'),
-            ('VMware vSphere', 'fa-solid fa-server'),
-            ('Compliance Audits', 'fa-solid fa-shield-halved'),
-            ('5-Star Rated', 'fa-solid fa-star'),
-            ('Certified Team', 'fa-solid fa-circle-check')
-          ] %}
-          {% for label, icon in trust_signals %}
+          {% for sig in trust_signals %}
           <span class="hero-service-pill" data-pill-delay="{{ loop.index0 * 170 }}">
-            <i class="{{ icon }}"></i> {{ label }}
+            <i class="{{ sig.icon }}"></i> {{ sig.label }}
           </span>
           {% endfor %}
-          {% for label, icon in trust_signals %}
+          {% for sig in trust_signals %}
           <span class="hero-service-pill" data-pill-delay="{{ loop.index0 * 170 }}">
-            <i class="{{ icon }}"></i> {{ label }}
+            <i class="{{ sig.icon }}"></i> {{ sig.label }}
           </span>
           {% endfor %}
         </div>
       </div>
     </div>
+    {% endif %}
   </div>
 </section>
 
@@ -104,9 +80,9 @@
 <section class="section" id="services">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-cube"></i> Services</div>
-      <h2>Everything Your Business Needs Under One Roof</h2>
-      <p>From proactive IT management to hands-on device repairs, we handle every layer of your technology.</p>
+      <div class="section-label"><i class="fa-solid fa-cube"></i> {{ cb.get('services_heading', {}).get('label', 'Services') }}</div>
+      <h2>{{ cb.get('services_heading', {}).get('title', 'Everything Your Business Needs Under One Roof') }}</h2>
+      <p>{{ cb.get('services_heading', {}).get('subtitle', 'From proactive IT management to hands-on device repairs, we handle every layer of your technology.') }}</p>
     </div>
     <div class="row g-4">
       {% set colors = ['blue','purple','green','amber','rose','cyan'] %}
@@ -141,9 +117,9 @@
 <section class="section section--alt" id="industries">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-building"></i> Industries</div>
-      <h2>Industry-Specific IT Support</h2>
-      <p>We tailor security, support, and technology strategy to how your industry works.</p>
+      <div class="section-label"><i class="fa-solid fa-building"></i> {{ cb.get('industries_heading', {}).get('label', 'Industries') }}</div>
+      <h2>{{ cb.get('industries_heading', {}).get('title', 'Industry-Specific IT Support') }}</h2>
+      <p>{{ cb.get('industries_heading', {}).get('subtitle', 'We tailor security, support, and technology strategy to how your industry works.') }}</p>
     </div>
     <div class="row g-4">
       {% for ind in nav_industries[:8] %}
@@ -167,64 +143,40 @@
 <section class="section">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-chart-line"></i> Results</div>
-      <h2>Measurable Impact for Local Businesses</h2>
+      <div class="section-label"><i class="fa-solid fa-chart-line"></i> {{ cb.get('stats', {}).get('label', 'Results') }}</div>
+      <h2>{{ cb.get('stats', {}).get('title', 'Measurable Impact for Local Businesses') }}</h2>
     </div>
     <div class="stat-grid reveal">
+      {% for s in cb.get('stats', {}).get('items', [{'value': '500+', 'title': 'Devices Managed', 'note': 'Across Orange County businesses'}, {'value': '99.9%', 'title': 'Uptime Target', 'note': 'Proactive monitoring & patching'}, {'value': '<2hr', 'title': 'Response Time', 'note': 'For critical support requests'}, {'value': '100%', 'title': 'Local Focus', 'note': 'Orange County businesses only'}]) %}
       <div class="stat-card">
-        <span class="stat-value">500+</span>
-        <h4>Devices Managed</h4>
-        <p class="stat-note">Across Orange County businesses</p>
+        <span class="stat-value">{{ s.value }}</span>
+        <h4>{{ s.title }}</h4>
+        <p class="stat-note">{{ s.note }}</p>
       </div>
-      <div class="stat-card">
-        <span class="stat-value">99.9%</span>
-        <h4>Uptime Target</h4>
-        <p class="stat-note">Proactive monitoring & patching</p>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">&lt;2hr</span>
-        <h4>Response Time</h4>
-        <p class="stat-note">For critical support requests</p>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">100%</span>
-        <h4>Local Focus</h4>
-        <p class="stat-note">Orange County businesses only</p>
-      </div>
+      {% endfor %}
     </div>
   </div>
 </section>
 
 <!-- How It Works — 3 Steps -->
+{% set hiw = cb.get('how_it_works', {}) %}
 <section class="section section--alt">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-diagram-project"></i> How It Works</div>
-      <h2>Get Started in Three Steps</h2>
-      <p>From first call to full coverage, we make the process simple and transparent.</p>
+      <div class="section-label"><i class="fa-solid fa-diagram-project"></i> {{ hiw.get('label', 'How It Works') }}</div>
+      <h2>{{ hiw.get('title', 'Get Started in Three Steps') }}</h2>
+      <p>{{ hiw.get('subtitle', 'From first call to full coverage, we make the process simple and transparent.') }}</p>
     </div>
     <div class="timeline-grid reveal">
-      <div class="timeline-card" data-delay="0">
-        <span class="process-icon">01</span>
+      {% for step in hiw.get('items', [{'title': 'Free Assessment', 'description': 'We review your current systems, devices, and pain points in a 30-minute call.'}, {'title': 'Custom Plan', 'description': 'You get a clear proposal with scope, pricing, and timeline — no guessing.'}, {'title': 'Ongoing Support', 'description': 'We onboard your team, start monitoring, and provide proactive support.'}]) %}
+      <div class="timeline-card" data-delay="{{ loop.index0 * 80 }}">
+        <span class="process-icon">{{ '%02d' | format(loop.index) }}</span>
         <div>
-          <h4>Free Assessment</h4>
-          <p>We review your current systems, devices, and pain points in a 30-minute call.</p>
+          <h4>{{ step.title }}</h4>
+          <p>{{ step.description }}</p>
         </div>
       </div>
-      <div class="timeline-card" data-delay="80">
-        <span class="process-icon">02</span>
-        <div>
-          <h4>Custom Plan</h4>
-          <p>You get a clear proposal with scope, pricing, and timeline — no guessing.</p>
-        </div>
-      </div>
-      <div class="timeline-card" data-delay="160">
-        <span class="process-icon">03</span>
-        <div>
-          <h4>Ongoing Support</h4>
-          <p>We onboard your team, start monitoring, and provide proactive support.</p>
-        </div>
-      </div>
+      {% endfor %}
     </div>
   </div>
 </section>
@@ -234,8 +186,8 @@
 <section class="section">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-star"></i> Testimonials</div>
-      <h2>Client Success Stories</h2>
+      <div class="section-label"><i class="fa-solid fa-star"></i> {{ cb.get('testimonials_heading', {}).get('label', 'Testimonials') }}</div>
+      <h2>{{ cb.get('testimonials_heading', {}).get('title', 'Client Success Stories') }}</h2>
     </div>
     <div class="row g-4">
       {% for t in testimonials %}
@@ -260,16 +212,16 @@
 {% endif %}
 
 <!-- Service Area / Local SEO -->
+{% set sa = cb.get('service_area', {}) %}
 <section class="section">
   <div class="container">
     <div class="section-heading text-center reveal">
-      <div class="section-label"><i class="fa-solid fa-location-dot"></i> Service Area</div>
-      <h2>IT Services Across Orange County</h2>
-      <p>On-site and remote support for businesses throughout the region.</p>
+      <div class="section-label"><i class="fa-solid fa-location-dot"></i> {{ sa.get('label', 'Service Area') }}</div>
+      <h2>{{ sa.get('title', 'IT Services Across Orange County') }}</h2>
+      <p>{{ sa.get('subtitle', 'On-site and remote support for businesses throughout the region.') }}</p>
     </div>
     <div class="chip-list chip-list-centered reveal">
-      {% set cities = ['Anaheim', 'Irvine', 'Santa Ana', 'Huntington Beach', 'Costa Mesa', 'Fullerton', 'Orange', 'Mission Viejo', 'Newport Beach', 'Laguna Beach', 'Tustin', 'Lake Forest', 'Buena Park', 'Garden Grove', 'Westminster', 'Yorba Linda', 'San Clemente', 'Dana Point', 'Rancho Santa Margarita', 'Aliso Viejo'] %}
-      {% for city in cities %}
+      {% for city in sa.get('cities', ['Anaheim', 'Irvine', 'Santa Ana', 'Huntington Beach', 'Costa Mesa', 'Fullerton', 'Orange', 'Mission Viejo', 'Newport Beach', 'Laguna Beach', 'Tustin', 'Lake Forest', 'Buena Park', 'Garden Grove', 'Westminster', 'Yorba Linda', 'San Clemente', 'Dana Point', 'Rancho Santa Margarita', 'Aliso Viejo']) %}
       <span class="chip"><i class="fa-solid fa-location-dot"></i> {{ city }}</span>
       {% endfor %}
     </div>
@@ -277,14 +229,15 @@
 </section>
 
 <!-- Final CTA -->
+{% set cta = cb.get('cta', {}) %}
 <section class="section">
   <div class="container">
     <div class="cta-strip reveal">
       <div class="cta-inner">
-        <h2>Ready To Fix Your IT?</h2>
-        <p>Schedule a free consultation or call us directly. No obligations, no pressure — just a clear plan for better IT.</p>
+        <h2>{{ cta.get('title', 'Ready To Fix Your IT?') }}</h2>
+        <p>{{ cta.get('subtitle', 'Schedule a free consultation or call us directly. No obligations, no pressure — just a clear plan for better IT.') }}</p>
         <div class="cta-actions">
-          <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-secondary"><i class="fa-solid fa-calendar-check"></i> Schedule a Meeting</a>
+          <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-secondary"><i class="fa-solid fa-calendar-check"></i> {{ cta.get('button_text', 'Schedule a Meeting') }}</a>
           {% if site_settings.get('phone') %}
           <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-ghost btn-ghost-light"><i class="fa-solid fa-phone"></i> {{ site_settings.phone }}</a>
           {% endif %}

@@ -31,9 +31,10 @@ class Service(db.Model):
     description = db.Column(db.Text, nullable=False)
     icon_class = db.Column(db.String(100), default='fa-solid fa-gear')
     image = db.Column(db.String(300))
-    service_type = db.Column(db.String(20), default='professional')  # 'professional' or 'repair'
-    is_featured = db.Column(db.Boolean, default=False)
+    service_type = db.Column(db.String(20), default='professional', index=True)  # 'professional' or 'repair'
+    is_featured = db.Column(db.Boolean, default=False, index=True)
     sort_order = db.Column(db.Integer, default=0)
+    profile_json = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
 
 
@@ -54,7 +55,7 @@ class Testimonial(db.Model):
     company = db.Column(db.String(200))
     content = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Integer, default=5)
-    is_featured = db.Column(db.Boolean, default=False)
+    is_featured = db.Column(db.Boolean, default=False, index=True)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
 
 
@@ -73,7 +74,7 @@ class Post(db.Model):
     content = db.Column(db.Text, nullable=False)
     featured_image = db.Column(db.String(300))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
-    is_published = db.Column(db.Boolean, default=False)
+    is_published = db.Column(db.Boolean, default=False, index=True)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
     updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
@@ -143,6 +144,19 @@ class Industry(db.Model):
     stats = db.Column(db.Text)       # pipe-separated: "label1:value1|label2:value2"
     sort_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+class ContentBlock(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    page = db.Column(db.String(50), nullable=False)
+    section = db.Column(db.String(80), nullable=False)
+    content = db.Column(db.Text, nullable=False, default='{}')
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
+
+    __table_args__ = (
+        db.UniqueConstraint('page', 'section', name='uq_content_block_page_section'),
+        db.Index('ix_content_block_page', 'page'),
+    )
 
 
 class SiteSetting(db.Model):

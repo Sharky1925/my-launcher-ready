@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta, timezone
-import ipaddress
+from datetime import timedelta
 import json
 import re
 import secrets
@@ -23,6 +22,7 @@ try:
         SecurityEvent,
     )
     from ..notifications import send_contact_notification, send_ticket_notification
+    from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, normalized_ip, get_request_ip, get_page_content
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     from models import (
         db,
@@ -39,11 +39,14 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SecurityEvent,
     )
     from notifications import send_contact_notification, send_ticket_notification
+    from utils import utc_now_naive, clean_text, escape_like, is_valid_email, normalized_ip, get_request_ip, get_page_content
 
 main_bp = Blueprint('main', __name__)
-EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 REMOTE_AUTH_LIMIT = 6
 REMOTE_AUTH_WINDOW_SECONDS = 300
+TICKET_CREATE_LIMIT = 20
+TICKET_CREATE_WINDOW_SECONDS = 3600
+TICKET_CREATE_SCOPE = 'ticket_create'
 
 TICKET_STATUS_LABELS = {
     'open': 'Open',
@@ -123,10 +126,6 @@ QUOTE_URGENCY_OPTIONS = {
 }
 CONTACT_FORM_SCOPE = 'contact_form'
 QUOTE_FORM_SCOPE = 'quote_form'
-
-
-def utc_now_naive():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 SERVICE_PROFILES = {
@@ -508,10 +507,6 @@ SERVICE_PROFILES = {
 }
 
 
-def clean_text(value, max_length=255):
-    return (value or '').strip()[:max_length]
-
-
 def normalize_icon_class(icon_class, fallback='fa-solid fa-circle'):
     fallback = fallback if ICON_CLASS_RE.match(fallback) else 'fa-solid fa-circle'
     raw = clean_text(str(icon_class or ''), 120)
@@ -539,29 +534,6 @@ def normalize_icon_attr(items, fallback):
     for item in items:
         item.icon_class = normalize_icon_class(getattr(item, 'icon_class', ''), fallback)
     return items
-
-
-def is_valid_email(value):
-    return bool(EMAIL_RE.match(value or ''))
-
-
-def normalized_ip(value):
-    candidate = (value or '').split(',', 1)[0].strip()
-    if not candidate:
-        return ''
-    try:
-        return str(ipaddress.ip_address(candidate))
-    except ValueError:
-        return ''
-
-
-def get_request_ip():
-    remote_ip = normalized_ip(request.remote_addr)
-    if current_app.config.get('TRUST_PROXY_HEADERS'):
-        forwarded_ip = normalized_ip(request.headers.get('X-Forwarded-For'))
-        if forwarded_ip:
-            return forwarded_ip
-    return remote_ip or 'unknown'
 
 
 def turnstile_enabled():
@@ -599,7 +571,25 @@ def verify_turnstile_response():
         return not current_app.config.get('TURNSTILE_ENFORCED', True)
 
 
+def _cleanup_expired_buckets():
+    """Periodically purge expired rate limit buckets to prevent table bloat."""
+    now = utc_now_naive()
+    try:
+        AuthRateLimitBucket.query.filter(AuthRateLimitBucket.reset_at < now).delete(synchronize_session=False)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+_cleanup_call_counter = 0
+
+
 def get_form_rate_limit_bucket(scope, window_seconds):
+    global _cleanup_call_counter
+    _cleanup_call_counter += 1
+    if _cleanup_call_counter % 50 == 0:
+        _cleanup_expired_buckets()
+
     ip = get_request_ip()
     now = utc_now_naive()
     bucket = AuthRateLimitBucket.query.filter_by(scope=scope, ip=ip).first()
@@ -778,7 +768,16 @@ def build_quote_ticket_details(payload):
 
 
 def get_service_profile(service):
-    profile = SERVICE_PROFILES.get(service.slug, {})
+    # Prefer DB-stored profile_json, fall back to hardcoded SERVICE_PROFILES
+    profile = {}
+    if service.profile_json:
+        try:
+            import json as _json
+            profile = _json.loads(service.profile_json)
+        except (ValueError, TypeError):
+            profile = {}
+    if not profile:
+        profile = SERVICE_PROFILES.get(service.slug, {})
     short_description = (service.description or '').strip()
     if len(short_description) > 220:
         short_description = f"{short_description[:217].rstrip()}..."
@@ -872,6 +871,8 @@ def index():
         'fa-solid fa-wrench'
     )
     testimonials = Testimonial.query.filter_by(is_featured=True).all()
+    cb = get_page_content('home')
+
     pro_slugs = {service.slug for service in pro_services}
     repair_slugs = {service.slug for service in repair_services}
 
@@ -880,40 +881,30 @@ def index():
             return url_for('main.service_detail', slug=slug)
         return url_for('main.services')
 
-    hero_cards = [
-        {
-            'title': 'Cloud',
-            'subtitle': 'AWS, Azure, and GCP',
-            'icon': 'fa-solid fa-cloud',
-            'color': 'blue',
-            'href': detail_or_services('cloud-solutions'),
-            'aria_label': 'Open Cloud Solutions service page',
-        },
-        {
-            'title': 'Security',
-            'subtitle': 'Zero Trust',
-            'icon': 'fa-solid fa-shield-halved',
-            'color': 'purple',
-            'href': detail_or_services('cybersecurity'),
-            'aria_label': 'Open Cybersecurity service page',
-        },
-        {
-            'title': 'Development',
-            'subtitle': 'Full-Stack Solutions',
-            'icon': 'fa-solid fa-code',
-            'color': 'green',
-            'href': detail_or_services('software-development'),
-            'aria_label': 'Open Software Development service page',
-        },
-        {
-            'title': 'Repair',
-            'subtitle': 'Certified Technicians',
-            'icon': 'fa-solid fa-laptop-medical',
-            'color': 'amber',
-            'href': f"{url_for('main.services')}#repair",
-            'aria_label': 'Open Technical Repair services',
-        },
-    ]
+    # Build hero cards from content blocks or use defaults
+    raw_hero_cards = cb.get('hero_cards', {}).get('items', [])
+    hero_cards = []
+    for card in raw_hero_cards:
+        slug = card.get('service_slug', '')
+        if slug:
+            href = detail_or_services(slug)
+        else:
+            href = f"{url_for('main.services')}#repair"
+        hero_cards.append({
+            'title': card.get('title', ''),
+            'subtitle': card.get('subtitle', ''),
+            'icon': card.get('icon', 'fa-solid fa-circle'),
+            'color': card.get('color', 'blue'),
+            'href': href,
+            'aria_label': f"Open {card.get('title', '')} service page",
+        })
+    if not hero_cards:
+        hero_cards = [
+            {'title': 'Cloud', 'subtitle': 'AWS, Azure, and GCP', 'icon': 'fa-solid fa-cloud', 'color': 'blue', 'href': detail_or_services('cloud-solutions'), 'aria_label': 'Open Cloud Solutions service page'},
+            {'title': 'Security', 'subtitle': 'Zero Trust', 'icon': 'fa-solid fa-shield-halved', 'color': 'purple', 'href': detail_or_services('cybersecurity'), 'aria_label': 'Open Cybersecurity service page'},
+            {'title': 'Development', 'subtitle': 'Full-Stack Solutions', 'icon': 'fa-solid fa-code', 'color': 'green', 'href': detail_or_services('software-development'), 'aria_label': 'Open Software Development service page'},
+            {'title': 'Repair', 'subtitle': 'Certified Technicians', 'icon': 'fa-solid fa-laptop-medical', 'color': 'amber', 'href': f"{url_for('main.services')}#repair", 'aria_label': 'Open Technical Repair services'},
+        ]
 
     return render_template(
         'index.html',
@@ -921,13 +912,15 @@ def index():
         repair_services=repair_services,
         testimonials=testimonials,
         hero_cards=hero_cards,
+        cb=cb,
     )
 
 
 @main_bp.route('/about')
 def about():
     team = TeamMember.query.order_by(TeamMember.sort_order).all()
-    return render_template('about.html', team=team)
+    cb = get_page_content('about')
+    return render_template('about.html', team=team, cb=cb)
 
 
 @main_bp.route('/services')
@@ -941,7 +934,8 @@ def services():
         Service.query.filter_by(service_type='repair').order_by(Service.sort_order).all(),
         'fa-solid fa-wrench'
     )
-    return render_template('services.html', pro_services=pro_services, repair_services=repair_services, active_type=service_type)
+    cb = get_page_content('services')
+    return render_template('services.html', pro_services=pro_services, repair_services=repair_services, active_type=service_type, cb=cb)
 
 
 @main_bp.route('/services/it-services')
@@ -980,7 +974,8 @@ def blog():
             query = query.filter_by(category_id=cat.id)
 
     if search:
-        query = query.filter(Post.title.ilike(f'%{search}%'))
+        safe_search = escape_like(search)
+        query = query.filter(Post.title.ilike(f'%{safe_search}%'))
 
     posts = query.order_by(Post.created_at.desc()).paginate(page=page, per_page=6, error_out=False)
     categories = Category.query.all()
@@ -1002,7 +997,8 @@ def industries():
         Industry.query.order_by(Industry.sort_order).all(),
         'fa-solid fa-building'
     )
-    return render_template('industries.html', industries=all_industries)
+    cb = get_page_content('industries')
+    return render_template('industries.html', industries=all_industries, cb=cb)
 
 
 @main_bp.route('/industries/<slug>')
@@ -1148,6 +1144,11 @@ def remote_support_create_ticket():
         flash('Please sign in to create a ticket.', 'danger')
         return redirect(url_for('main.remote_support'))
 
+    limited, seconds = is_form_rate_limited(TICKET_CREATE_SCOPE, TICKET_CREATE_LIMIT, TICKET_CREATE_WINDOW_SECONDS)
+    if limited:
+        flash(f'Too many ticket submissions. Please wait {seconds} seconds and try again.', 'danger')
+        return redirect(url_for('main.remote_support'))
+
     subject = clean_text(request.form.get('subject', ''), 300)
     service_slug = clean_text(request.form.get('service_slug', ''), 200)
     priority = clean_text(request.form.get('priority', 'normal'), 20).lower()
@@ -1163,6 +1164,8 @@ def remote_support_create_ticket():
 
     if service_slug and not Service.query.filter_by(slug=service_slug).first():
         service_slug = ''
+
+    register_form_submission_attempt(TICKET_CREATE_SCOPE, TICKET_CREATE_WINDOW_SECONDS)
 
     ticket = SupportTicket(
         ticket_number=generate_ticket_number(),
@@ -1395,4 +1398,5 @@ def contact():
         send_contact_notification(submission)
         flash('Thank you for your message! We will get back to you soon.', 'success')
         return redirect(url_for('main.contact'))
-    return render_template('contact.html')
+    cb = get_page_content('contact')
+    return render_template('contact.html', cb=cb)

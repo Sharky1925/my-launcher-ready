@@ -1,11 +1,12 @@
+import json
 import os
 import secrets
 from slugify import slugify
 
 try:
-    from .models import db, User, Service, TeamMember, Testimonial, Category, Post, SiteSetting, Industry
+    from .models import db, User, Service, TeamMember, Testimonial, Category, Post, SiteSetting, Industry, ContentBlock
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
-    from models import db, User, Service, TeamMember, Testimonial, Category, Post, SiteSetting, Industry
+    from models import db, User, Service, TeamMember, Testimonial, Category, Post, SiteSetting, Industry, ContentBlock
 
 
 def seed_database():
@@ -205,6 +206,198 @@ def seed_database():
             hero_description=ind['hero_description'],
             challenges=ind['challenges'], solutions=ind['solutions'],
             stats=ind['stats'], sort_order=i
+        ))
+
+    # Content blocks — default page content
+    content_blocks = {
+        ('home', 'hero'): {
+            'badge': 'Managed IT + Technical Repair for Orange County',
+            'title': 'Managed IT Services & Technical Repair Services in Orange County',
+            'lead': 'One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.',
+        },
+        ('home', 'signal_pills'): {
+            'items': ['OC RESPONSE < 2H', '24/7 MONITORING', 'SECURITY-FIRST'],
+        },
+        ('home', 'hero_cards'): {
+            'items': [
+                {'title': 'Cloud', 'subtitle': 'AWS, Azure, and GCP', 'icon': 'fa-solid fa-cloud', 'color': 'blue', 'service_slug': 'cloud-solutions'},
+                {'title': 'Security', 'subtitle': 'Zero Trust', 'icon': 'fa-solid fa-shield-halved', 'color': 'purple', 'service_slug': 'cybersecurity'},
+                {'title': 'Development', 'subtitle': 'Full-Stack Solutions', 'icon': 'fa-solid fa-code', 'color': 'green', 'service_slug': 'software-development'},
+                {'title': 'Repair', 'subtitle': 'Certified Technicians', 'icon': 'fa-solid fa-laptop-medical', 'color': 'amber', 'service_slug': ''},
+            ],
+        },
+        ('home', 'trust_signals'): {
+            'items': [
+                {'label': 'Microsoft Partner', 'icon': 'fa-brands fa-microsoft'},
+                {'label': 'Google Workspace', 'icon': 'fa-brands fa-google'},
+                {'label': 'Microsoft 365', 'icon': 'fa-brands fa-microsoft'},
+                {'label': 'AWS Cloud', 'icon': 'fa-brands fa-aws'},
+                {'label': 'Microsoft Azure', 'icon': 'fa-solid fa-cloud'},
+                {'label': 'Google Cloud', 'icon': 'fa-brands fa-google'},
+                {'label': 'Hybrid Cloud', 'icon': 'fa-solid fa-cloud'},
+                {'label': 'Disaster Recovery', 'icon': 'fa-solid fa-cloud'},
+                {'label': 'SOC 2 Compliant', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': 'Identity & MFA', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': 'Microsoft Intune', 'icon': 'fa-solid fa-server'},
+                {'label': 'Microsoft Entra ID', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': 'Patch Management', 'icon': 'fa-solid fa-server'},
+                {'label': 'Datto RMM', 'icon': 'fa-solid fa-server'},
+                {'label': 'Veeam Backup', 'icon': 'fa-solid fa-server'},
+                {'label': 'Cloudflare Security', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': 'Fortinet Firewall', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': 'SentinelOne EDR', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': 'CrowdStrike Falcon', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': 'Cisco Meraki', 'icon': 'fa-solid fa-server'},
+                {'label': 'Ubiquiti UniFi', 'icon': 'fa-solid fa-server'},
+                {'label': 'VMware vSphere', 'icon': 'fa-solid fa-server'},
+                {'label': 'Compliance Audits', 'icon': 'fa-solid fa-shield-halved'},
+                {'label': '5-Star Rated', 'icon': 'fa-solid fa-star'},
+                {'label': 'Certified Team', 'icon': 'fa-solid fa-circle-check'},
+            ],
+        },
+        ('home', 'services_heading'): {
+            'label': 'Services',
+            'title': 'Everything Your Business Needs Under One Roof',
+            'subtitle': 'From proactive IT management to hands-on device repairs, we handle every layer of your technology.',
+        },
+        ('home', 'industries_heading'): {
+            'label': 'Industries',
+            'title': 'Industry-Specific IT Support',
+            'subtitle': 'We tailor security, support, and technology strategy to how your industry works.',
+        },
+        ('home', 'stats'): {
+            'label': 'Results',
+            'title': 'Measurable Impact for Local Businesses',
+            'items': [
+                {'value': '500+', 'title': 'Devices Managed', 'note': 'Across Orange County businesses'},
+                {'value': '99.9%', 'title': 'Uptime Target', 'note': 'Proactive monitoring & patching'},
+                {'value': '<2hr', 'title': 'Response Time', 'note': 'For critical support requests'},
+                {'value': '100%', 'title': 'Local Focus', 'note': 'Orange County businesses only'},
+            ],
+        },
+        ('home', 'how_it_works'): {
+            'label': 'How It Works',
+            'title': 'Get Started in Three Steps',
+            'subtitle': 'From first call to full coverage, we make the process simple and transparent.',
+            'items': [
+                {'title': 'Free Assessment', 'description': 'We review your current systems, devices, and pain points in a 30-minute call.'},
+                {'title': 'Custom Plan', 'description': 'You get a clear proposal with scope, pricing, and timeline \u2014 no guessing.'},
+                {'title': 'Ongoing Support', 'description': 'We onboard your team, start monitoring, and provide proactive support.'},
+            ],
+        },
+        ('home', 'testimonials_heading'): {
+            'label': 'Testimonials',
+            'title': 'Client Success Stories',
+        },
+        ('home', 'service_area'): {
+            'label': 'Service Area',
+            'title': 'IT Services Across Orange County',
+            'subtitle': 'On-site and remote support for businesses throughout the region.',
+            'cities': ['Anaheim', 'Irvine', 'Santa Ana', 'Huntington Beach', 'Costa Mesa', 'Fullerton', 'Orange', 'Mission Viejo', 'Newport Beach', 'Laguna Beach', 'Tustin', 'Lake Forest', 'Buena Park', 'Garden Grove', 'Westminster', 'Yorba Linda', 'San Clemente', 'Dana Point', 'Rancho Santa Margarita', 'Aliso Viejo'],
+        },
+        ('home', 'cta'): {
+            'title': 'Ready To Fix Your IT?',
+            'subtitle': 'Schedule a free consultation or call us directly. No obligations, no pressure \u2014 just a clear plan for better IT.',
+            'button_text': 'Schedule a Meeting',
+        },
+        ('about', 'header'): {
+            'title': 'About Us',
+            'subtitle': 'Pioneering IT excellence since 2015.',
+        },
+        ('about', 'story'): {
+            'label': 'Our Story',
+            'title': 'Building the Future of IT',
+            'text': 'Founded in 2015, Right On Repair began with a simple belief: every business deserves world-class technology. Today, we serve 500+ clients with a team of 50+ certified professionals.',
+        },
+        ('about', 'metrics'): {
+            'items': [
+                {'value': '500+', 'label': 'Local Clients'},
+                {'value': '50+', 'label': 'IT Specialists'},
+                {'value': '99.9%', 'label': 'Uptime SLA'},
+                {'value': '24/7', 'label': 'Expert Support'},
+            ],
+        },
+        ('about', 'milestones'): {
+            'label': 'Milestones',
+            'title': 'Our Journey',
+            'subtitle': 'Key moments that shaped who we are today.',
+            'items': [
+                {'year': '2015', 'title': 'Founded', 'description': 'Started as a small IT consultancy with a vision to make enterprise technology accessible.', 'icon': 'fa-solid fa-rocket'},
+                {'year': '2018', 'title': '100 Clients', 'description': 'Expanded to managed services and cybersecurity, reaching our first 100 clients.', 'icon': 'fa-solid fa-users'},
+                {'year': '2021', 'title': 'Repair Division', 'description': 'Launched certified hardware repair and data recovery services.', 'icon': 'fa-solid fa-award'},
+                {'year': '2024', 'title': '500+ Clients', 'description': 'Serving Orange County businesses with a team of 50+ certified professionals.', 'icon': 'fa-solid fa-globe'},
+            ],
+        },
+        ('about', 'values'): {
+            'label': 'Our Values',
+            'title': 'What Drives Us',
+            'items': [
+                {'title': 'Innovation', 'description': 'Cutting-edge solutions for a competitive edge.', 'icon': 'fa-solid fa-lightbulb', 'color': 'blue'},
+                {'title': 'Security', 'description': 'Protection embedded in every layer.', 'icon': 'fa-solid fa-shield-halved', 'color': 'purple'},
+                {'title': 'Partnership', 'description': 'Long-term relationships aligned with your goals.', 'icon': 'fa-solid fa-handshake', 'color': 'green'},
+                {'title': 'Excellence', 'description': 'Highest standards of quality and professionalism.', 'icon': 'fa-solid fa-medal', 'color': 'amber'},
+            ],
+        },
+        ('about', 'cta'): {
+            'title': 'Want to Join Our Team?',
+            'subtitle': "We're looking for talented people who share our passion for technology.",
+        },
+        ('services', 'header'): {
+            'title': 'Our Services',
+            'subtitle': 'End-to-end technology solutions for modern businesses.',
+        },
+        ('services', 'professional_heading'): {
+            'label': 'Professional IT',
+            'title': 'Strategic Technology Solutions',
+        },
+        ('services', 'repair_heading'): {
+            'label': 'Technical Repair',
+            'title': 'Expert Repair & Recovery',
+        },
+        ('services', 'cta'): {
+            'title': 'Need Remote Support or a Quote?',
+            'subtitle': 'Choose remote assistance or request scoped pricing for your business.',
+        },
+        ('industries', 'header'): {
+            'title': 'Industries We Serve',
+            'subtitle': 'Tailored technology solutions for every sector.',
+        },
+        ('industries', 'grid_heading'): {
+            'label': 'Sectors',
+            'title': 'Technology Built for Your Industry',
+            'subtitle': 'We understand the unique challenges of your sector and deliver solutions that drive results.',
+        },
+        ('industries', 'expertise'): {
+            'label': 'Why It Matters',
+            'title': 'Industry-Specific Expertise',
+            'text': 'Generic IT fails. We build solutions shaped by deep industry knowledge \u2014 compliance, workflows, and growth patterns unique to your sector.',
+            'items': [
+                {'title': 'Compliance-First', 'description': 'HIPAA, PCI DSS, FERPA \u2014 built in, not bolted on.', 'icon': 'fa-solid fa-shield-halved'},
+                {'title': 'Data-Driven', 'description': 'Analytics tailored to your industry KPIs.', 'icon': 'fa-solid fa-chart-line'},
+                {'title': 'Scalable', 'description': 'Architecture that grows with your business.', 'icon': 'fa-solid fa-arrows-rotate'},
+                {'title': '24/7 Support', 'description': 'Round-the-clock expert assistance.', 'icon': 'fa-solid fa-headset'},
+            ],
+        },
+        ('industries', 'cta'): {
+            'title': "Don't See Your Industry?",
+            'subtitle': "We work across all sectors. Let's discuss your unique technology needs.",
+        },
+        ('contact', 'header'): {
+            'title': 'Get in Touch',
+            'subtitle': "We'd love to hear from you.",
+        },
+        ('contact', 'support_hours'): {
+            'text': '24/7 \u2014 365 days',
+        },
+        ('footer', 'service_area'): {
+            'description': 'On-site and remote support for businesses throughout Orange County.',
+            'cities': ['Anaheim', 'Irvine', 'Santa Ana', 'Huntington Beach', 'Costa Mesa', 'Fullerton', 'Orange', 'Mission Viejo', 'Newport Beach', 'Laguna Beach', 'Tustin', 'Lake Forest'],
+        },
+    }
+    for (page, section), data in content_blocks.items():
+        db.session.add(ContentBlock(
+            page=page, section=section,
+            content=json.dumps(data, ensure_ascii=False),
         ))
 
     db.session.commit()

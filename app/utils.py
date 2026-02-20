@@ -1,5 +1,6 @@
 """Shared utility functions used across route modules."""
 import ipaddress
+import json
 import re
 from datetime import datetime, timezone
 
@@ -39,3 +40,16 @@ def get_request_ip():
     # request.remote_addr is proxy-aware when ProxyFix is enabled by app config.
     remote_ip = normalized_ip(request.remote_addr)
     return remote_ip or 'unknown'
+
+
+def get_page_content(page):
+    """Load all ContentBlock entries for a page, return dict of section -> parsed JSON."""
+    from .models import ContentBlock
+    blocks = ContentBlock.query.filter_by(page=page).all()
+    result = {}
+    for block in blocks:
+        try:
+            result[block.section] = json.loads(block.content)
+        except (json.JSONDecodeError, TypeError):
+            result[block.section] = {}
+    return result

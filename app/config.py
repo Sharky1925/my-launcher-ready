@@ -66,7 +66,6 @@ class Config:
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
     REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
-    ALLOW_IFRAME_EMBED = _as_bool(os.environ.get('ALLOW_IFRAME_EMBED'), False)
     TRUST_PROXY_HEADERS = _as_bool(os.environ.get('TRUST_PROXY_HEADERS'), False)
     PREFERRED_URL_SCHEME = os.environ.get('PREFERRED_URL_SCHEME') or ('https' if SESSION_COOKIE_SECURE else 'http')
     APP_BASE_URL = (os.environ.get('APP_BASE_URL') or '').rstrip('/')

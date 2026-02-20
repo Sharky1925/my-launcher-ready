@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Page Content{% endblock %}
+{% block content %}
+<p class="text-muted mb-4">Edit text, headings, and section content across your public pages.</p>
+<div class="row g-4">
+  {% for page, sections in pages.items() %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header"><h6 class="mb-0" style="text-transform:capitalize">{{ page }}</h6></div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush" style="background:transparent">
+          {% for s in sections %}
+          <li class="list-group-item d-flex justify-content-between align-items-center" style="background:transparent;border-color:var(--border)">
+            <span style="font-size:.85rem">{{ s.label }}</span>
+            <a href="{{ url_for('admin.content_edit', page=page, section=s.section) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

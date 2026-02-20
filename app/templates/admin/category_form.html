@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Edit Category{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <form method="post">
+      {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label">Name *</label>
+          <input type="text" name="name" class="form-control" value="{{ item.name }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Current Slug</label>
+          <input type="text" class="form-control" value="{{ item.slug }}" disabled>
+          <small class="text-muted">Slug will be regenerated from the name.</small>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Update Category</button>
+          <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
