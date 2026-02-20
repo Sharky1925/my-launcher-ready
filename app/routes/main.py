@@ -901,11 +901,11 @@ def index():
     if not hero_cards:
         hero_cards = [
             {'title': 'Cloud', 'subtitle': 'AWS, Azure, and GCP', 'icon': 'fa-solid fa-cloud', 'color': 'blue', 'href': detail_or_services('cloud-solutions'), 'aria_label': 'Open Cloud Solutions service page'},
-            {'title': 'Cybersecurity', 'subtitle': 'Zero Trust', 'icon': 'fa-solid fa-shield-halved', 'color': 'purple', 'href': detail_or_services('cybersecurity'), 'aria_label': 'Open Cybersecurity service page'},
-            {'title': 'Development', 'subtitle': 'Full-Stack Solutions', 'icon': 'fa-solid fa-code', 'color': 'green', 'href': detail_or_services('software-development'), 'aria_label': 'Open Software Development service page'},
+            {'title': 'Cybersecurity', 'subtitle': 'Threat Defense', 'icon': 'fa-solid fa-lock', 'color': 'purple', 'href': detail_or_services('cybersecurity'), 'aria_label': 'Open Cybersecurity service page'},
+            {'title': 'Software & Web Development', 'subtitle': 'Full-Stack Solutions', 'icon': 'fa-solid fa-code', 'color': 'green', 'href': detail_or_services('software-development'), 'aria_label': 'Open Software & Web Development service page'},
             {'title': 'Technical Repair', 'subtitle': 'Certified Technicians', 'icon': 'fa-solid fa-laptop-medical', 'color': 'amber', 'href': f"{url_for('main.services')}#repair", 'aria_label': 'Open Technical Repair services'},
-            {'title': 'Managed IT Solutions', 'subtitle': 'Proactive Support', 'icon': 'fa-solid fa-server', 'color': 'cyan', 'href': detail_or_services('managed-it-services'), 'aria_label': 'Open Managed IT Solutions service page'},
-            {'title': 'Enterprise Consultant', 'subtitle': 'Strategic Advisory', 'icon': 'fa-solid fa-user-tie', 'color': 'rose', 'href': url_for('main.contact', subject='Enterprise Consultation'), 'aria_label': 'Open Enterprise Consultant page'},
+            {'title': 'Managed IT Solutions', 'subtitle': 'Proactive Support', 'icon': 'fa-solid fa-network-wired', 'color': 'cyan', 'href': detail_or_services('managed-it-services'), 'aria_label': 'Open Managed IT Solutions service page'},
+            {'title': 'Enterprise Consultancy', 'subtitle': 'Strategic Advisory', 'icon': 'fa-solid fa-handshake', 'color': 'rose', 'href': url_for('main.contact', subject='Enterprise Consultancy'), 'aria_label': 'Open Enterprise Consultancy page'},
         ]
 
     return render_template(
