@@ -480,6 +480,7 @@ p { margin: 0 0 16px; }
   gap: 8px;
   order: 2;
   margin-left: auto;
+  padding-left: 28px;
 }
 
 /* Mobile CTA buttons inside collapse */

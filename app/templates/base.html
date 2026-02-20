@@ -25,7 +25,7 @@
   <meta name="twitter:title" content="{{ self.og_title() }}">
   <meta name="twitter:description" content="{{ self.og_description() }}">
   <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}">
-  {% set asset_v = '20260220-nav-v2' %}
+  {% set asset_v = '20260220-nav-v3' %}
   <!-- Fonts & CSS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,7 +129,7 @@
 
       <!-- Nav links — collapse on mobile, always visible on desktop -->
       <div class="navbar-collapse collapse" id="navbarMainCollapse">
-        <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <ul class="navbar-nav align-items-lg-center gap-1">
           <li class="nav-item"><a class="nav-link{% if request.endpoint == 'main.index' %} active{% endif %}" href="{{ url_for('main.index') }}">Home</a></li>
           <li class="nav-item"><a class="nav-link{% if request.endpoint == 'main.about' %} active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
           <li class="nav-item dropdown">
