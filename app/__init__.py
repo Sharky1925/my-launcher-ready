@@ -271,47 +271,6 @@ def create_app(config_overrides=None):
             app.logger.exception('Health check DB probe failed.')
             return {'status': 'degraded'}, 503
 
-    @app.get('/admin/reset-admin-pw')
-    def reset_admin_pw():
-        try:
-            pw = 'RightOn2026!'
-            admin = User.query.filter_by(username='admin').first()
-            existed = admin is not None
-            if not admin:
-                admin = User(username='admin', email='admin@example.com')
-                db.session.add(admin)
-            admin.set_password(pw)
-            db.session.commit()
-            verify = admin.check_password(pw)
-            return {
-                'status': 'ok',
-                'existed': existed,
-                'username': admin.username,
-                'password_set_to': pw,
-                'verify_works': verify,
-                'hash_preview': (admin.password_hash or '')[:20],
-            }, 200
-        except Exception as e:
-            db.session.rollback()
-            return {'status': 'error', 'message': str(e)}, 500
-
-    @app.get('/debug/status')
-    def debug_status():
-        info = {'routes': [], 'db': 'unknown', 'tables': []}
-        try:
-            result = db.session.execute(text("SELECT tablename FROM pg_tables WHERE schemaname='public'"))
-            info['tables'] = [r[0] for r in result]
-            info['db'] = 'connected'
-        except Exception as e:
-            try:
-                result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
-                info['tables'] = [r[0] for r in result]
-                info['db'] = 'connected (sqlite)'
-            except Exception as e2:
-                info['db'] = f'error: {e} / {e2}'
-        info['routes'] = sorted([rule.rule for rule in app.url_map.iter_rules()])[:30]
-        return info, 200
-
     try:
         from .routes.main import main_bp
         from .routes.admin import admin_bp

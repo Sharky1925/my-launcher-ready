@@ -458,6 +458,7 @@
       <a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}"><i class="fa-solid fa-shield-halved"></i>Security Events</a>
       <div class="sidebar-sep"></div>
       <a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}"><i class="fa-solid fa-file-pen"></i>Page Content</a>
+      <a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_add', 'admin.user_edit'] %}active{% endif %}" href="{{ url_for('admin.users') }}"><i class="fa-solid fa-user-shield"></i>Admin Users</a>
       <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}"><i class="fa-solid fa-sliders"></i>Settings</a>
       <div class="sidebar-sep"></div>
       <a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i>View Site</a>
@@ -485,6 +486,7 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.support_tickets', 'admin.support_ticket_view'] %}active{% endif %}" href="{{ url_for('admin.support_tickets') }}">Support Tickets</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}">Security Events</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}">Page Content</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_add', 'admin.user_edit'] %}active{% endif %}" href="{{ url_for('admin.users') }}">Admin Users</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Settings</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener">View Site</a></li>
           <li class="nav-item"><form method="POST" action="{{ url_for('admin.logout') }}" style="display:contents">{{ csrf_input() }}<button type="submit" class="nav-link" style="border:none;background:none;cursor:pointer;width:100%;text-align:left;">Logout</button></form></li>

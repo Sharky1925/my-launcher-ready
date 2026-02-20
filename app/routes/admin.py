@@ -843,6 +843,90 @@ def settings():
     return render_template('admin/settings.html', settings=settings_dict)
 
 
+# Admin Users
+@admin_bp.route('/users')
+@login_required
+def users():
+    items = User.query.order_by(User.created_at).all()
+    return render_template('admin/users.html', items=items)
+
+
+@admin_bp.route('/users/add', methods=['GET', 'POST'])
+@login_required
+def user_add():
+    if request.method == 'POST':
+        username = clean_text(request.form.get('username', ''), 80)
+        email = clean_text(request.form.get('email', ''), 120)
+        password = request.form.get('password', '')
+        if not username or not email or not password:
+            flash('Username, email, and password are required.', 'danger')
+            return render_template('admin/user_form.html', user=None)
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'danger')
+            return render_template('admin/user_form.html', user=None)
+        if not is_valid_email(email):
+            flash('Please provide a valid email address.', 'danger')
+            return render_template('admin/user_form.html', user=None)
+        existing = User.query.filter((User.username == username) | (User.email == email)).first()
+        if existing:
+            flash('Username or email already exists.', 'danger')
+            return render_template('admin/user_form.html', user=None)
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        flash(f'Admin user "{username}" created.', 'success')
+        return redirect(url_for('admin.users'))
+    return render_template('admin/user_form.html', user=None)
+
+
+@admin_bp.route('/users/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def user_edit(id):
+    user = db.session.get(User, id)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin.users'))
+    if request.method == 'POST':
+        email = clean_text(request.form.get('email', ''), 120)
+        password = request.form.get('password', '')
+        if email and not is_valid_email(email):
+            flash('Please provide a valid email address.', 'danger')
+            return render_template('admin/user_form.html', user=user)
+        if email:
+            dup = User.query.filter(User.email == email, User.id != user.id).first()
+            if dup:
+                flash('Email already in use by another user.', 'danger')
+                return render_template('admin/user_form.html', user=user)
+            user.email = email
+        if password:
+            if len(password) < 6:
+                flash('Password must be at least 6 characters.', 'danger')
+                return render_template('admin/user_form.html', user=user)
+            user.set_password(password)
+        db.session.commit()
+        flash(f'User "{user.username}" updated.', 'success')
+        return redirect(url_for('admin.users'))
+    return render_template('admin/user_form.html', user=user)
+
+
+@admin_bp.route('/users/<int:id>/delete', methods=['POST'])
+@login_required
+def user_delete(id):
+    user = db.session.get(User, id)
+    if not user:
+        flash('User not found.', 'danger')
+    elif user.id == current_user.id:
+        flash('You cannot delete your own account.', 'danger')
+    elif User.query.count() <= 1:
+        flash('Cannot delete the last admin user.', 'danger')
+    else:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User "{user.username}" deleted.', 'success')
+    return redirect(url_for('admin.users'))
+
+
 # Contacts
 @admin_bp.route('/contacts')
 @login_required

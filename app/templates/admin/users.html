@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Admin Users{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Admin Users</h2>
+  <a href="{{ url_for('admin.user_add') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add User</a>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-dark table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Created</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in items %}
+      <tr>
+        <td><i class="fa-solid fa-user-shield me-2 text-info"></i>{{ user.username }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '—' }}</td>
+        <td class="text-end">
+          <a href="{{ url_for('admin.user_edit', id=user.id) }}" class="btn btn-sm btn-outline-light me-1"><i class="fa-solid fa-pen"></i></a>
+          {% if user.id != current_user.id %}
+          <form method="POST" action="{{ url_for('admin.user_delete', id=user.id) }}" style="display:inline" onsubmit="return confirm('Delete user {{ user.username }}?')">
+            {{ csrf_input() }}
+            <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
