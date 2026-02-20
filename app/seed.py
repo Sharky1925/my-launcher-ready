@@ -221,9 +221,11 @@ def seed_database():
         ('home', 'hero_cards'): {
             'items': [
                 {'title': 'Cloud', 'subtitle': 'AWS, Azure, and GCP', 'icon': 'fa-solid fa-cloud', 'color': 'blue', 'service_slug': 'cloud-solutions'},
-                {'title': 'Security', 'subtitle': 'Zero Trust', 'icon': 'fa-solid fa-shield-halved', 'color': 'purple', 'service_slug': 'cybersecurity'},
+                {'title': 'Cybersecurity', 'subtitle': 'Zero Trust', 'icon': 'fa-solid fa-shield-halved', 'color': 'purple', 'service_slug': 'cybersecurity'},
                 {'title': 'Development', 'subtitle': 'Full-Stack Solutions', 'icon': 'fa-solid fa-code', 'color': 'green', 'service_slug': 'software-development'},
-                {'title': 'Repair', 'subtitle': 'Certified Technicians', 'icon': 'fa-solid fa-laptop-medical', 'color': 'amber', 'service_slug': ''},
+                {'title': 'Technical Repair', 'subtitle': 'Certified Technicians', 'icon': 'fa-solid fa-laptop-medical', 'color': 'amber', 'service_slug': ''},
+                {'title': 'Managed IT Solutions', 'subtitle': 'Proactive Support', 'icon': 'fa-solid fa-server', 'color': 'cyan', 'service_slug': 'managed-it-services'},
+                {'title': 'Enterprise Consultant', 'subtitle': 'Strategic Advisory', 'icon': 'fa-solid fa-user-tie', 'color': 'rose', 'service_slug': ''},
             ],
         },
         ('home', 'trust_signals'): {

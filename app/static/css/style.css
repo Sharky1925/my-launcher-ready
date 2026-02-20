@@ -813,8 +813,8 @@ p { margin: 0 0 16px; }
 }
 .hero-visual-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(160px, 1fr));
-  gap: clamp(12px, 1.6vw, 16px);
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: clamp(10px, 1.4vw, 14px);
   width: 100%;
   position: relative;
   z-index: 2;
@@ -823,8 +823,8 @@ p { margin: 0 0 16px; }
   background: rgba(14, 22, 35, 0.92);
   backdrop-filter: blur(18px);
   border: 1px solid var(--border); border-radius: var(--radius-md);
-  padding: clamp(20px, 2.4vw, 28px) clamp(14px, 2vw, 20px);
-  min-height: clamp(160px, 18vw, 210px);
+  padding: clamp(16px, 2vw, 22px) clamp(12px, 1.6vw, 16px);
+  min-height: clamp(130px, 14vw, 170px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2910,8 +2910,8 @@ p { margin: 0 0 16px; }
   .hero h1 { font-size: 2rem; }
   .hero-content { padding: 24px; }
   .hero-visual { margin-top: 20px; }
-  .hero-visual-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .hero-icon-card { min-height: 150px; }
+  .hero-visual-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .hero-icon-card { min-height: 130px; }
   .section { padding: 60px 0; }
   .cta-section { margin: 0; border-radius: 0; }
   .cta-strip { border-radius: var(--radius-md); }
@@ -2997,8 +2997,8 @@ p { margin: 0 0 16px; }
   }
   .cta-actions .btn { width: 100%; min-width: 0; }
   .hero-visual { margin-top: 16px; }
-  .hero-visual-grid { grid-template-columns: 1fr; }
-  .hero-icon-card { min-height: 0; padding: 18px 14px; }
+  .hero-visual-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .hero-icon-card { min-height: 0; padding: 14px 10px; }
   .service-card .card-link {
     width: 100%;
     justify-content: space-between;
