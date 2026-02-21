@@ -296,26 +296,58 @@ p { margin: 0 0 16px; }
   background: none !important; border: none !important; border-radius: 0 !important;
   box-shadow: none !important; outline: none;
   transform: translateZ(0);
-  transition: color .32s var(--ease-smooth), text-shadow .32s var(--ease-smooth);
+  transition: color .35s var(--ease-smooth), text-shadow .35s var(--ease-smooth);
   position: relative;
 }
+/* Underline glow bar */
+.navbar-main .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: opacity .35s var(--ease-smooth), transform .35s var(--ease-smooth), box-shadow .35s var(--ease-smooth);
+}
 .navbar-main .nav-link:hover {
-  color: #7ba6ff;
-  text-shadow: 0 0 18px rgba(123, 166, 255, 0.45);
+  color: #8dccff;
+  text-shadow: 0 0 20px rgba(100, 180, 255, 0.50), 0 0 40px rgba(80, 160, 255, 0.20);
   background: none !important; border: none !important; box-shadow: none !important;
+}
+.navbar-main .nav-link:hover::after {
+  opacity: 1;
+  transform: scaleX(1);
+  box-shadow: 0 0 12px rgba(79, 172, 254, 0.50), 0 0 24px rgba(0, 242, 254, 0.25);
 }
 .navbar-main .nav-link.active,
 .navbar-main .nav-item.dropdown.show > .nav-link {
-  color: #9ac4ff;
-  text-shadow: 0 0 22px rgba(154, 196, 255, 0.5);
+  color: #a0d4ff;
+  text-shadow: 0 0 22px rgba(160, 212, 255, 0.55), 0 0 44px rgba(100, 180, 255, 0.20);
   background: none !important; border: none !important; box-shadow: none !important;
+}
+.navbar-main .nav-link.active::after,
+.navbar-main .nav-item.dropdown.show > .nav-link::after {
+  opacity: 1;
+  transform: scaleX(1);
+  box-shadow: 0 0 12px rgba(79, 172, 254, 0.50), 0 0 24px rgba(0, 242, 254, 0.25);
 }
 .navbar-main .nav-link:focus-visible {
   outline: 2px solid rgba(133, 180, 255, 0.86);
   outline-offset: 2px;
 }
-/* Hide Bootstrap default caret */
-.navbar-main .dropdown-toggle::after { display: none; }
+/* Override Bootstrap caret — our ::after is the glow bar, so reset caret visuals */
+.navbar-main .dropdown-toggle::after {
+  border: none;
+  margin: 0;
+  vertical-align: initial;
+  width: auto;
+  display: block;
+}
 /* Stylish dropdown arrow */
 .navbar-main .nav-link.dropdown-toggle {
   padding-right: 28px !important;
@@ -3417,6 +3449,13 @@ p { margin: 0 0 16px; }
     width: 100%;
     border-radius: 12px;
     padding: 10px 14px !important;
+  }
+  .navbar-main .nav-link::after {
+    display: none;
+  }
+  .navbar-main .nav-link:hover,
+  .navbar-main .nav-link.active {
+    background: rgba(79, 172, 254, 0.08) !important;
   }
   .navbar-main .nav-link.dropdown-toggle {
     padding-right: 32px !important;
