@@ -145,30 +145,8 @@
     });
   }
 
-  // --- Desktop dropdown hover for nav menus ---
+  // --- Desktop dropdown: click-to-open (no hover) ---
   const dropdownItems = document.querySelectorAll('.navbar-main .nav-item.dropdown');
-  if (dropdownItems.length && window.bootstrap?.Dropdown) {
-    const desktopMedia = window.matchMedia('(min-width: 992px)');
-    const bindDropdownHover = () => {
-      dropdownItems.forEach((item) => {
-        const toggle = item.querySelector('.dropdown-toggle');
-        if (!toggle) return;
-        const dropdown = window.bootstrap.Dropdown.getOrCreateInstance(toggle);
-
-        item.addEventListener('mouseenter', () => {
-          if (!desktopMedia.matches) return;
-          dropdown.show();
-        });
-
-        item.addEventListener('mouseleave', () => {
-          if (!desktopMedia.matches) return;
-          dropdown.hide();
-        });
-      });
-    };
-
-    bindDropdownHover();
-  }
 
   // --- Fallback dropdown toggle if Bootstrap dropdown JS is unavailable ---
   if (dropdownItems.length && !window.bootstrap?.Dropdown) {
