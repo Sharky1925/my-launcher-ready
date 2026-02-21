@@ -1114,9 +1114,9 @@ def remote_support_register():
     password = request.form.get('password', '')
     confirm_password = request.form.get('confirm_password', '')
 
-    if not full_name or not email or not password:
+    if not full_name or not email or not phone or not password:
         register_remote_auth_failure()
-        flash('Name, email, and password are required.', 'danger')
+        flash('Name, email, phone, and password are required.', 'danger')
         return redirect(url_for('main.remote_support'))
 
     if not is_valid_email(email):
@@ -1319,6 +1319,8 @@ def request_quote():
             required_missing.append('full name')
         if not email:
             required_missing.append('email')
+        if not phone:
+            required_missing.append('phone')
         if not primary_service_slug:
             required_missing.append('primary service')
         if not business_goals:
@@ -1463,6 +1465,8 @@ def request_quote_personal():
             required_missing.append('full name')
         if not email:
             required_missing.append('email')
+        if not phone:
+            required_missing.append('phone')
         if not service_slug:
             required_missing.append('service needed')
         if not preferred_contact:
@@ -1550,8 +1554,8 @@ def contact():
         subject = clean_text(request.form.get('subject', ''), 300)
         message = clean_text(request.form.get('message', ''), 5000)
 
-        if not name or not email or not message:
-            flash('Name, email, and message are required.', 'danger')
+        if not name or not email or not phone or not message:
+            flash('Name, email, phone, and message are required.', 'danger')
             return redirect(url_for('main.contact'))
         if not is_valid_email(email):
             flash('Please provide a valid email address.', 'danger')
