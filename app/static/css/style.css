@@ -328,10 +328,17 @@ p { margin: 0 0 16px; }
   transform-origin: center;
   transition: opacity .35s var(--ease-smooth), transform .35s var(--ease-smooth), box-shadow .35s var(--ease-smooth);
 }
-/* Hide Bootstrap caret — we use ::before for our arrow */
+/* Dropdown toggle — repurpose ::after as glow bar; Bootstrap caret killed by border:none above */
 .navbar-main .dropdown-toggle::after {
-  content: none !important;
-  display: none !important;
+  content: '' !important;
+  display: block !important;
+  margin-left: 0 !important;
+  vertical-align: initial !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-left: none !important;
+  border-bottom: none !important;
+  right: 28px;
 }
 .navbar-main .nav-link:hover,
 .navbar-main .nav-link:hover:link,
@@ -366,6 +373,7 @@ p { margin: 0 0 16px; }
 .navbar-main .nav-link:focus-visible {
   outline: 2px solid rgba(133, 180, 255, 0.86) !important;
   outline-offset: 2px;
+  box-shadow: none !important;
 }
 /* Stylish dropdown arrow via ::before */
 .navbar-main .nav-link.dropdown-toggle {
