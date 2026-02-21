@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Request a Quote - {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
-{% block meta_description %}Request a detailed IT services quote. Submit project scope, priorities, timeline, and technical requirements directly into our CMS ticket workflow.{% endblock %}
+{% block meta_description %}Request a free IT services quote — personal device repair or full business solutions. Submit your project scope, priorities, and requirements and receive a scoped proposal fast.{% endblock %}
 {% block og_title %}Request a Quote - {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
-{% block og_description %}Submit a detailed project intake form and route it directly into the CMS support ticket queue.{% endblock %}
+{% block og_description %}Get a quote for personal device repair, home setup, or full business IT solutions. Two paths — one fast, easy intake process.{% endblock %}
 {% block meta_keywords %}request IT quote Orange County, managed IT quote, cybersecurity quote, web development quote, cloud services quote{% endblock %}
 
 {% block structured_data %}
@@ -11,8 +11,59 @@
   "@context": "https://schema.org",
   "@type": "WebPage",
   "name": "Request a Quote",
-  "description": "Detailed quote intake form for managed IT, cybersecurity, cloud, development, and technical repair services.",
-  "url": {{ request.base_url | tojson }}
+  "description": "Request a free quote for personal device repair or full business IT solutions including managed IT, cybersecurity, cloud, and development services.",
+  "url": {{ request.base_url | tojson }},
+  "mainEntity": {
+    "@type": "Service",
+    "name": "IT Services Quote",
+    "provider": {
+      "@type": "Organization",
+      "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }}
+    },
+    "description": "Personal and business IT service quotes covering device repair, managed IT, cybersecurity, cloud infrastructure, and web development."
+  }
+}
+</script>
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url_for('main.index', _external=True) }}" },
+    { "@type": "ListItem", "position": 2, "name": "Request Quote", "item": {{ request.base_url | tojson }} }
+  ]
+}
+</script>
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the difference between a personal and business quote?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A personal quote covers individual services like device repair, home network setup, and personal tech support. A business quote is a detailed intake for managed IT, cybersecurity, cloud infrastructure, and enterprise-level projects."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How quickly will I receive a response?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We aim to respond within one business day. Your submission creates a structured internal ticket so our team can review, prioritize, and deliver an accurate scoped proposal."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What services can I request a quote for?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We provide quotes for managed IT services, cybersecurity solutions, cloud infrastructure, web and app development, technical repair, networking, and more."
+      }
+    }
+  ]
 }
 </script>
 {% endblock %}
@@ -27,8 +78,8 @@
         <li class="breadcrumb-item active">Request Quote</li>
       </ol>
     </nav>
-    <h1>Request a Detailed Quote</h1>
-    <p>Share your environment, priorities, and project goals. We turn this intake into a CMS ticket and respond with a scoped proposal.</p>
+    <h1>Request a Quote</h1>
+    <p>Whether you need personal device help or a full business solution, choose your path below and we'll deliver a scoped proposal fast.</p>
   </div>
 </section>
 
@@ -45,16 +96,38 @@
       </div>
     </div>
 
-    <a href="{{ url_for('main.request_quote_personal') }}" class="quote-crosslink-banner quote-crosslink-banner--personal reveal">
-      <span class="quote-crosslink-icon"><i class="fa-solid fa-user"></i></span>
-      <span class="quote-crosslink-body">
-        <span class="quote-crosslink-title">Looking for a quick personal quote?</span>
-        <span class="quote-crosslink-desc">Device repair, home setup, or individual support — get a quote in under a minute.</span>
-      </span>
-      <span class="quote-crosslink-cta">Get Started <i class="fa-solid fa-arrow-right"></i></span>
-    </a>
+    <div class="quote-chooser-grid">
+      <a href="{{ url_for('main.request_quote_personal') }}" class="quote-chooser-card quote-chooser-card--personal reveal-left stagger-1">
+        <div class="quote-chooser-card-glow"></div>
+        <div class="quote-chooser-icon"><i class="fa-solid fa-user"></i></div>
+        <span class="quote-chooser-badge">For Individuals</span>
+        <span class="quote-chooser-title">Personal Quote</span>
+        <span class="quote-chooser-desc">Device repair, home setup, or individual tech support — quick and simple.</span>
+        <ul class="quote-chooser-features">
+          <li class="reveal-scale stagger-2"><i class="fa-solid fa-check"></i> Device repair &amp; diagnostics</li>
+          <li class="reveal-scale stagger-3"><i class="fa-solid fa-check"></i> Home network setup</li>
+          <li class="reveal-scale stagger-4"><i class="fa-solid fa-check"></i> Personal tech support</li>
+          <li class="reveal-scale stagger-5"><i class="fa-solid fa-check"></i> Quick one-minute form</li>
+        </ul>
+        <span class="quote-chooser-cta">Get Started <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+      <a href="#business-form" class="quote-chooser-card quote-chooser-card--business reveal-right stagger-1">
+        <div class="quote-chooser-card-glow"></div>
+        <div class="quote-chooser-icon"><i class="fa-solid fa-building"></i></div>
+        <span class="quote-chooser-badge">For Companies</span>
+        <span class="quote-chooser-title">Business Quote</span>
+        <span class="quote-chooser-desc">Managed IT, cybersecurity, cloud, and enterprise projects — detailed scoping.</span>
+        <ul class="quote-chooser-features">
+          <li class="reveal-scale stagger-2"><i class="fa-solid fa-check"></i> Managed IT &amp; infrastructure</li>
+          <li class="reveal-scale stagger-3"><i class="fa-solid fa-check"></i> Cybersecurity solutions</li>
+          <li class="reveal-scale stagger-4"><i class="fa-solid fa-check"></i> Cloud &amp; development</li>
+          <li class="reveal-scale stagger-5"><i class="fa-solid fa-check"></i> Scoped proposal with timeline</li>
+        </ul>
+        <span class="quote-chooser-cta">Get Started <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+    </div>
 
-    <div class="row g-4 mt-1">
+    <div class="row g-4 mt-1" id="business-form">
       <div class="col-xl-8 reveal-left">
         <div class="contact-form-wrap quote-form-wrap">
           <div class="quote-form-head">
