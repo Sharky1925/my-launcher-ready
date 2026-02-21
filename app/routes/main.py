@@ -23,6 +23,7 @@ try:
         SecurityEvent,
     )
     from ..notifications import send_contact_notification, send_ticket_notification
+    from ..service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
     from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, normalized_ip, get_request_ip, get_page_content
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     from models import (
@@ -40,6 +41,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SecurityEvent,
     )
     from notifications import send_contact_notification, send_ticket_notification
+    from service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
     from utils import utc_now_naive, clean_text, escape_like, is_valid_email, normalized_ip, get_request_ip, get_page_content
 
 main_bp = Blueprint('main', __name__)
@@ -941,17 +943,36 @@ def build_personal_quote_ticket_details(payload):
     return '\n'.join(lines)
 
 
+def merge_service_profile(base_profile, override_profile):
+    merged = dict(base_profile or {})
+    if not isinstance(override_profile, dict):
+        return merged
+    for key, value in override_profile.items():
+        if value in (None, '', [], {}):
+            continue
+        merged[key] = value
+    return merged
+
+
 def get_service_profile(service):
     # Prefer DB-stored profile_json, fall back to hardcoded SERVICE_PROFILES
     profile = {}
+    has_custom_db_profile = False
     if service.profile_json:
         try:
             import json as _json
-            profile = _json.loads(service.profile_json)
+            loaded = _json.loads(service.profile_json)
+            if isinstance(loaded, dict):
+                profile = loaded
+                has_custom_db_profile = True
+            else:
+                profile = {}
         except (ValueError, TypeError):
             profile = {}
     if not profile:
         profile = SERVICE_PROFILES.get(service.slug, {})
+    if not has_custom_db_profile:
+        profile = merge_service_profile(profile, SERVICE_RESEARCH_OVERRIDES.get(service.slug, {}))
     short_description = (service.description or '').strip()
     if len(short_description) > 220:
         short_description = f"{short_description[:217].rstrip()}..."
@@ -1032,6 +1053,86 @@ def get_service_profile(service):
         }
         for faq in faqs if isinstance(faq, dict)
     ]
+
+    meta_title = clean_text(profile.get('meta_title', ''), 140)
+    if not meta_title:
+        meta_title = f"{service.title} in Orange County | Right On Repair"
+
+    positioning_badge = clean_text(profile.get('positioning_badge', ''), 90)
+    if not positioning_badge:
+        positioning_badge = 'Service Delivery Program'
+
+    if service.service_type == 'professional':
+        default_hero_badges = [
+            {'icon': 'fa-solid fa-layer-group', 'label': 'Strategic Discovery and Planning'},
+            {'icon': 'fa-solid fa-gears', 'label': 'Implementation with Quality Controls'},
+            {'icon': 'fa-solid fa-chart-line', 'label': 'Continuous Optimization'},
+        ]
+    else:
+        default_hero_badges = [
+            {'icon': 'fa-solid fa-stethoscope', 'label': 'Diagnostics-First Workflow'},
+            {'icon': 'fa-solid fa-screwdriver-wrench', 'label': 'Component-Level Repair Paths'},
+            {'icon': 'fa-solid fa-circle-check', 'label': 'Validation Before Handoff'},
+        ]
+
+    hero_badges = profile.get('hero_badges', default_hero_badges)
+    normalized_hero_badges = []
+    for item in hero_badges:
+        if not isinstance(item, dict):
+            continue
+        label = str(item.get('label', '')).strip()
+        if not label:
+            continue
+        normalized_hero_badges.append({
+            'icon': normalize_icon_class(item.get('icon', ''), 'fa-solid fa-circle'),
+            'label': label,
+        })
+    if not normalized_hero_badges:
+        normalized_hero_badges = default_hero_badges
+
+    modules_title = clean_text(profile.get('modules_title', ''), 120)
+    if not modules_title:
+        modules_title = 'Specialized Service Programs'
+
+    service_modules = profile.get('service_modules', [])
+    normalized_modules = []
+    for item in service_modules:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get('title', '')).strip()
+        detail = str(item.get('detail', '')).strip()
+        if not title or not detail:
+            continue
+        normalized_modules.append({
+            'title': title,
+            'detail': detail,
+            'icon': normalize_icon_class(item.get('icon', ''), 'fa-solid fa-circle'),
+        })
+    if not normalized_modules:
+        normalized_modules = [
+            {
+                'title': step['title'],
+                'detail': step['detail'],
+                'icon': step['icon'],
+            }
+            for step in process[:4]
+        ]
+
+    narrative_title = clean_text(profile.get('narrative_title', ''), 120)
+    if not narrative_title:
+        narrative_title = 'Service Scope and Delivery Standards'
+
+    seo_content_blocks = profile.get('seo_content_blocks', [])
+    normalized_content_blocks = []
+    for item in seo_content_blocks:
+        text = str(item).strip()
+        if text:
+            normalized_content_blocks.append(text)
+    if not normalized_content_blocks:
+        normalized_content_blocks = [
+            f"{service.title} engagements are scoped around operational goals, risk controls, and measurable outcomes for Orange County organizations.",
+            "Each project includes a defined workflow, implementation milestones, and post-delivery review to improve reliability and long-term performance.",
+        ]
 
     service_area_cities = profile.get('service_area_cities', [
         'Irvine', 'Santa Ana', 'Anaheim', 'Huntington Beach',
@@ -1150,8 +1251,15 @@ def get_service_profile(service):
         normalized_brand_services.append({'brand': brand, 'services': services_text})
 
     return {
+        'meta_title': meta_title,
         'meta_description': profile.get('meta_description', short_description),
         'keywords': keywords,
+        'positioning_badge': positioning_badge,
+        'hero_badges': normalized_hero_badges,
+        'modules_title': modules_title,
+        'service_modules': normalized_modules,
+        'narrative_title': narrative_title,
+        'seo_content_blocks': normalized_content_blocks,
         'intro_kicker': profile.get('intro_kicker', 'Plan • Deliver • Improve'),
         'board_title': profile.get('board_title', 'Service Workflow'),
         'process': process,

@@ -1,102 +1,130 @@
 # SEO Executive Marketing Plan
 
-Date: 2026-02-21  
-Scope: Professional and repair service detail pages (`/services/<slug>`)
+Date: 2026-02-21
+Scope: All service detail pages (`/services/<slug>`) with deeper positioning for technical repair pages
 
-## Competitor Deep Research Snapshot (First-Page Orange County MSP/IT Queries)
+## Deep Research Scope (20+ Competitors)
 
-Primary competitor set reviewed:
+### A) Top IT Services / MSP Leaders (Ranking Signals)
 
-1. TechMD - https://www.techmd.com/it-services/managed-it-services-orange-county/
-2. Technijian - https://technijian.com/managed-it-services-orange-county/
-3. OCMSP - https://ocmsp.com/managed-it-services-orange-county
-4. QLAN - https://www.qlan.com/managed-it-services-orange-county/
-5. AllSafe IT - https://www.allsafeit.com/managed-it-services-orange-county/
-6. The Universal IT Services - https://theuniversalitservices.com/managed-it-services-in-orange-county/
-7. OC IT Solutions - https://ocitsolutions.com/
-8. SoCal IT Services - https://socalitservices.com/
-9. CIU Networks - https://www.ciunetworks.com/
-10. SDGi - https://www.sdgi.com/managed-services-provider-orange-county/
+Primary ranking sources reviewed:
+- Channel Futures MSP 501 (2025) and top-50 breakout examples
+- CRN MSP 500 (2025)
+- CRN Elite 150 (2024)
 
-## Competitive SEO Patterns Found
+Competitor set captured from ranking pages and leader profiles:
+1. Ensono (MSP 501 #1)
+2. Zayo Group (MSP 501 #2)
+3. Expedient (MSP 501 top cohort)
+4. Assured Data Protection (MSP 501 top cohort)
+5. Fifosys (MSP 501 top cohort)
+6. Align (MSP 501 rank #26)
+7. BCA IT (MSP 501 rank #42)
+8. Spectrotel (CRN MSP 500 rank #33)
+9. Netgain (CRN MSP 500 rank #38)
+10. NexusTek (CRN MSP 500)
+11. Sentinel Technologies (CRN MSP 500)
+12. Anunta (CRN MSP 500 top 100 reference)
+13. Integris (managed IT competitor signal set)
 
-- Consistent location-intent targeting in title/H1/body (Orange County + nearby city intent).
-- Conversion-first hero messaging (free assessment/consultation, quick-response promises).
-- Trust framing in-page: standards, security, governance, process credibility.
-- Internal service clustering: related service links and cross-service navigation.
-- Industry-specific trust pages and vertical references.
-- FAQ-based intent capture for decision-stage queries.
-- Visual proof blocks and outcome-led sectioning (response, uptime, risk reduction).
+### B) Top Data Recovery Competitors (Ranking Signals)
 
-## Technical Services Deep Research (Brand-Driven Pages)
+Primary ranking sources reviewed:
+- Forbes Advisor: Best Data Recovery Services (2026)
+- TechRadar: Best Data Recovery Services (2024)
 
-Additional high-visibility technical-service references reviewed:
+Competitor set captured:
+14. CBL Data Recovery
+15. Ontrack Data Recovery
+16. SalvageData Recovery Services
+17. DriveSavers Data Recovery
+18. Seagate In-Lab Data Recovery
+19. Stellar Data Recovery
+20. WeRecoverData
+21. Disk Doctors
 
-1. uBreakiFix (Asurion) - https://www.ubreakifix.com/
-2. iFixit Repair Guides - https://www.ifixit.com/Repair
-3. Best Buy Geek Squad Repair - https://www.bestbuy.com/site/geek-squad/
-4. CPR Cell Phone Repair - https://www.cellphonerepair.com/
-5. DriveSavers Data Recovery - https://drivesaversdatarecovery.com/
+### C) Top Computer / Mobile Repair Competitors (Nationwide Signals)
 
-Patterns used in technical-service SEO:
+Primary ranking/scale signals reviewed:
+- Entrepreneur Franchise 500 (CPR ranking mention)
+- Official location scale and service-positioning pages
 
-- Prominent brand compatibility blocks (Apple, Samsung, Dell, console brands, storage brands).
-- Explicit repair/service mapping by brand family to capture branded query variants.
-- Turnaround expectation framing (intake, diagnostics, repair, quality check).
-- Device-category + component-level terminology to match high-intent search queries.
-- Reassurance signals: diagnostics rigor, data handling controls, and post-repair validation.
+Competitor set captured:
+22. CPR Cell Phone Repair (franchise-ranked + 850+ stores claim)
+23. uBreakiFix by Asurion (700+ store footprint signal)
+24. Batteries Plus (700+ US locations signal)
+25. iFixandRepair (700+ location footprint signal)
+26. Geek Squad (nationwide device service offering)
 
-## Executive SEO Plan
+## Competitive SEO Patterns Observed
 
-### Pillar 1: Search Intent Coverage
+### High-performing page architecture
+- Intent-aligned H1 + title with service + location + commercial modifier.
+- Trust-first hero (speed, warranty/assurance, security/compliance, clear process).
+- Programized service modules (not generic bullets): specific sub-services and outcomes.
+- Conversion framing on every viewport depth (assessment, message, remote support).
+- Strong internal clusters (related services, industries, related posts) for topical authority.
 
-- Expand service detail keyword scope with city-modified variants.
-- Keep service pages focused on commercial intent and solution outcomes.
+### Data recovery-specific ranking patterns
+- Explicit emergency language (`24/7`, `priority`, `expedited` pathways).
+- Confidence framing (`no data, no fee`, secure handling, encrypted delivery).
+- Technical specificity (`RAID`, `NAS`, `SSD`, `cleanroom`, `forensic workflow`).
+- Chain-of-custody and integrity validation messaging for business/legal trust.
 
-### Pillar 2: Local Authority
+### Computer/mobile repair-specific ranking patterns
+- Short-turnaround positioning (same-day triage and common repairs).
+- Component-level intent keywords (screen, battery, charging port, motherboard, HDMI).
+- Quality assurance hooks (post-repair testing, warranty-backed repair, data-safe handling).
+- Brand-compatible service mapping (Apple/Samsung/Dell/etc.) for branded search capture.
 
-- Add city coverage blocks for Orange County service areas.
-- Add governance/compliance alignment blocks to strengthen enterprise buying signals.
+## Keyword Cluster Strategy Applied
 
-### Pillar 3: Topical Depth + Internal Links
+Per service page, we expanded from generic terms to multi-intent clusters:
+- Core commercial: `service + company/provider + location`
+- Problem/issue intent: `symptom + repair/recovery/fix`
+- Component intent: `battery/screen/RAID/port/thermal/etc.`
+- Buyer confidence intent: `warranty`, `same-day`, `secure`, `managed`, `compliance`
+- B2B intent: `business`, `enterprise`, `SLA`, `managed`, `governance`
 
-- Add related service clusters directly on each service page.
-- Add industry playbook links and related expert insights links per service page.
+## Implementation Plan (Executed)
 
-### Pillar 4: Rich Results and Crawl Intelligence
+### 1) Service profile SEO overlays
+- Added `app/service_seo_overrides.py`.
+- Created research-driven overlays for **every** service slug.
+- For each page, added:
+  - `meta_title`
+  - expanded keyword clusters
+  - positioning badge
+  - hero trust badges
+  - specialized service module cards
+  - long-form narrative blocks for intent depth
+  - upgraded proof points (and for repair, stronger trust handling language)
 
-- Expand service-level structured data (Service + WebPage + OfferCatalog + FAQ + related ItemList).
-- Preserve sitemap/robots strategy and secure noindex for portal pages.
+### 2) Route-level profile merge logic
+- Updated `app/routes/main.py`:
+  - imports SEO overlays
+  - merges overlays into default profiles when no custom DB profile exists
+  - normalizes new fields (`meta_title`, `positioning_badge`, `hero_badges`, `service_modules`, `narrative_title`, `seo_content_blocks`)
 
-### Pillar 5: Lead Conversion Alignment
+### 3) Service template upgrades
+- Updated `app/templates/service_detail.html`:
+  - title and OG title now use per-service `meta_title`
+  - added hero positioning badge + service trust badges
+  - added new `Service Scope` module section
+  - added new `Service Positioning` narrative section
+  - enriched WebPage schema with keyword serialization
 
-- Shift service CTA language to "Free IT Assessment" and "Send Message".
-- Keep support and quote paths visible for both urgent and planned engagements.
+## KPI Targets (90 Days)
 
-### Pillar 6: Technical Service Brand SEO
+- +30% organic entrances to `/services/*` pages
+- +25% increase in technical repair page entrances
+- +20% increase in contact/quote conversion rate from service pages
+- +30% internal click-through from service pages to related services/industries
+- Broader Search Console impression coverage for long-tail service-intent queries
 
-- Add supported-brand and brand-service coverage blocks on technical service pages.
-- Add lead-time diagrams per service page to strengthen decision-stage intent matching.
-- Expand structured data with brand entities when brand coverage exists.
+## Next SEO Iterations
 
-## KPI Targets (90-Day)
-
-- +25% organic entrances to `/services/*` pages.
-- +20% increase in quote/contact conversion rate from service pages.
-- +30% increase in internal click-through from service pages to related pages.
-- Improved query coverage for service + city combinations in Search Console.
-
-## Implementation Status
-
-- Phase 1 implemented in code:
-  - Service template upgraded for local coverage, trust blocks, related clusters, and insight links.
-  - Service route enhanced to inject related services, industries, and posts.
-  - Structured data expanded for richer search eligibility.
-- Phase 2 implemented in code:
-  - Added lead-time diagram system and per-service workflow timing content.
-  - Added related technologies section for each service detail page.
-  - Added brand coverage + brand-service matrices for technical service pages.
-  - Added brand entities to service structured data where applicable.
-- Next phase:
-  - Add service-specific case studies and testimonial snippets per slug.
-  - Expand city landing pages only if Search Console confirms demand gaps.
+1. Add service-specific case studies and proof snippets per slug.
+2. Add city-intent support pages only where Search Console confirms demand.
+3. Add service-by-service conversion event tracking reports in GA4 and Search Console.
+4. Build FAQ expansion from live sales/support query logs every month.
