@@ -151,36 +151,11 @@
     });
   }
 
-  // --- Desktop dropdown: pure CSS hover (no JS needed) ---
+  // --- Dropdown nav: CSS :hover on desktop, click-to-toggle on mobile ---
   const dropdownItems = document.querySelectorAll('.navbar-main .nav-item.dropdown');
+  const isMobile = () => window.innerWidth < 992;
 
-  // Close all dropdowns on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      dropdownItems.forEach((item) => {
-        if (item.classList.contains('show')) {
-          item.classList.remove('show');
-          item.querySelector('.dropdown-menu')?.classList.remove('show');
-          const toggle = item.querySelector('.dropdown-toggle');
-          toggle?.setAttribute('aria-expanded', 'false');
-          toggle?.focus();
-        }
-      });
-      // Also close Bootstrap-managed dropdowns
-      if (window.bootstrap?.Dropdown) {
-        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-          const toggle = menu.previousElementSibling;
-          if (toggle) {
-            const dd = window.bootstrap.Dropdown.getInstance(toggle);
-            if (dd) dd.hide();
-          }
-        });
-      }
-    }
-  });
-
-  // --- Fallback dropdown toggle if Bootstrap dropdown JS is unavailable ---
-  if (dropdownItems.length && !window.bootstrap?.Dropdown) {
+  if (dropdownItems.length) {
     const toggles = document.querySelectorAll('.navbar-main .nav-item.dropdown > .dropdown-toggle');
     const closeAll = (exceptItem) => {
       dropdownItems.forEach((item) => {
@@ -191,8 +166,10 @@
       });
     };
 
+    // Toggle on click — mobile only (desktop uses CSS :hover)
     toggles.forEach((toggle) => {
       toggle.addEventListener('click', (event) => {
+        if (!isMobile()) return; // desktop: let the link navigate
         event.preventDefault();
         const item = toggle.closest('.nav-item.dropdown');
         if (!item) return;
@@ -205,9 +182,25 @@
       });
     });
 
+    // Close on outside click
     document.addEventListener('click', (event) => {
       if (event.target.closest('.navbar-main .nav-item.dropdown')) return;
       closeAll(null);
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        dropdownItems.forEach((item) => {
+          if (item.classList.contains('show')) {
+            const toggle = item.querySelector('.dropdown-toggle');
+            item.classList.remove('show');
+            item.querySelector('.dropdown-menu')?.classList.remove('show');
+            toggle?.setAttribute('aria-expanded', 'false');
+            toggle?.focus();
+          }
+        });
+      }
     });
   }
 
