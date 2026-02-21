@@ -102,7 +102,8 @@
 {% endblock %}
 
 {% block content %}
-<section class="page-header">
+<!-- Hero -->
+<section class="page-header section-bottom-spacious">
   <div class="container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -111,157 +112,27 @@
         <li class="breadcrumb-item active">{{ service.title }}</li>
       </ol>
     </nav>
-    <h1>{{ service.title }}</h1>
-  </div>
-</section>
-
-<section class="section">
-  <div class="container">
-    <div class="row g-5">
-      <div class="col-lg-8 reveal-left">
-        <div class="service-detail-hero service-detail-hero--v2">
-          <div class="service-kicker-badge">{{ profile.get('intro_kicker', 'Plan • Deliver • Improve') }}</div>
-          <div class="icon-large"><i class="{{ service.icon_class }}"></i></div>
-          <h1>{{ service.title }}</h1>
-          <div class="description">{{ meta_desc }}</div>
-          <div class="service-hero-badges">
-            <span><i class="fa-solid fa-bolt"></i> Fast onboarding</span>
-            <span><i class="fa-solid fa-shield-halved"></i> Security-first execution</span>
-            <span><i class="fa-solid fa-headset"></i> Dedicated support</span>
-          </div>
-          {% if service.image %}
-          <img src="{{ url_for('admin.uploaded_file', filename=service.image) }}" alt="{{ service.title }}" class="service-img" loading="eager" fetchpriority="high" decoding="async">
-          {% endif %}
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7 reveal-left">
+        <div class="ind-hero-icon"><i class="{{ service.icon_class }}"></i></div>
+        <h1>{{ service.title }} <span class="gradient-text">{{ profile.get('intro_kicker', 'Solutions') }}</span></h1>
+        <p class="industry-hero-description">{{ meta_desc }}</p>
+        <div class="hero-buttons industry-hero-actions">
+          <a href="{{ url_for('main.remote_support') }}" class="btn btn-primary">Remote Support <i class="fa-solid fa-life-ring"></i></a>
+          <a href="{{ url_for('main.request_quote') }}" class="btn btn-ghost">Request Quote <i class="fa-solid fa-file-invoice-dollar"></i></a>
         </div>
-
-        {% if process_steps %}
-        <div class="service-visual-panel mt-4 reveal">
-          <div class="service-panel-head">
-            <h2><i class="fa-solid fa-diagram-project"></i>{{ profile.get('board_title', 'Service Workflow') }}</h2>
-            <p>Clear step-by-step execution flow</p>
-          </div>
-          <div class="timeline-grid service-process-grid">
-            {% for step in process_steps %}
-            <article class="timeline-card service-process-card stagger-{{ loop.index }}">
-              <div class="process-icon"><i class="{{ step.icon }}"></i></div>
-              <div>
-                <div class="service-step-chip">Step {{ loop.index }}</div>
-                <h3>{{ step.title }}</h3>
-                <p>{{ step.detail }}</p>
-              </div>
-            </article>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-
-        {% if tool_stack %}
-        <div class="service-visual-panel mt-4 reveal">
-          <div class="service-panel-head">
-            <h2><i class="fa-solid fa-layer-group"></i>Tools & Platforms</h2>
-            <p>Industry-standard stack used across delivery</p>
-          </div>
-          <div class="service-tool-cloud">
-            {% for tool in tool_stack %}
-            <div class="service-tool-pill stagger-{{ ((loop.index - 1) % 6) + 1 }}">
-              <i class="{{ tool.icon }}"></i>
-              <span>{{ tool.name }}</span>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-
-        {% if deliverables %}
-        <div class="service-visual-panel mt-4 reveal">
-          <div class="service-panel-head">
-            <h2><i class="fa-solid fa-chart-simple"></i>Outcomes</h2>
-            <p>Business-focused result targets</p>
-          </div>
-          <div class="row g-3">
-            {% for outcome in deliverables %}
-            <div class="col-md-4">
-              <article class="service-outcome-card stagger-{{ loop.index }}">
-                <div class="service-outcome-icon"><i class="{{ outcome.icon }}"></i></div>
-                <div class="service-outcome-label">{{ outcome.label }}</div>
-                <p>{{ outcome.value }}</p>
-              </article>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-
-        {% if faqs %}
-        <div class="service-visual-panel mt-4 reveal">
-          <div class="service-panel-head">
-            <h2><i class="fa-solid fa-circle-question"></i>Quick FAQ</h2>
-            <p>Short answers to common planning questions</p>
-          </div>
-          <div class="service-faq-list">
-            {% for faq in faqs %}
-            <details class="service-faq-item" {% if loop.first %}open{% endif %}>
-              <summary>{{ faq.q }}</summary>
-              <p>{{ faq.a }}</p>
-            </details>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
       </div>
-
-      <div class="col-lg-4 reveal-right">
-        <div class="sidebar-cta mb-4">
-          <div class="sidebar-cta-head">
-            <div class="sidebar-cta-orb"><i class="fa-solid fa-headset"></i></div>
-            <div>
-              <div class="sidebar-cta-kicker">Client Support</div>
-              <h4>Remote Support & Quotes</h4>
-            </div>
-          </div>
-          <p>Choose the fastest path for {{ service.title | lower }}.</p>
-          <div class="sidebar-cta-points">
-            <span><i class="fa-solid fa-circle-check"></i> Free consultation</span>
-            <span><i class="fa-solid fa-circle-check"></i> Response in under 2 hours</span>
-          </div>
-          <div class="sidebar-cta-actions">
-            <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support w-100">
-              <i class="fa-solid fa-life-ring"></i>
-              <span>Remote Support</span>
-            </a>
-            <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger w-100" aria-label="Send a support message">
-              <i class="fa-solid fa-envelope"></i>
-              <span>Send Message</span>
-            </a>
-            <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote w-100">
-              <i class="fa-solid fa-file-invoice-dollar"></i>
-              <span>Request Quote</span>
-            </a>
-          </div>
-        </div>
-
-        {% if tool_stack %}
-        <div class="service-detail-sidebar service-stack-sidebar mb-4">
-          <h4>Stack Highlights</h4>
-          <div class="service-stack-list">
-            {% for tool in tool_stack[:6] %}
-            <div class="service-stack-item">
-              <i class="{{ tool.icon }}"></i>
-              <span>{{ tool.name }}</span>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-
+      <div class="col-lg-5 reveal-right">
         {% if deliverables %}
-        <div class="service-detail-sidebar service-value-sidebar">
-          <h4>What You Get</h4>
-          <ul class="service-value-list">
-            {% for outcome in deliverables %}
-            <li><i class="fa-solid fa-circle-check"></i>{{ outcome.label }}: {{ outcome.value }}</li>
-            {% endfor %}
-          </ul>
+        <div class="row g-3">
+          {% for outcome in deliverables %}
+          <div class="col-6">
+            <div class="metric-card">
+              <div class="mc-value">{{ outcome.value }}</div>
+              <div class="mc-label">{{ outcome.label }}</div>
+            </div>
+          </div>
+          {% endfor %}
         </div>
         {% endif %}
       </div>
@@ -269,8 +140,81 @@
   </div>
 </section>
 
+<div class="glow-line"></div>
+
+<!-- How It Works -->
+{% if process_steps %}
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-diagram-project"></i> How It Works</div>
+      <h2>{{ profile.get('board_title', 'Service Workflow') }}</h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% set step_colors = ['blue', 'purple', 'amber', 'green', 'rose', 'cyan'] %}
+      {% for step in process_steps %}
+      <div class="col-md-6 col-lg-4">
+        <div class="challenge-card reveal stagger-{{ loop.index }}">
+          <div class="ch-icon {{ step_colors[(loop.index0) % 6] }}"><i class="{{ step.icon }}"></i></div>
+          <h4>{{ step.title }}</h4>
+          <p>{{ step.detail }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<div class="glow-line"></div>
+
+<!-- Tools & Platforms -->
+{% if tool_stack %}
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-layer-group"></i> Tools &amp; Platforms</div>
+      <h2>Technology We Use</h2>
+    </div>
+    <div class="row g-4">
+      {% for tool in tool_stack %}
+      <div class="col-md-6">
+        <div class="feature-item reveal stagger-{{ loop.index }}">
+          <div class="fi-icon"><i class="{{ tool.icon }}"></i></div>
+          <div>
+            <h4>{{ tool.name }}</h4>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- FAQ -->
+{% if faqs %}
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-circle-question"></i> FAQ</div>
+      <h2>Frequently Asked Questions</h2>
+    </div>
+    <div class="service-faq-list reveal">
+      {% for faq in faqs %}
+      <details class="service-faq-item" {% if loop.first %}open{% endif %}>
+        <summary>{{ faq.q }}</summary>
+        <p>{{ faq.a }}</p>
+      </details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- CTA -->
 <section class="section-sm section-bottom-spacious">
-  <div class="cta-section cta-section--services reveal-scale">
+  <div class="cta-section reveal-scale">
     <div class="cta-inner">
       <h2>Remote Support or Request a Quote</h2>
       <p>Get live assistance or a scoped estimate for {{ service.title | lower }}.</p>
