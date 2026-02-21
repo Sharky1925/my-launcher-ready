@@ -48,7 +48,7 @@
       <div class="col-lg-6 reveal-right">
         <div class="row g-3">
           {% for m in metrics.get('items', [{'value': '500+', 'label': 'Local Clients'}, {'value': '50+', 'label': 'IT Specialists'}, {'value': '99.9%', 'label': 'Uptime SLA'}, {'value': '24/7', 'label': 'Expert Support'}]) %}
-          <div class="col-6"><div class="metric-card"><div class="mc-value">{{ m.value }}</div><div class="mc-label">{{ m.label }}</div></div></div>
+          <div class="col-6"><div class="metric-card metric-card--stat"><div class="mc-value">{{ m.value }}</div><div class="mc-label">{{ m.label }}</div></div></div>
           {% endfor %}
         </div>
       </div>

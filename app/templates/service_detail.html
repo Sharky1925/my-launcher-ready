@@ -124,10 +124,12 @@
       </div>
       <div class="col-lg-5 reveal-right">
         {% if deliverables %}
+        {% set mc_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
         <div class="row g-3">
           {% for outcome in deliverables %}
           <div class="col-6">
             <div class="metric-card">
+              <div class="mc-icon {{ mc_colors[(loop.index0) % 6] }}"><i class="{{ outcome.icon }}"></i></div>
               <div class="mc-value">{{ outcome.value }}</div>
               <div class="mc-label">{{ outcome.label }}</div>
             </div>
@@ -156,8 +158,10 @@
       <div class="col-md-6 col-lg-4">
         <div class="challenge-card reveal stagger-{{ loop.index }}">
           <div class="ch-icon {{ step_colors[(loop.index0) % 6] }}"><i class="{{ step.icon }}"></i></div>
-          <h4>{{ step.title }}</h4>
-          <p>{{ step.detail }}</p>
+          <div class="ch-body">
+            <h4>{{ step.title }}</h4>
+            <p>{{ step.detail }}</p>
+          </div>
         </div>
       </div>
       {% endfor %}
@@ -177,12 +181,14 @@
       <h2>Technology We Use</h2>
     </div>
     <div class="row g-4">
+      {% set tool_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
       {% for tool in tool_stack %}
       <div class="col-md-6">
         <div class="feature-item reveal stagger-{{ loop.index }}">
-          <div class="fi-icon"><i class="{{ tool.icon }}"></i></div>
+          <div class="fi-icon {{ tool_colors[(loop.index0) % 6] }}"><i class="{{ tool.icon }}"></i></div>
           <div>
             <h4>{{ tool.name }}</h4>
+            {% if tool.desc %}<p>{{ tool.desc }}</p>{% endif %}
           </div>
         </div>
       </div>
