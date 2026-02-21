@@ -75,7 +75,7 @@
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
-        <li class="breadcrumb-item active">Request Quote</li>
+        <li class="breadcrumb-item active" aria-current="page">Request Quote</li>
       </ol>
     </nav>
     <h1>Request a Quote</h1>
@@ -350,50 +350,87 @@
 (function() {
   var toggle = document.getElementById('quoteToggle');
   if (!toggle) return;
-  var btns = toggle.querySelectorAll('.quote-toggle-btn');
+  var btns = Array.prototype.slice.call(toggle.querySelectorAll('.quote-toggle-btn'));
   var personalUrl = '{{ url_for("main.request_quote_personal") }}';
   var navigating = false;
+  var formEl = document.getElementById('business-form');
+  var bizCard = document.getElementById('businessChooserCard');
 
   function setActive(activeBtn) {
     btns.forEach(function(b) {
       var isActive = b === activeBtn;
       b.classList.toggle('is-active', isActive);
       b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      b.setAttribute('tabindex', isActive ? '0' : '-1');
     });
   }
 
-  btns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      if (navigating) return;
-      var target = btn.getAttribute('data-target');
-      setActive(btn);
+  function selectTarget(target) {
+    if (navigating) return;
+    var btn = btns.filter(function(b) { return b.getAttribute('data-target') === target; })[0];
+    if (!btn) return;
+    setActive(btn);
 
-      if (target === 'business') {
-        toggle.classList.add('is-business');
-        var form = document.getElementById('business-form');
-        if (form) {
-          setTimeout(function() {
-            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 300);
-        }
-      } else {
-        toggle.classList.remove('is-business');
-        navigating = true;
+    if (target === 'business') {
+      toggle.classList.add('is-business');
+      if (formEl) {
         setTimeout(function() {
-          window.location.href = personalUrl;
+          formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 300);
       }
+    } else {
+      toggle.classList.remove('is-business');
+      navigating = true;
+      setTimeout(function() {
+        window.location.href = personalUrl;
+      }, 300);
+    }
+  }
+
+  /* Click handler */
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      selectTarget(btn.getAttribute('data-target'));
     });
   });
 
-  /* Smooth-scroll the business chooser card instead of hard-jumping */
-  var bizCard = document.getElementById('businessChooserCard');
+  /* Keyboard: arrow keys move between tabs (WAI-ARIA tablist pattern) */
+  toggle.addEventListener('keydown', function(e) {
+    var idx = btns.indexOf(document.activeElement);
+    if (idx < 0) return;
+    var next = -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      next = (idx + 1) % btns.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      next = (idx - 1 + btns.length) % btns.length;
+    }
+    if (next >= 0) {
+      e.preventDefault();
+      btns[next].focus();
+      selectTarget(btns[next].getAttribute('data-target'));
+    }
+  });
+
+  /* Set initial tabindex */
+  btns.forEach(function(b) {
+    b.setAttribute('tabindex', b.classList.contains('is-active') ? '0' : '-1');
+  });
+
+  /* Sync toggle when business chooser card is clicked */
   if (bizCard) {
     bizCard.addEventListener('click', function(e) {
       e.preventDefault();
-      var form = document.getElementById('business-form');
-      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      selectTarget('business');
     });
+  }
+
+  /* If page loads with #business-form hash, auto-select business */
+  if (window.location.hash === '#business-form') {
+    var bBtn = btns.filter(function(b) { return b.getAttribute('data-target') === 'business'; })[0];
+    if (bBtn) {
+      setActive(bBtn);
+      toggle.classList.add('is-business');
+    }
   }
 })();
 </script>

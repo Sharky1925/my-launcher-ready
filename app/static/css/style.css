@@ -3050,6 +3050,7 @@ p { margin: 0 0 16px; }
   width: calc(50% - 3px);
   height: calc(100% - 10px);
   border-radius: var(--radius-full);
+  overflow: hidden;
   transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 0.5s ease;
   z-index: 0;
   pointer-events: none;
@@ -3165,7 +3166,6 @@ p { margin: 0 0 16px; }
   flex-direction: column;
   padding: 32px;
   border-radius: var(--radius-lg);
-  overflow: hidden;
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
@@ -3178,6 +3178,7 @@ p { margin: 0 0 16px; }
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  overflow: hidden;
   opacity: 0;
   transition: opacity 0.4s ease;
   pointer-events: none;
@@ -3548,6 +3549,7 @@ p { margin: 0 0 16px; }
     min-width: 46px;
     font-size: 1.15rem;
     border-radius: 12px;
+    animation: none;
   }
   .quote-chooser-title {
     font-size: 1.15rem;
@@ -3561,6 +3563,9 @@ p { margin: 0 0 16px; }
   .quote-chooser-cta {
     padding: 10px 18px;
     font-size: 0.82rem;
+  }
+  .quote-toggle-label {
+    font-size: 0.7rem;
   }
   .remote-ticket-panel {
     padding: 16px;
