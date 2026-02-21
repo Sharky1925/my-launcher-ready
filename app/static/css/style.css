@@ -3050,16 +3050,37 @@ p { margin: 0 0 16px; }
   width: calc(50% - 3px);
   height: calc(100% - 10px);
   border-radius: var(--radius-full);
-  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), background 0.45s ease, box-shadow 0.45s ease;
+  transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow 0.5s ease;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(135deg, #00b4d8, #0dd5e6, #48e8f0);
   box-shadow: 0 6px 24px rgba(0, 180, 216, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+/* Two pseudo-layers for smooth gradient crossfade (CSS can't transition gradients) */
+.quote-toggle-slider::before,
+.quote-toggle-slider::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transition: opacity 0.5s ease;
+}
+.quote-toggle-slider::before {
+  background: linear-gradient(135deg, #00b4d8, #0dd5e6, #48e8f0);
+  opacity: 1;
+}
+.quote-toggle-slider::after {
+  background: linear-gradient(135deg, #3a3a42, #5c5c66, #787880, #5c5c66);
+  opacity: 0;
 }
 .quote-toggle.is-business .quote-toggle-slider {
   transform: translateX(calc(100% + 1px));
-  background: linear-gradient(135deg, #3a3a42, #5c5c66, #787880, #5c5c66);
   box-shadow: 0 6px 24px rgba(100, 100, 110, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.30);
+}
+.quote-toggle.is-business .quote-toggle-slider::before {
+  opacity: 0;
+}
+.quote-toggle.is-business .quote-toggle-slider::after {
+  opacity: 1;
 }
 .quote-toggle-btn {
   position: relative;
@@ -3075,7 +3096,7 @@ p { margin: 0 0 16px; }
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: color 0.35s ease, text-shadow 0.35s ease;
+  transition: color 0.5s ease, text-shadow 0.5s ease;
   white-space: nowrap;
   text-decoration: none;
   line-height: 1.4;
@@ -3083,7 +3104,7 @@ p { margin: 0 0 16px; }
 }
 .quote-toggle-btn i {
   font-size: 0.92rem;
-  transition: color 0.35s ease;
+  transition: color 0.5s ease;
 }
 .quote-toggle-btn.is-active {
   color: #021620;
