@@ -1040,8 +1040,6 @@ p { margin: 0 0 16px; }
   margin-top: auto;
   min-height: 44px;
   padding: 8px 0;
-  position: relative;
-  z-index: 2;
   transition: gap var(--transition-fast), color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
   text-decoration: none;
 }
