@@ -390,6 +390,7 @@ p { margin: 0 0 16px; }
   opacity: .7;
   transition: transform .3s var(--ease-smooth), opacity .3s var(--ease-smooth);
 }
+.navbar-main .nav-item.dropdown:hover > .nav-link.dropdown-toggle::before,
 .navbar-main .nav-item.dropdown.show > .nav-link.dropdown-toggle::before {
   transform: translateY(-30%) rotate(-135deg);
   opacity: 1;
@@ -419,6 +420,7 @@ p { margin: 0 0 16px; }
     transform-origin: top center;
     transition: opacity .28s var(--ease-smooth), transform .28s var(--ease-smooth), visibility .28s var(--ease-smooth);
   }
+  .navbar-main .nav-item.dropdown:hover > .dropdown-menu,
   .navbar-main .nav-item.dropdown:focus-within > .dropdown-menu,
   .navbar-main .nav-item.dropdown.show > .dropdown-menu {
     opacity: 1;
