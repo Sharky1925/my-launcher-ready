@@ -336,6 +336,22 @@ SERVICE_PROFILES = {
             {'name': 'Motion Alerts', 'icon': 'fa-solid fa-bell', 'desc': 'AI-triggered notifications for activity zones'},
             {'name': 'Health Monitoring', 'icon': 'fa-solid fa-heart-pulse', 'desc': 'Camera uptime and connectivity checks'},
         ],
+        'lead_time_diagram': [
+            {'phase': 'Site Survey', 'eta': '1-2 days', 'detail': 'Onsite assessment and retention requirements.', 'icon': 'fa-solid fa-map-location-dot'},
+            {'phase': 'System Design', 'eta': '2-4 days', 'detail': 'Camera map, storage plan, and network segmentation.', 'icon': 'fa-solid fa-drafting-compass'},
+            {'phase': 'Installation', 'eta': '2-10 days', 'detail': 'Mounting, cabling, recorder setup, and testing.', 'icon': 'fa-solid fa-screwdriver-wrench'},
+            {'phase': 'Training & Handover', 'eta': '1 day', 'detail': 'Access controls, SOPs, and operational handoff.', 'icon': 'fa-solid fa-file-shield'},
+        ],
+        'related_technologies': [
+            'UniFi Protect', 'Axis Cameras', 'Verkada Command', 'Cisco Meraki',
+            'NVR RAID Storage', 'PoE Switching', 'VLAN Segmentation', 'Cloud Archiving',
+        ],
+        'supported_brands': ['Axis', 'Verkada', 'Cisco Meraki', 'Ubiquiti UniFi', 'Hikvision', 'Dahua'],
+        'brand_services': [
+            {'brand': 'Axis / Verkada', 'services': 'Commercial IP camera deployment, retention planning, and policy tuning'},
+            {'brand': 'Cisco Meraki / UniFi', 'services': 'Cloud-managed camera networking, remote access, and health monitoring'},
+            {'brand': 'Hikvision / Dahua', 'services': 'NVR integration, camera hardening, and secure remote viewing controls'},
+        ],
         'deliverables': [
             {'label': 'Visibility', 'value': 'Critical zones fully covered', 'icon': 'fa-solid fa-eye'},
             {'label': 'Retention', 'value': 'Policy-based storage windows', 'icon': 'fa-solid fa-clock-rotate-left'},
@@ -369,6 +385,23 @@ SERVICE_PROFILES = {
             {'name': 'Cloud Replicas', 'icon': 'fa-solid fa-cloud-arrow-down', 'desc': 'Offsite recovery from cloud snapshots'},
             {'name': 'Checksum Validation', 'icon': 'fa-solid fa-circle-check', 'desc': 'File integrity verification after extraction'},
             {'name': 'Encrypted Transfer', 'icon': 'fa-solid fa-lock', 'desc': 'Secure handoff of recovered data'},
+        ],
+        'lead_time_diagram': [
+            {'phase': 'Secure Intake', 'eta': '30-60 min', 'detail': 'Chain-of-custody logging and media triage.', 'icon': 'fa-solid fa-box-archive'},
+            {'phase': 'Diagnostics', 'eta': '2-8 hours', 'detail': 'Failure mode analysis and recovery probability scoring.', 'icon': 'fa-solid fa-microscope'},
+            {'phase': 'Recovery Execution', 'eta': '1-5 days', 'detail': 'Sector imaging, extraction, and staged restore.', 'icon': 'fa-solid fa-database'},
+            {'phase': 'Integrity Validation', 'eta': '2-12 hours', 'detail': 'Checksum validation and prioritized file handoff.', 'icon': 'fa-solid fa-check-to-slot'},
+        ],
+        'related_technologies': [
+            'SMART Diagnostics', 'Sector Imaging', 'RAID Reconstruction', 'Checksum Validation',
+            'AES-256 Encrypted Transfer', 'Veeam Restore', 'Snapshot Recovery', 'Forensic Workflow',
+        ],
+        'supported_brands': ['Western Digital', 'Seagate', 'Samsung', 'SanDisk', 'Synology', 'QNAP', 'Apple'],
+        'brand_services': [
+            {'brand': 'Western Digital / Seagate', 'services': 'Mechanical drive recovery, bad-sector extraction, and integrity verification'},
+            {'brand': 'Samsung / SanDisk', 'services': 'SSD and flash recovery with controller-aware diagnostics'},
+            {'brand': 'Synology / QNAP', 'services': 'NAS recovery, RAID rebuild support, and business-critical file restoration'},
+            {'brand': 'Apple / Dell', 'services': 'Workstation and laptop media recovery with secure data handling controls'},
         ],
         'deliverables': [
             {'label': 'Critical Files', 'value': 'Priority-first restoration', 'icon': 'fa-solid fa-file-circle-check'},
@@ -404,6 +437,23 @@ SERVICE_PROFILES = {
             {'name': 'Driver Remediation', 'icon': 'fa-solid fa-microchip', 'desc': 'Outdated and conflicting driver fixes'},
             {'name': 'System Benchmarking', 'icon': 'fa-solid fa-gauge-high', 'desc': 'Performance baseline and comparison'},
         ],
+        'lead_time_diagram': [
+            {'phase': 'Intake & Triage', 'eta': '15-45 min', 'detail': 'Capture failure symptoms and run immediate checks.', 'icon': 'fa-solid fa-stethoscope'},
+            {'phase': 'Deep Diagnostics', 'eta': '1-4 hours', 'detail': 'Component testing, OS analysis, and failure isolation.', 'icon': 'fa-solid fa-magnifying-glass'},
+            {'phase': 'Repair & Replacement', 'eta': 'Same day - 2 days', 'detail': 'Part replacement, OS remediation, and patching.', 'icon': 'fa-solid fa-screwdriver'},
+            {'phase': 'Stress Validation', 'eta': '30-120 min', 'detail': 'CPU, memory, thermal, and workload checks before release.', 'icon': 'fa-solid fa-vial'},
+        ],
+        'related_technologies': [
+            'SMART Disk Analytics', 'UEFI Diagnostics', 'Memory Stress Testing', 'Thermal Profiling',
+            'Driver Remediation', 'Malware Forensics', 'System Benchmarking', 'Patch Baseline Enforcement',
+        ],
+        'supported_brands': ['Dell', 'HP', 'Lenovo', 'Apple', 'ASUS', 'Acer', 'Microsoft Surface'],
+        'brand_services': [
+            {'brand': 'Dell / HP / Lenovo', 'services': 'Motherboard, storage, RAM, and thermal repair with business QA testing'},
+            {'brand': 'Apple', 'services': 'Mac hardware diagnostics, storage replacement, and performance remediation'},
+            {'brand': 'ASUS / Acer', 'services': 'Laptop screen, keyboard, and charging subsystem repairs'},
+            {'brand': 'Microsoft Surface', 'services': 'Power, boot, and thermal diagnostics with component-level triage'},
+        ],
         'deliverables': [
             {'label': 'Reliability', 'value': 'Stable post-repair validation', 'icon': 'fa-solid fa-circle-check'},
             {'label': 'Performance', 'value': 'Boot and app speed improvements', 'icon': 'fa-solid fa-bolt'},
@@ -437,6 +487,23 @@ SERVICE_PROFILES = {
             {'name': 'Data-Safe Workbench', 'icon': 'fa-solid fa-lock', 'desc': 'Repair without factory reset when possible'},
             {'name': 'Signal Verification', 'icon': 'fa-solid fa-signal', 'desc': 'Cellular and Wi-Fi connectivity checks'},
             {'name': 'Accessory Validation', 'icon': 'fa-solid fa-headphones', 'desc': 'Bluetooth, audio jack, and peripheral tests'},
+        ],
+        'lead_time_diagram': [
+            {'phase': 'Device Intake', 'eta': '15-30 min', 'detail': 'Issue confirmation, damage documentation, and estimate path.', 'icon': 'fa-solid fa-mobile-screen'},
+            {'phase': 'Diagnostic Pass', 'eta': '30-90 min', 'detail': 'Battery, display, charging, and board-level testing.', 'icon': 'fa-solid fa-sim-card'},
+            {'phase': 'Component Repair', 'eta': 'Same day - 2 days', 'detail': 'Screen, battery, port, or camera subsystem replacement.', 'icon': 'fa-solid fa-screwdriver-wrench'},
+            {'phase': 'Functional QA', 'eta': '20-60 min', 'detail': 'Charging, signal, camera, audio, and sensor verification.', 'icon': 'fa-solid fa-circle-check'},
+        ],
+        'related_technologies': [
+            'Battery Health Analytics', 'OLED/LCD Calibration', 'Charging Port Microscopy', 'Signal Chain Testing',
+            'Firmware Integrity Checks', 'ESD-Safe Workbench', 'Data-Safe Workflow', 'Accessory Validation',
+        ],
+        'supported_brands': ['Apple iPhone', 'Samsung Galaxy', 'Google Pixel', 'iPad', 'Microsoft Surface', 'OnePlus'],
+        'brand_services': [
+            {'brand': 'Apple iPhone / iPad', 'services': 'Display, battery, charging, and camera subsystem repairs'},
+            {'brand': 'Samsung Galaxy', 'services': 'OLED replacement, charging diagnostics, and board-level checks'},
+            {'brand': 'Google Pixel / OnePlus', 'services': 'Battery service, port repair, and firmware stability validation'},
+            {'brand': 'Microsoft Surface', 'services': 'Tablet power, display, and thermal diagnostics for field devices'},
         ],
         'deliverables': [
             {'label': 'Downtime', 'value': 'Fast return-to-user cycle', 'icon': 'fa-solid fa-hourglass-half'},
@@ -472,6 +539,22 @@ SERVICE_PROFILES = {
             {'name': 'Controller Pairing Tests', 'icon': 'fa-solid fa-satellite-dish', 'desc': 'Bluetooth sync and input validation'},
             {'name': 'Network Latency Checks', 'icon': 'fa-solid fa-network-wired', 'desc': 'Wi-Fi and Ethernet connectivity tests'},
         ],
+        'lead_time_diagram': [
+            {'phase': 'Bench Intake', 'eta': '15-45 min', 'detail': 'Power, display, and accessory symptom capture.', 'icon': 'fa-solid fa-gamepad'},
+            {'phase': 'Board Diagnostics', 'eta': '1-4 hours', 'detail': 'HDMI path, power rails, thermal, and storage checks.', 'icon': 'fa-solid fa-screwdriver-wrench'},
+            {'phase': 'Repair Execution', 'eta': '1-3 days', 'detail': 'Port, thermal, storage, or board-level remediation.', 'icon': 'fa-solid fa-fire-flame-curved'},
+            {'phase': 'Extended Stress Test', 'eta': '2-6 hours', 'detail': 'Gameplay load, thermals, networking, and controller QA.', 'icon': 'fa-solid fa-circle-check'},
+        ],
+        'related_technologies': [
+            'HDMI Micro-Soldering', 'Thermal Repaste', 'Power Rail Analysis', 'Storage Integrity Validation',
+            'Controller Pairing QA', 'Latency Profiling', 'Cooling Path Rebuild', 'Extended Burn-In Testing',
+        ],
+        'supported_brands': ['Sony PlayStation', 'Microsoft Xbox', 'Nintendo Switch'],
+        'brand_services': [
+            {'brand': 'Sony PlayStation', 'services': 'HDMI port repair, thermal service, storage upgrades, and stress testing'},
+            {'brand': 'Microsoft Xbox', 'services': 'Power diagnostics, cooling remediation, and output-path validation'},
+            {'brand': 'Nintendo Switch', 'services': 'Charging, display, controller pairing, and connectivity repairs'},
+        ],
         'deliverables': [
             {'label': 'Stability', 'value': 'Extended run validation', 'icon': 'fa-solid fa-circle-check'},
             {'label': 'Thermals', 'value': 'Improved cooling performance', 'icon': 'fa-solid fa-wind'},
@@ -505,6 +588,22 @@ SERVICE_PROFILES = {
             {'name': 'Port and NIC Checks', 'icon': 'fa-solid fa-ethernet', 'desc': 'Connectivity and throughput validation'},
             {'name': 'Malware Risk Scan', 'icon': 'fa-solid fa-shield-virus', 'desc': 'Hidden threat and rootkit detection'},
             {'name': 'Performance Baseline', 'icon': 'fa-solid fa-chart-line', 'desc': 'Benchmark scores for comparison tracking'},
+        ],
+        'lead_time_diagram': [
+            {'phase': 'Asset Intake', 'eta': '15-45 min', 'detail': 'Device cataloging, symptom intake, and baseline capture.', 'icon': 'fa-solid fa-file-waveform'},
+            {'phase': 'Deep Test Cycle', 'eta': '1-6 hours', 'detail': 'Memory, storage, thermal, and network diagnostics.', 'icon': 'fa-solid fa-microchip'},
+            {'phase': 'Risk Scoring', 'eta': '30-90 min', 'detail': 'Failure probability and business-impact ranking.', 'icon': 'fa-solid fa-chart-simple'},
+            {'phase': 'Action Brief', 'eta': '1-2 hours', 'detail': 'Repair, replace, and timeline recommendations delivered.', 'icon': 'fa-solid fa-list-ol'},
+        ],
+        'related_technologies': [
+            'Hardware Health Scoring', 'SMART Predictive Analytics', 'Memory Burn-In Testing', 'Thermal Stress Profiling',
+            'NIC Throughput Validation', 'Malware Forensics', 'Risk Prioritization Matrix', 'Lifecycle Planning',
+        ],
+        'supported_brands': ['Dell', 'HP', 'Lenovo', 'Apple', 'Microsoft', 'Samsung'],
+        'brand_services': [
+            {'brand': 'Dell / HP / Lenovo', 'services': 'Enterprise workstation and laptop deep diagnostics with lifecycle scoring'},
+            {'brand': 'Apple', 'services': 'Mac diagnostics, thermal profiling, and performance baseline checks'},
+            {'brand': 'Microsoft / Samsung', 'services': 'Tablet and hybrid-device hardware-health and connectivity analysis'},
         ],
         'deliverables': [
             {'label': 'Visibility', 'value': 'Failure points identified early', 'icon': 'fa-solid fa-eye'},
@@ -971,6 +1070,85 @@ def get_service_profile(service):
     if not normalized_proof_points:
         normalized_proof_points = default_proof_points
 
+    if service.service_type == 'professional':
+        default_lead_time = [
+            {'phase': 'Discovery & Intake', 'eta': '1-2 days', 'detail': 'Requirements, risks, and current-state capture.', 'icon': 'fa-solid fa-magnifying-glass-chart'},
+            {'phase': 'Architecture & Plan', 'eta': '2-5 days', 'detail': 'Scope, milestones, and delivery sequence finalized.', 'icon': 'fa-solid fa-diagram-project'},
+            {'phase': 'Implementation', 'eta': '1-4 weeks', 'detail': 'Execution, validation, and stakeholder checkpoints.', 'icon': 'fa-solid fa-gears'},
+            {'phase': 'Handover & Optimization', 'eta': '2-5 days', 'detail': 'Documentation, enablement, and continuous tuning.', 'icon': 'fa-solid fa-chart-line'},
+        ]
+    else:
+        default_lead_time = [
+            {'phase': 'Intake & Triage', 'eta': '15-60 min', 'detail': 'Device check-in, symptom review, and priority assessment.', 'icon': 'fa-solid fa-clipboard-check'},
+            {'phase': 'Diagnostics', 'eta': '30-180 min', 'detail': 'Root-cause analysis and repair path selection.', 'icon': 'fa-solid fa-stethoscope'},
+            {'phase': 'Repair & Recovery', 'eta': 'Same day - 3 days', 'detail': 'Component-level work, replacement, or data recovery actions.', 'icon': 'fa-solid fa-screwdriver-wrench'},
+            {'phase': 'Quality Validation', 'eta': '30-120 min', 'detail': 'Stress checks, functional QA, and handoff readiness.', 'icon': 'fa-solid fa-circle-check'},
+        ]
+
+    lead_time_diagram = profile.get('lead_time_diagram', default_lead_time)
+    normalized_lead_time = []
+    for step in lead_time_diagram:
+        if not isinstance(step, dict):
+            continue
+        phase = str(step.get('phase', 'Phase')).strip() or 'Phase'
+        eta = str(step.get('eta', 'TBD')).strip() or 'TBD'
+        detail = str(step.get('detail', 'Delivery checkpoint.')).strip() or 'Delivery checkpoint.'
+        icon = normalize_icon_class(step.get('icon', ''), 'fa-solid fa-clock')
+        normalized_lead_time.append({
+            'phase': phase,
+            'eta': eta,
+            'detail': detail,
+            'icon': icon,
+        })
+    if not normalized_lead_time:
+        normalized_lead_time = default_lead_time
+
+    related_technologies = profile.get('related_technologies', [tool.get('name', '') for tool in tools[:8]])
+    normalized_technologies = []
+    seen_technologies = set()
+    for item in related_technologies:
+        value = str(item).strip()
+        key = value.lower()
+        if not value or key in seen_technologies:
+            continue
+        normalized_technologies.append(value)
+        seen_technologies.add(key)
+    if not normalized_technologies:
+        normalized_technologies = [tool.get('name', '') for tool in tools[:6] if tool.get('name')]
+
+    default_supported_brands = []
+    if service.service_type == 'repair':
+        default_supported_brands = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo', 'Microsoft']
+    supported_brands = profile.get('supported_brands', default_supported_brands)
+    normalized_supported_brands = []
+    seen_brands = set()
+    for brand in supported_brands:
+        brand_name = str(brand).strip()
+        brand_key = brand_name.lower()
+        if not brand_name or brand_key in seen_brands:
+            continue
+        normalized_supported_brands.append(brand_name)
+        seen_brands.add(brand_key)
+
+    default_brand_services = []
+    if service.service_type == 'repair':
+        default_brand_services = [
+            {'brand': 'Apple', 'services': 'Diagnostics, component repair, and post-repair QA'},
+            {'brand': 'Samsung', 'services': 'Screen, battery, board-level checks, and firmware validation'},
+            {'brand': 'Dell / HP / Lenovo', 'services': 'Laptop and desktop component replacement and performance tuning'},
+            {'brand': 'Microsoft Surface', 'services': 'Power, charging, display, and thermal diagnostics'},
+        ]
+    brand_services = profile.get('brand_services', default_brand_services)
+    normalized_brand_services = []
+    for item in brand_services:
+        if not isinstance(item, dict):
+            continue
+        brand = str(item.get('brand', '')).strip()
+        services_text = str(item.get('services', '')).strip()
+        if not brand or not services_text:
+            continue
+        normalized_brand_services.append({'brand': brand, 'services': services_text})
+
     return {
         'meta_description': profile.get('meta_description', short_description),
         'keywords': keywords,
@@ -983,6 +1161,10 @@ def get_service_profile(service):
         'service_area_cities': service_area_cities,
         'compliance_frameworks': compliance_frameworks,
         'proof_points': normalized_proof_points,
+        'lead_time_diagram': normalized_lead_time,
+        'related_technologies': normalized_technologies,
+        'supported_brands': normalized_supported_brands,
+        'brand_services': normalized_brand_services,
     }
 
 

@@ -28,6 +28,24 @@ Primary competitor set reviewed:
 - FAQ-based intent capture for decision-stage queries.
 - Visual proof blocks and outcome-led sectioning (response, uptime, risk reduction).
 
+## Technical Services Deep Research (Brand-Driven Pages)
+
+Additional high-visibility technical-service references reviewed:
+
+1. uBreakiFix (Asurion) - https://www.ubreakifix.com/
+2. iFixit Repair Guides - https://www.ifixit.com/Repair
+3. Best Buy Geek Squad Repair - https://www.bestbuy.com/site/geek-squad/
+4. CPR Cell Phone Repair - https://www.cellphonerepair.com/
+5. DriveSavers Data Recovery - https://drivesaversdatarecovery.com/
+
+Patterns used in technical-service SEO:
+
+- Prominent brand compatibility blocks (Apple, Samsung, Dell, console brands, storage brands).
+- Explicit repair/service mapping by brand family to capture branded query variants.
+- Turnaround expectation framing (intake, diagnostics, repair, quality check).
+- Device-category + component-level terminology to match high-intent search queries.
+- Reassurance signals: diagnostics rigor, data handling controls, and post-repair validation.
+
 ## Executive SEO Plan
 
 ### Pillar 1: Search Intent Coverage
@@ -55,6 +73,12 @@ Primary competitor set reviewed:
 - Shift service CTA language to "Free IT Assessment" and "Send Message".
 - Keep support and quote paths visible for both urgent and planned engagements.
 
+### Pillar 6: Technical Service Brand SEO
+
+- Add supported-brand and brand-service coverage blocks on technical service pages.
+- Add lead-time diagrams per service page to strengthen decision-stage intent matching.
+- Expand structured data with brand entities when brand coverage exists.
+
 ## KPI Targets (90-Day)
 
 - +25% organic entrances to `/services/*` pages.
@@ -68,6 +92,11 @@ Primary competitor set reviewed:
   - Service template upgraded for local coverage, trust blocks, related clusters, and insight links.
   - Service route enhanced to inject related services, industries, and posts.
   - Structured data expanded for richer search eligibility.
+- Phase 2 implemented in code:
+  - Added lead-time diagram system and per-service workflow timing content.
+  - Added related technologies section for each service detail page.
+  - Added brand coverage + brand-service matrices for technical service pages.
+  - Added brand entities to service structured data where applicable.
 - Next phase:
   - Add service-specific case studies and testimonial snippets per slug.
   - Expand city landing pages only if Search Console confirms demand gaps.

@@ -11,6 +11,10 @@
 {% set local_cities = profile.get('service_area_cities', []) %}
 {% set compliance_frameworks = profile.get('compliance_frameworks', []) %}
 {% set proof_points = profile.get('proof_points', []) %}
+{% set lead_time_steps = profile.get('lead_time_diagram', []) %}
+{% set related_technologies = profile.get('related_technologies', []) %}
+{% set supported_brands = profile.get('supported_brands', []) %}
+{% set brand_services = profile.get('brand_services', []) %}
 {% set related_services = related_services or [] %}
 {% set featured_industries = featured_industries or [] %}
 {% set related_posts = related_posts or [] %}
@@ -54,7 +58,12 @@
       "contactType": "sales",
       "telephone": {{ site_settings.get('phone', '') | tojson }}
     }
-  }{% if process_steps %},
+  }{% if supported_brands %},
+  "brand": [
+    {% for brand in supported_brands %}
+    { "@type": "Brand", "name": {{ brand | tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]{% endif %}{% if process_steps %},
   "hasOfferCatalog": {
     "@type": "OfferCatalog",
     "name": {{ (service.title ~ ' Service Scope') | tojson }},
@@ -247,6 +256,30 @@
 
 <div class="glow-line"></div>
 
+{% if lead_time_steps %}
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-hourglass-half"></i> Lead Time Diagram</div>
+      <h2>From Intake to Delivery</h2>
+    </div>
+    <div class="lead-time-grid">
+      {% for item in lead_time_steps %}
+      <article class="lead-time-card reveal stagger-{{ loop.index }}">
+        <div class="lead-time-step">Step {{ loop.index }}</div>
+        <div class="lead-time-icon"><i class="{{ item.icon }}"></i></div>
+        <h3>{{ item.phase }}</h3>
+        <div class="lead-time-eta">{{ item.eta }}</div>
+        <p>{{ item.detail }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<div class="glow-line"></div>
+
 {% if local_cities or compliance_frameworks or proof_points %}
 <section class="section section--alt">
   <div class="container">
@@ -298,8 +331,17 @@
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-layer-group"></i> Tools &amp; Platforms</div>
-      <h2>Technology We Use</h2>
+      <h2>Related Technologies &amp; Tools</h2>
     </div>
+    {% if related_technologies %}
+    <div class="service-technology-wrap reveal">
+      <div class="service-tool-cloud">
+        {% for technology in related_technologies %}
+        <span class="service-tool-pill"><i class="fa-solid fa-microchip"></i>{{ technology }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
     <div class="row g-4">
       {% set tool_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
       {% for tool in tool_stack %}
@@ -313,6 +355,50 @@
         </div>
       </div>
       {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if supported_brands or brand_services %}
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-certificate"></i> Brand Coverage</div>
+      <h2>Supported Brands and Service Scope</h2>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="service-visual-panel h-100 reveal-left">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-tags"></i> Brands We Support</h2>
+            <p>Technical coverage across major commercial and consumer hardware ecosystems.</p>
+          </div>
+          {% if supported_brands %}
+          <div class="brand-pill-grid">
+            {% for brand in supported_brands %}
+            <span class="brand-pill">{{ brand }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="service-visual-panel h-100 reveal-right">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-list-check"></i> Service Coverage by Brand</h2>
+            <p>Repair, diagnostics, and validation workflows tailored to each platform family.</p>
+          </div>
+          <div class="brand-service-grid">
+            {% for item in brand_services %}
+            <article class="brand-service-card">
+              <h3>{{ item.brand }}</h3>
+              <p>{{ item.services }}</p>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
