@@ -26,7 +26,7 @@
       <div class="card-body p-2">
         <small class="text-truncate d-block" title="{{ m.filename }}">{{ m.filename }}</small>
         <small class="text-muted">{{ (m.file_size / 1024)|round(1) }} KB</small>
-        <form method="post" action="{{ url_for('admin.media_delete', id=m.id) }}" class="mt-1" onsubmit="return confirm('Delete?')">
+        <form method="post" action="{{ url_for('admin.media_delete', id=m.id) }}" class="mt-1 confirm-delete">
             {{ csrf_input() }}
           <button class="btn btn-sm btn-outline-danger w-100"><i class="fa-solid fa-trash me-1"></i>Delete</button>
         </form>

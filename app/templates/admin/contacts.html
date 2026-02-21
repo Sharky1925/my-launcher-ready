@@ -15,7 +15,7 @@
           <td>{% if c.is_read %}<span class="badge bg-secondary">Read</span>{% else %}<span class="badge bg-primary">New</span>{% endif %}</td>
           <td>
             <a href="{{ url_for('admin.contact_view', id=c.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-eye"></i></a>
-            <form method="post" action="{{ url_for('admin.contact_delete', id=c.id) }}" class="d-inline" onsubmit="return confirm('Delete?')">
+            <form method="post" action="{{ url_for('admin.contact_delete', id=c.id) }}" class="d-inline confirm-delete">
             {{ csrf_input() }}
               <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
             </form>

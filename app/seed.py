@@ -10,23 +10,25 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
 
 
 def seed_database():
-    env_password = os.environ.get('ADMIN_PASSWORD', 'RightOn2026!')
+    env_password = os.environ.get('ADMIN_PASSWORD') or ''
 
     # Always sync admin password with env var on startup
-    try:
-        existing_admin = User.query.filter_by(username='admin').first()
-        if existing_admin:
-            existing_admin.set_password(env_password)
-            db.session.commit()
-            print('[seed] Admin password synced.')
-    except Exception as e:
-        db.session.rollback()
-        print(f'[seed] Password sync failed: {e}')
+    if env_password:
+        try:
+            existing_admin = User.query.filter_by(username='admin').first()
+            if existing_admin:
+                existing_admin.set_password(env_password)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     if User.query.first():
         return
 
     # Admin user
+    if not env_password:
+        env_password = secrets.token_urlsafe(16)
+        print(f'[seed] Generated random admin password (set ADMIN_PASSWORD env var to override): {env_password}')
     admin = User(username='admin', email='admin@example.com')
     admin.set_password(env_password)
     db.session.add(admin)

@@ -26,7 +26,7 @@
         <td class="text-end">
           <a href="{{ url_for('admin.user_edit', id=user.id) }}" class="btn btn-sm btn-outline-light me-1"><i class="fa-solid fa-pen"></i></a>
           {% if user.id != current_user.id %}
-          <form method="POST" action="{{ url_for('admin.user_delete', id=user.id) }}" style="display:inline" onsubmit="return confirm('Delete user {{ user.username }}?')">
+          <form method="POST" action="{{ url_for('admin.user_delete', id=user.id) }}" style="display:inline" class="confirm-delete">
             {{ csrf_input() }}
             <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
           </form>

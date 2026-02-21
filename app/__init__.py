@@ -155,6 +155,16 @@ def create_app(config_overrides=None):
     if config_overrides:
         app.config.update(config_overrides)
 
+    if not app.config.get('SECRET_KEY'):
+        import warnings
+        app.config['SECRET_KEY'] = secrets.token_urlsafe(32)
+        warnings.warn(
+            'SECRET_KEY is not set — using a random key. '
+            'Sessions will not survive restarts. '
+            'Set the SECRET_KEY environment variable for production.',
+            stacklevel=2,
+        )
+
     if app.config.get('TRUST_PROXY_HEADERS'):
         # Only trust one proxy hop (the platform edge) when explicitly enabled.
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
@@ -214,8 +224,9 @@ def create_app(config_overrides=None):
         response.headers.setdefault('X-Frame-Options', 'DENY')
         response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
         response.headers.setdefault('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+        response.headers.setdefault('Cross-Origin-Opener-Policy', 'same-origin')
         if request.is_secure:
-            response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+            response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
 
         # Frontend performance: cache static and uploaded assets aggressively.
         if request.path.startswith('/static/') and response.status_code in (200, 304):

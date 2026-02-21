@@ -39,7 +39,7 @@ def _database_url():
 
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'ror-default-key-change-me-in-production-2026'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or ''
     SQLALCHEMY_DATABASE_URI = _database_url()
     SQLALCHEMY_ENGINE_OPTIONS = {} if SQLALCHEMY_DATABASE_URI.startswith('sqlite') else {
         'pool_pre_ping': True,
@@ -62,7 +62,10 @@ class Config:
     }
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SECURE = _as_bool(os.environ.get('SESSION_COOKIE_SECURE'), False)
+    SESSION_COOKIE_SECURE = _as_bool(
+        os.environ.get('SESSION_COOKIE_SECURE'),
+        (os.environ.get('PREFERRED_URL_SCHEME') or '').lower() == 'https',
+    )
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
     REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE

@@ -1027,6 +1027,7 @@ def service_detail(slug):
 @main_bp.route('/blog')
 def blog():
     page = request.args.get('page', 1, type=int)
+    page = max(1, min(page, 1000))
     category_slug = clean_text(request.args.get('category', ''), 120)
     search = clean_text(request.args.get('q', ''), 120)
 
@@ -1129,10 +1130,16 @@ def remote_support_register():
         flash('Password confirmation does not match.', 'danger')
         return redirect(url_for('main.remote_support'))
 
-    password_valid = len(password) >= 8 and any(c.isalpha() for c in password) and any(c.isdigit() for c in password)
+    password_valid = (
+        len(password) >= 10
+        and any(c.isupper() for c in password)
+        and any(c.islower() for c in password)
+        and any(c.isdigit() for c in password)
+        and any(not c.isalnum() for c in password)
+    )
     if not password_valid:
         register_remote_auth_failure()
-        flash('Password must be at least 8 characters and include both letters and numbers.', 'danger')
+        flash('Password must be at least 10 characters and include uppercase, lowercase, a digit, and a special character.', 'danger')
         return redirect(url_for('main.remote_support'))
 
     exists = SupportClient.query.filter_by(email=email).first()
@@ -1182,7 +1189,7 @@ def remote_support_login():
         if remaining == 0:
             flash('Too many failed attempts. Please wait 5 minutes and try again.', 'danger')
         else:
-            flash(f'Invalid email or password. {remaining} attempt(s) remaining before temporary lock.', 'danger')
+            flash('Invalid email or password.', 'danger')
         return redirect(url_for('main.remote_support'))
 
     clear_remote_auth_failures()
@@ -1570,7 +1577,7 @@ def contact():
         )
         db.session.add(submission)
         db.session.commit()
-        current_app.logger.info(f'Contact submission saved: {name} <{email}>')
+        current_app.logger.info(f'Contact submission saved (id={submission.id})')
         result = send_contact_notification(submission)
         current_app.logger.info(f'Email notification result: {result}')
         flash('Thank you for your message! We will get back to you soon.', 'success')
