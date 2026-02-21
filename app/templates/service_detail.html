@@ -8,6 +8,12 @@
 {% set tool_stack = profile.get('tools', []) %}
 {% set deliverables = profile.get('deliverables', []) %}
 {% set faqs = profile.get('faqs', []) %}
+{% set local_cities = profile.get('service_area_cities', []) %}
+{% set compliance_frameworks = profile.get('compliance_frameworks', []) %}
+{% set proof_points = profile.get('proof_points', []) %}
+{% set related_services = related_services or [] %}
+{% set featured_industries = featured_industries or [] %}
+{% set related_posts = related_posts or [] %}
 
 {% block title %}{{ service.title }} — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
 {% block meta_description %}{{ meta_desc }}{% endblock %}
@@ -23,14 +29,66 @@
   "name": {{ service.title | tojson }},
   "description": {{ meta_desc | tojson }},
   "serviceType": {{ service.service_type | tojson }},
-  "areaServed": "Orange County, CA",
+  "url": {{ request.base_url | tojson }},
   "provider": {
     "@type": "Organization",
     "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }},
     "telephone": {{ site_settings.get('phone', '') | tojson }},
     "email": {{ site_settings.get('email', '') | tojson }}
   },
-  "url": {{ request.base_url | tojson }}
+  "areaServed": [
+    {% if local_cities %}
+    {% for city in local_cities %}
+    { "@type": "City", "name": {{ (city ~ ', CA') | tojson }} }{% if not loop.last %},{% endif %}
+    {% endfor %}
+    {% else %}
+    { "@type": "AdministrativeArea", "name": "Orange County, CA" }
+    {% endif %}
+  ],
+  "availableChannel": {
+    "@type": "ServiceChannel",
+    "serviceUrl": {{ request.base_url | tojson }},
+    "availableLanguage": ["en"],
+    "servicePhone": {
+      "@type": "ContactPoint",
+      "contactType": "sales",
+      "telephone": {{ site_settings.get('phone', '') | tojson }}
+    }
+  }{% if process_steps %},
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": {{ (service.title ~ ' Service Scope') | tojson }},
+    "itemListElement": [
+      {% for step in process_steps %}
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": {{ step.title | tojson }},
+          "description": {{ step.detail | tojson }}
+        }
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }{% endif %}
+}
+</script>
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": {{ (service.title ~ ' | ' ~ site_settings.get('company_name', 'Right On Repair')) | tojson }},
+  "description": {{ meta_desc | tojson }},
+  "url": {{ request.base_url | tojson }},
+  "about": {
+    "@type": "Service",
+    "name": {{ service.title | tojson }}
+  },
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }},
+    "url": {{ url_for('main.index', _external=True) | tojson }}
+  }
 }
 </script>
 <script nonce="{{ csp_nonce }}" type="application/ld+json">
@@ -79,6 +137,25 @@
 }
 </script>
 {% endif %}
+{% if related_services %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": {{ ('Related services for ' ~ service.title) | tojson }},
+  "itemListElement": [
+    {% for rel in related_services %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "name": {{ rel.title | tojson }},
+      "url": {{ url_for('main.service_detail', slug=rel.slug, _external=True) | tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
 {% if faqs %}
 <script nonce="{{ csp_nonce }}" type="application/ld+json">
 {
@@ -102,7 +179,6 @@
 {% endblock %}
 
 {% block content %}
-<!-- Hero -->
 <section class="page-header section-bottom-spacious">
   <div class="container">
     <nav aria-label="breadcrumb">
@@ -118,8 +194,8 @@
         <h1>{{ service.title }} <span class="gradient-text">{{ profile.get('intro_kicker', 'Solutions') }}</span></h1>
         <p class="industry-hero-description">{{ meta_desc }}</p>
         <div class="hero-buttons industry-hero-actions">
-          <a href="{{ url_for('main.remote_support') }}" class="btn btn-primary">Remote Support <i class="fa-solid fa-life-ring"></i></a>
-          <a href="{{ url_for('main.request_quote') }}" class="btn btn-ghost">Request Quote <i class="fa-solid fa-file-invoice-dollar"></i></a>
+          <a href="{{ url_for('main.request_quote') }}" class="btn btn-primary">Free IT Assessment <i class="fa-solid fa-magnifying-glass-chart"></i></a>
+          <a href="{{ url_for('main.remote_support') }}" class="btn btn-ghost">Remote Support <i class="fa-solid fa-life-ring"></i></a>
         </div>
       </div>
       <div class="col-lg-5 reveal-right">
@@ -144,7 +220,6 @@
 
 <div class="glow-line"></div>
 
-<!-- How It Works -->
 {% if process_steps %}
 <section class="section">
   <div class="container">
@@ -172,9 +247,54 @@
 
 <div class="glow-line"></div>
 
-<!-- Tools & Platforms -->
-{% if tool_stack %}
+{% if local_cities or compliance_frameworks or proof_points %}
 <section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-location-dot"></i> Local Coverage &amp; Trust</div>
+      <h2>Operational Readiness Across Orange County</h2>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="service-visual-panel h-100 reveal-left">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-map-location-dot"></i> Cities We Serve</h2>
+            <p>Field and remote support coverage for organizations across Orange County.</p>
+          </div>
+          {% if local_cities %}
+          <div class="service-tool-cloud">
+            {% for city in local_cities %}
+            <span class="service-tool-pill"><i class="fa-solid fa-location-crosshairs"></i>{{ city }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="service-visual-panel h-100 reveal-right">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-shield-halved"></i> Governance Alignment</h2>
+            <p>Delivery model built around security, accountability, and measurable outcomes.</p>
+          </div>
+          <ul class="service-value-list mb-0">
+            {% for item in compliance_frameworks %}
+            <li><i class="fa-solid fa-circle-check"></i>{{ item }}</li>
+            {% endfor %}
+            {% for point in proof_points %}
+            <li><i class="fa-solid fa-bullseye"></i><strong>{{ point.label }}:</strong> {{ point.value }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<div class="glow-line"></div>
+
+{% if tool_stack %}
+<section class="section">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-layer-group"></i> Tools &amp; Platforms</div>
@@ -198,7 +318,81 @@
 </section>
 {% endif %}
 
-<!-- FAQ -->
+{% if related_services %}
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-arrows-split-up-and-left"></i> Related Services</div>
+      <h2>Build a Full Coverage IT Stack</h2>
+    </div>
+    <div class="row g-4">
+      {% set rel_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
+      {% for rel in related_services %}
+      <div class="col-md-6 col-lg-4">
+        <a href="{{ url_for('main.service_detail', slug=rel.slug) }}" class="feature-item reveal stagger-{{ loop.index }} h-100 text-decoration-none">
+          <div class="fi-icon {{ rel_colors[(loop.index0) % 6] }}"><i class="{{ rel.icon_class }}"></i></div>
+          <div>
+            <h4>{{ rel.title }}</h4>
+            <p>{{ (rel.description or '')[:140] }}{% if rel.description and rel.description|length > 140 %}...{% endif %}</p>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if featured_industries %}
+<section class="section">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-building"></i> Industry Coverage</div>
+      <h2>Playbooks for Sector-Specific Environments</h2>
+    </div>
+    <div class="row g-4">
+      {% set ind_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
+      {% for ind in featured_industries %}
+      <div class="col-md-6 col-lg-4">
+        <article class="industry-card reveal stagger-{{ loop.index }}">
+          <div class="ind-icon {{ ind_colors[(loop.index0) % 6] }}"><i class="{{ ind.icon_class }}"></i></div>
+          <h3>{{ ind.title }}</h3>
+          <p>{{ (ind.description or '')[:140] }}{% if ind.description and ind.description|length > 140 %}...{% endif %}</p>
+          <a class="ind-link" href="{{ url_for('main.industry_detail', slug=ind.slug) }}">See industry playbook <i class="fa-solid fa-arrow-right"></i></a>
+        </article>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if related_posts %}
+<section class="section section--alt">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-newspaper"></i> Expert Insights</div>
+      <h2>Related Articles and Best Practices</h2>
+    </div>
+    <div class="row g-4">
+      {% set post_colors = ['cyan', 'rose', 'amber'] %}
+      {% for item in related_posts %}
+      {% set blurb = item.excerpt if item.excerpt else (item.content | striptags) %}
+      <div class="col-lg-4">
+        <a href="{{ url_for('main.post', slug=item.slug) }}" class="feature-item reveal stagger-{{ loop.index }} h-100 text-decoration-none">
+          <div class="fi-icon {{ post_colors[(loop.index0) % 3] }}"><i class="fa-solid fa-newspaper"></i></div>
+          <div>
+            <h4>{{ item.title }}</h4>
+            <p>{{ blurb[:150] }}{% if blurb|length > 150 %}...{% endif %}</p>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
 {% if faqs %}
 <section class="section">
   <div class="container">
@@ -218,15 +412,14 @@
 </section>
 {% endif %}
 
-<!-- CTA -->
 <section class="section-sm section-bottom-spacious">
   <div class="cta-section reveal-scale">
     <div class="cta-inner">
-      <h2>Remote Support or Request a Quote</h2>
-      <p>Get live assistance or a scoped estimate for {{ service.title | lower }}.</p>
+      <h2>Book a Free IT Assessment</h2>
+      <p>Get a scoped plan for {{ service.title | lower }}, with clear priorities, timeline options, and next steps.</p>
       <div class="cta-actions cta-actions-dual">
-        <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
-        <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request Quote</a>
+        <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request Assessment</a>
+        <a href="{{ url_for('main.contact', subject='Service Consultation: ' ~ service.title) }}" class="btn btn-remote-support"><i class="fa-solid fa-paper-plane"></i> Send Message</a>
       </div>
     </div>
   </div>

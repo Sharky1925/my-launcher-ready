@@ -866,6 +866,16 @@ def get_service_profile(service):
         'Right On Repair'
     ])
     keywords = [str(k).strip() for k in keywords if str(k).strip()]
+    keyword_set = {k.lower() for k in keywords}
+    local_variants = [
+        f"{service.title} Irvine",
+        f"{service.title} Santa Ana",
+        f"{service.title} Anaheim",
+    ]
+    for variant in local_variants:
+        if variant.lower() not in keyword_set:
+            keywords.append(variant)
+            keyword_set.add(variant.lower())
 
     process = profile.get('process', [
         {'title': 'Assess', 'detail': 'Review requirements and define scope.', 'icon': 'fa-solid fa-clipboard-check'},
@@ -924,6 +934,43 @@ def get_service_profile(service):
         for faq in faqs if isinstance(faq, dict)
     ]
 
+    service_area_cities = profile.get('service_area_cities', [
+        'Irvine', 'Santa Ana', 'Anaheim', 'Huntington Beach',
+        'Newport Beach', 'Costa Mesa', 'Fullerton', 'Orange',
+    ])
+    service_area_cities = [str(city).strip() for city in service_area_cities if str(city).strip()]
+
+    if service.service_type == 'professional':
+        default_frameworks = ['SOC 2', 'HIPAA', 'PCI-DSS', 'NIST CSF', 'CIS Controls']
+        default_proof_points = [
+            {'label': 'Response Model', 'value': 'Structured triage and escalation workflows'},
+            {'label': 'Local Coverage', 'value': 'Orange County onsite and remote support'},
+            {'label': 'Security Posture', 'value': 'Hardening, monitoring, and policy alignment'},
+            {'label': 'Roadmap Visibility', 'value': 'Prioritized recommendations and reporting'},
+        ]
+    else:
+        default_frameworks = ['Chain-of-custody handling', 'Data-safe diagnostics', 'Quality assurance testing']
+        default_proof_points = [
+            {'label': 'Diagnostic Rigor', 'value': 'Root-cause analysis before repair actions'},
+            {'label': 'Turnaround Focus', 'value': 'Priority workflows for business-critical devices'},
+            {'label': 'Data Protection', 'value': 'Data-aware repair procedures when feasible'},
+            {'label': 'Validation', 'value': 'Post-repair functional and stress test checks'},
+        ]
+
+    compliance_frameworks = profile.get('compliance_frameworks', default_frameworks)
+    compliance_frameworks = [str(item).strip() for item in compliance_frameworks if str(item).strip()]
+
+    proof_points = profile.get('proof_points', default_proof_points)
+    normalized_proof_points = []
+    for point in proof_points:
+        if not isinstance(point, dict):
+            continue
+        label = str(point.get('label', 'Operational Strength')).strip() or 'Operational Strength'
+        value = str(point.get('value', 'Reliable delivery with practical oversight.')).strip() or 'Reliable delivery with practical oversight.'
+        normalized_proof_points.append({'label': label, 'value': value})
+    if not normalized_proof_points:
+        normalized_proof_points = default_proof_points
+
     return {
         'meta_description': profile.get('meta_description', short_description),
         'keywords': keywords,
@@ -933,6 +980,9 @@ def get_service_profile(service):
         'tools': tools,
         'deliverables': deliverables,
         'faqs': faqs,
+        'service_area_cities': service_area_cities,
+        'compliance_frameworks': compliance_frameworks,
+        'proof_points': normalized_proof_points,
     }
 
 
@@ -1072,7 +1122,55 @@ def service_detail(slug):
         abort(404)
     service.icon_class = normalize_icon_class(service.icon_class, 'fa-solid fa-gear')
     service_profile = get_service_profile(service)
-    return render_template('service_detail.html', service=service, service_profile=service_profile)
+    related_services_same_type = normalize_icon_attr(
+        Service.query.filter(
+            Service.id != service.id,
+            Service.service_type == service.service_type,
+        ).order_by(Service.sort_order.asc(), Service.id.asc()).limit(4).all(),
+        'fa-solid fa-gear',
+    )
+    related_services_other_type = normalize_icon_attr(
+        Service.query.filter(
+            Service.id != service.id,
+            Service.service_type != service.service_type,
+        ).order_by(Service.sort_order.asc(), Service.id.asc()).limit(2).all(),
+        'fa-solid fa-wrench',
+    )
+    related_services = related_services_same_type + related_services_other_type
+
+    featured_industries = normalize_icon_attr(
+        Industry.query.order_by(Industry.sort_order.asc(), Industry.id.asc()).limit(6).all(),
+        'fa-solid fa-building',
+    )
+
+    related_posts = []
+    safe_title = escape_like(service.title)
+    if safe_title:
+        related_posts = Post.query.filter_by(is_published=True)\
+            .filter(Post.title.ilike(f'%{safe_title}%'))\
+            .order_by(Post.created_at.desc())\
+            .limit(3).all()
+    if len(related_posts) < 3:
+        existing_ids = {post.id for post in related_posts}
+        fallback_posts = Post.query.filter_by(is_published=True)\
+            .order_by(Post.created_at.desc())\
+            .limit(6).all()
+        for post in fallback_posts:
+            if post.id in existing_ids:
+                continue
+            related_posts.append(post)
+            existing_ids.add(post.id)
+            if len(related_posts) >= 3:
+                break
+
+    return render_template(
+        'service_detail.html',
+        service=service,
+        service_profile=service_profile,
+        related_services=related_services,
+        featured_industries=featured_industries,
+        related_posts=related_posts,
+    )
 
 
 @main_bp.route('/blog')
