@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Personal Quote Request - {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Request a quick personal quote for device repair, home setup, or individual IT support from Right On Repair.{% endblock %}
+{% block og_title %}Personal Quote Request - {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block og_description %}Submit a quick personal quote request for device repair or individual IT support.{% endblock %}
+{% block meta_keywords %}personal IT quote, device repair quote, home IT support quote, computer repair quote Orange County{% endblock %}
+
+{% block structured_data %}
+<script nonce="{{ csp_nonce }}" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Personal Quote Request",
+  "description": "Quick personal quote request for device repair, home setup, and individual IT support.",
+  "url": {{ request.base_url | tojson }}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.request_quote') }}">Request Quote</a></li>
+        <li class="breadcrumb-item active">Personal</li>
+      </ol>
+    </nav>
+    <h1>Personal Quote Request</h1>
+    <p>Need a quick quote for device repair, home setup, or individual support? Fill out this short form and we'll get back to you.</p>
+  </div>
+</section>
+
+<section class="section quote-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="quote-personal-business-link reveal">
+          <i class="fa-solid fa-building"></i>
+          Need a detailed business quote? <a href="{{ url_for('main.request_quote') }}">Click here</a> for the full business intake form.
+        </div>
+
+        <div class="contact-form-wrap quote-form-wrap reveal">
+          <div class="quote-form-head">
+            <h3><i class="fa-solid fa-user"></i> Personal Quote</h3>
+            <p>Fields marked with <strong>*</strong> are required.</p>
+          </div>
+          <form method="POST" action="{{ url_for('main.request_quote_personal') }}">
+            {{ csrf_input() }}
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="full_name">Full Name *</label>
+                <input type="text" class="form-control" id="full_name" name="full_name" autocomplete="name" required value="{{ request.form.get('full_name', '') }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="email">Email *</label>
+                <input type="email" class="form-control" id="email" name="email" autocomplete="email" required value="{{ request.form.get('email', '') }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="phone">Phone</label>
+                <input type="tel" class="form-control" id="phone" name="phone" autocomplete="tel" inputmode="tel" value="{{ request.form.get('phone', '') }}">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label" for="service_slug">Service Needed *</label>
+                <select class="form-select" id="service_slug" name="service_slug" required>
+                  <option value="">Select a service</option>
+                  <optgroup label="Professional IT Services">
+                    {% for service in professional_services %}
+                    <option value="{{ service.slug }}" {% if request.form.get('service_slug') == service.slug %}selected{% endif %}>{{ service.title }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  <optgroup label="Technical Repair Services">
+                    {% for service in repair_services %}
+                    <option value="{{ service.slug }}" {% if request.form.get('service_slug') == service.slug %}selected{% endif %}>{{ service.title }}</option>
+                    {% endfor %}
+                  </optgroup>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="preferred_contact">Preferred Contact Method *</label>
+                <select class="form-select" id="preferred_contact" name="preferred_contact" required>
+                  {% for value, label in contact_options.items() %}
+                  <option value="{{ value }}" {% if request.form.get('preferred_contact', 'either') == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="issue_description">Describe Your Issue *</label>
+                <textarea class="form-control" id="issue_description" name="issue_description" rows="5" minlength="10" required placeholder="Tell us what's going on — device type, symptoms, what you need help with.">{{ request.form.get('issue_description', '') }}</textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="additional_notes">Additional Notes</label>
+                <textarea class="form-control" id="additional_notes" name="additional_notes" rows="3" placeholder="Anything else we should know? Preferred schedule, urgency, etc.">{{ request.form.get('additional_notes', '') }}</textarea>
+              </div>
+
+              {% if turnstile_enabled %}
+              <div class="col-12">
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}"></div>
+              </div>
+              {% endif %}
+              <div class="col-12">
+                <button type="submit" class="btn btn-quote-submit">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  Submit Quote Request
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if turnstile_enabled %}
+<script nonce="{{ csp_nonce }}" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{% endif %}
+{% endblock %}

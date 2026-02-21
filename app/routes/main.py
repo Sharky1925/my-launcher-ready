@@ -126,6 +126,7 @@ QUOTE_URGENCY_OPTIONS = {
 }
 CONTACT_FORM_SCOPE = 'contact_form'
 QUOTE_FORM_SCOPE = 'quote_form'
+PERSONAL_QUOTE_FORM_SCOPE = 'personal_quote_form'
 
 
 SERVICE_PROFILES = {
@@ -805,6 +806,29 @@ def build_quote_ticket_details(payload):
     return '\n'.join(lines)
 
 
+def build_personal_quote_ticket_details(payload):
+    lines = [
+        'Personal Quote Request',
+        f"Submitted (UTC): {utc_now_naive().strftime('%Y-%m-%d %H:%M:%S')}",
+        '',
+        'Requester',
+        f"- Name: {payload.get('full_name') or 'Not provided'}",
+        f"- Email: {payload.get('email') or 'Not provided'}",
+        f"- Phone: {payload.get('phone') or 'Not provided'}",
+        f"- Preferred Contact: {payload.get('preferred_contact') or 'Not provided'}",
+        '',
+        'Service Requested',
+        f"- Service: {payload.get('service') or 'Not provided'}",
+        '',
+        'Issue Description',
+        payload.get('issue_description') or 'Not provided',
+        '',
+        'Additional Notes',
+        payload.get('additional_notes') or 'Not provided',
+    ]
+    return '\n'.join(lines)
+
+
 def get_service_profile(service):
     # Prefer DB-stored profile_json, fall back to hardcoded SERVICE_PROFILES
     profile = {}
@@ -1385,6 +1409,113 @@ def request_quote():
         return redirect(url_for('main.request_quote'))
 
     return render_template('request_quote.html', **template_context)
+
+
+@main_bp.route('/request-quote/personal', methods=['GET', 'POST'])
+def request_quote_personal():
+    services = normalize_icon_attr(
+        Service.query.order_by(Service.service_type, Service.sort_order, Service.title).all(),
+        'fa-solid fa-gear',
+    )
+    service_map = {service.slug: service for service in services}
+    professional_services = [s for s in services if s.service_type == 'professional']
+    repair_services = [s for s in services if s.service_type == 'repair']
+    template_context = {
+        'professional_services': professional_services,
+        'repair_services': repair_services,
+        'contact_options': QUOTE_CONTACT_OPTIONS,
+    }
+
+    if request.method == 'POST':
+        limited, seconds = is_form_rate_limited(
+            PERSONAL_QUOTE_FORM_SCOPE,
+            current_app.config.get('QUOTE_FORM_LIMIT', 8),
+            current_app.config.get('QUOTE_FORM_WINDOW_SECONDS', 3600),
+        )
+        if limited:
+            record_security_event(
+                'rate_limited',
+                PERSONAL_QUOTE_FORM_SCOPE,
+                f"limit={current_app.config.get('QUOTE_FORM_LIMIT', 8)} window={current_app.config.get('QUOTE_FORM_WINDOW_SECONDS', 3600)}s",
+            )
+            flash(f'Too many quote submissions from this IP. Please wait {seconds} seconds and try again.', 'danger')
+            return render_template('request_quote_personal.html', **template_context), 429
+
+        register_form_submission_attempt(
+            PERSONAL_QUOTE_FORM_SCOPE,
+            current_app.config.get('QUOTE_FORM_WINDOW_SECONDS', 3600),
+        )
+        if not verify_turnstile_response():
+            record_security_event('turnstile_failed', PERSONAL_QUOTE_FORM_SCOPE, 'missing_or_invalid_turnstile_token')
+            flash('Spam verification failed. Please retry and complete verification.', 'danger')
+            return render_template('request_quote_personal.html', **template_context), 400
+
+        full_name = clean_text(request.form.get('full_name', ''), 200)
+        email = clean_text(request.form.get('email', ''), 200).lower()
+        phone = clean_text(request.form.get('phone', ''), 80)
+        service_slug = clean_text(request.form.get('service_slug', ''), 200)
+        preferred_contact = clean_text(request.form.get('preferred_contact', ''), 20)
+        issue_description = clean_text(request.form.get('issue_description', ''), 5000)
+        additional_notes = clean_text(request.form.get('additional_notes', ''), 2500)
+
+        required_missing = []
+        if not full_name:
+            required_missing.append('full name')
+        if not email:
+            required_missing.append('email')
+        if not service_slug:
+            required_missing.append('service needed')
+        if not preferred_contact:
+            required_missing.append('preferred contact method')
+        if not issue_description:
+            required_missing.append('issue description')
+
+        if required_missing:
+            flash(f"Please complete the required fields: {', '.join(required_missing)}.", 'danger')
+            return render_template('request_quote_personal.html', **template_context), 400
+
+        if not is_valid_email(email):
+            flash('Please provide a valid email address.', 'danger')
+            return render_template('request_quote_personal.html', **template_context), 400
+
+        if service_slug not in service_map:
+            flash('Please select a valid service.', 'danger')
+            return render_template('request_quote_personal.html', **template_context), 400
+
+        if preferred_contact not in QUOTE_CONTACT_OPTIONS:
+            preferred_contact = 'either'
+
+        selected_service = service_map[service_slug]
+        quote_payload = {
+            'full_name': full_name,
+            'email': email,
+            'phone': phone,
+            'preferred_contact': QUOTE_CONTACT_OPTIONS.get(preferred_contact, 'Either email or phone'),
+            'service': selected_service.title,
+            'issue_description': issue_description,
+            'additional_notes': additional_notes,
+        }
+
+        quote_client = get_or_create_quote_intake_client()
+        ticket_subject = clean_text(f"Personal Quote: {selected_service.title} - {full_name}", 300)
+
+        ticket = SupportTicket(
+            ticket_number=generate_ticket_number(),
+            client_id=quote_client.id,
+            subject=ticket_subject,
+            service_slug=service_slug,
+            priority='normal',
+            status='open',
+            details=build_personal_quote_ticket_details(quote_payload),
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        send_ticket_notification(ticket, ticket_kind='quote')
+
+        flash(f"Quote request received. Ticket {ticket.ticket_number} has been created. We'll be in touch soon!", 'success')
+        return redirect(url_for('main.request_quote_personal'))
+
+    return render_template('request_quote_personal.html', **template_context)
 
 
 @main_bp.route('/contact', methods=['GET', 'POST'])

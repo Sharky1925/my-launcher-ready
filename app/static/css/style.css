@@ -2859,6 +2859,31 @@ p { margin: 0 0 16px; }
   color: #031425;
   box-shadow: 0 20px 40px rgba(36, 140, 225, 0.52);
 }
+.quote-personal-business-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(105, 148, 237, 0.28);
+  background: rgba(10, 19, 34, 0.88);
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+.quote-personal-business-link i {
+  color: #8ab6ff;
+  font-size: 1rem;
+}
+.quote-personal-business-link a {
+  color: #8fb9ff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.quote-personal-business-link a:hover {
+  color: #c4dcff;
+}
 
 /* ============================================================
    BOOTSTRAP DARK OVERRIDES
