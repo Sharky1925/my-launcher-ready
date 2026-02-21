@@ -421,12 +421,17 @@ p { margin: 0 0 16px; }
     transition: opacity .28s var(--ease-smooth), transform .28s var(--ease-smooth), visibility .28s var(--ease-smooth);
   }
   .navbar-main .nav-item.dropdown:hover > .dropdown-menu,
-  .navbar-main .nav-item.dropdown:focus-within > .dropdown-menu,
-  .navbar-main .nav-item.dropdown.show > .dropdown-menu {
+  .navbar-main .nav-item.dropdown:focus-within > .dropdown-menu {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
     transform: translateY(0) scale(1);
+  }
+}
+/* Mobile: .show class opens dropdowns on click (below 992px only) */
+@media (max-width: 991.98px) {
+  .navbar-main .nav-item.dropdown.show > .dropdown-menu {
+    display: block;
   }
 }
 /* Kill every Bootstrap dropdown variable */

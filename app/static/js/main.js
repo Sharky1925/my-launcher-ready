@@ -151,22 +151,8 @@
     });
   }
 
-  // --- Desktop dropdown: hover-to-open ---
+  // --- Desktop dropdown: pure CSS hover (no JS needed) ---
   const dropdownItems = document.querySelectorAll('.navbar-main .nav-item.dropdown');
-  if (dropdownItems.length && window.bootstrap?.Dropdown) {
-    const desktopMedia = window.matchMedia('(min-width: 992px)');
-    dropdownItems.forEach((item) => {
-      const toggle = item.querySelector('.dropdown-toggle');
-      if (!toggle) return;
-      const dropdown = window.bootstrap.Dropdown.getOrCreateInstance(toggle);
-      item.addEventListener('mouseenter', () => {
-        if (desktopMedia.matches) dropdown.show();
-      });
-      item.addEventListener('mouseleave', () => {
-        if (desktopMedia.matches) dropdown.hide();
-      });
-    });
-  }
 
   // Close all dropdowns on Escape key
   document.addEventListener('keydown', (e) => {
