@@ -25,7 +25,7 @@
   <meta name="twitter:title" content="{{ self.og_title() }}">
   <meta name="twitter:description" content="{{ self.og_description() }}">
   <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}">
-  {% set asset_v = '20260220-nav-v7' %}
+  {% set asset_v = '20260220-polish-v1' %}
   <!-- Fonts & CSS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -114,7 +114,7 @@
       <!-- Desktop CTA buttons — visible only on lg+ -->
       <div class="nav-cta-group d-none d-lg-flex">
         {% if site_settings.get('phone') %}
-        <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
+        <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
         {% endif %}
         <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
         <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
@@ -167,7 +167,7 @@
           <li class="nav-item d-lg-none mt-2">
             <div class="mobile-nav-ctas">
               {% if site_settings.get('phone') %}
-              <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
+              <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
               {% endif %}
               <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
               <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
@@ -256,7 +256,7 @@
 
 <!-- Mobile Call Button -->
 {% if site_settings.get('phone') %}
-<a class="mobile-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}">
+<a class="mobile-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">
   <i class="fa-solid fa-phone"></i> Call Now
 </a>
 {% endif %}

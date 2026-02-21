@@ -3,6 +3,9 @@
    ============================================================ */
 (function () {
   'use strict';
+  if (window.__mainJSLoaded) return;
+  window.__mainJSLoaded = true;
+
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // --- Delay variables from data attributes (replaces inline style usage) ---
@@ -84,10 +87,9 @@
     });
   }
 
-  // --- Animated Counters ---
+  // --- Animated Counters (rAF with easeOut) ---
   function animateCounters() {
-    document.querySelectorAll('.stat-number[data-target]').forEach(el => {
-      if (el.dataset.animated) return;
+    document.querySelectorAll('.stat-number[data-target]:not([data-animated])').forEach(el => {
       el.dataset.animated = '1';
       const target = parseInt(el.dataset.target, 10);
       const suffix = el.dataset.suffix || '';
@@ -96,17 +98,18 @@
         return;
       }
       const duration = 2000;
-      const step = target / (duration / 16);
-      let current = 0;
-      const timer = setInterval(() => {
-        current += step;
-        if (current >= target) {
-          el.textContent = target.toLocaleString() + suffix;
-          clearInterval(timer);
-        } else {
-          el.textContent = Math.floor(current).toLocaleString() + suffix;
+      const startTime = performance.now();
+      const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+      const tick = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const value = Math.floor(target * easeOutCubic(progress));
+        el.textContent = value.toLocaleString() + suffix;
+        if (progress < 1) {
+          requestAnimationFrame(tick);
         }
-      }, 16);
+      };
+      requestAnimationFrame(tick);
     });
   }
   const statsSection = document.querySelector('.stats-section');
@@ -128,9 +131,12 @@
       if (isOpen) {
         navCollapse.classList.remove('show');
         mobileToggle.setAttribute('aria-expanded', 'false');
+        mobileToggle.focus();
       } else {
         navCollapse.classList.add('show');
         mobileToggle.setAttribute('aria-expanded', 'true');
+        const firstLink = navCollapse.querySelector('.nav-link');
+        if (firstLink) firstLink.focus();
       }
     });
 
@@ -147,6 +153,31 @@
 
   // --- Desktop dropdown: click-to-open (no hover) ---
   const dropdownItems = document.querySelectorAll('.navbar-main .nav-item.dropdown');
+
+  // Close all dropdowns on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      dropdownItems.forEach((item) => {
+        if (item.classList.contains('show')) {
+          item.classList.remove('show');
+          item.querySelector('.dropdown-menu')?.classList.remove('show');
+          const toggle = item.querySelector('.dropdown-toggle');
+          toggle?.setAttribute('aria-expanded', 'false');
+          toggle?.focus();
+        }
+      });
+      // Also close Bootstrap-managed dropdowns
+      if (window.bootstrap?.Dropdown) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+          const toggle = menu.previousElementSibling;
+          if (toggle) {
+            const dd = window.bootstrap.Dropdown.getInstance(toggle);
+            if (dd) dd.hide();
+          }
+        });
+      }
+    }
+  });
 
   // --- Fallback dropdown toggle if Bootstrap dropdown JS is unavailable ---
   if (dropdownItems.length && !window.bootstrap?.Dropdown) {
