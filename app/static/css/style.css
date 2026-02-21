@@ -3022,6 +3022,88 @@ p { margin: 0 0 16px; }
 }
 
 /* ============================================================
+   QUOTE TOGGLE SWITCH
+   ============================================================ */
+.quote-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.quote-toggle {
+  position: relative;
+  display: inline-flex;
+  padding: 4px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(120, 160, 230, 0.28);
+  background: rgba(10, 19, 34, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  gap: 0;
+}
+.quote-toggle-slider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  border-radius: var(--radius-full);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease, box-shadow 0.4s ease;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, #ff9d2f, #ffb347);
+  box-shadow: 0 4px 18px rgba(255, 150, 40, 0.35);
+}
+.quote-toggle.is-business .quote-toggle-slider {
+  transform: translateX(100%);
+  background: linear-gradient(135deg, #4f8bff, #6da8ff);
+  box-shadow: 0 4px 18px rgba(70, 130, 240, 0.35);
+}
+.quote-toggle-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: rgba(200, 215, 240, 0.6);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.35s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.quote-toggle-btn i {
+  font-size: 0.82rem;
+  transition: color 0.35s ease;
+}
+.quote-toggle-btn.is-active {
+  color: #1a0e02;
+}
+.quote-toggle.is-business .quote-toggle-btn.is-active {
+  color: #020d1e;
+}
+.quote-toggle-btn:not(.is-active):hover {
+  color: rgba(220, 230, 250, 0.9);
+}
+@media (max-width: 767px) {
+  .quote-toggle-btn {
+    padding: 10px 20px;
+    font-size: 0.82rem;
+    gap: 6px;
+  }
+}
+@media (max-width: 400px) {
+  .quote-toggle-btn {
+    padding: 9px 14px;
+    font-size: 0.78rem;
+  }
+}
+
+/* ============================================================
    QUOTE CHOOSER HERO CARDS
    ============================================================ */
 @keyframes chooserIconFloat {

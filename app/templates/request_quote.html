@@ -96,6 +96,18 @@
       </div>
     </div>
 
+    <div class="quote-toggle-wrap reveal">
+      <div class="quote-toggle" id="quoteToggle">
+        <div class="quote-toggle-slider"></div>
+        <button type="button" class="quote-toggle-btn is-active" data-target="personal">
+          <i class="fa-solid fa-user"></i> Personal
+        </button>
+        <button type="button" class="quote-toggle-btn" data-target="business">
+          <i class="fa-solid fa-building"></i> Business
+        </button>
+      </div>
+    </div>
+
     <div class="quote-chooser-grid">
       <a href="{{ url_for('main.request_quote_personal') }}" class="quote-chooser-card quote-chooser-card--personal reveal-left stagger-1">
         <div class="quote-chooser-card-glow"></div>
@@ -331,4 +343,35 @@
 {% if turnstile_enabled %}
 <script nonce="{{ csp_nonce }}" src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 {% endif %}
+<script nonce="{{ csp_nonce }}">
+(function() {
+  var toggle = document.getElementById('quoteToggle');
+  if (!toggle) return;
+  var btns = toggle.querySelectorAll('.quote-toggle-btn');
+  var personalUrl = '{{ url_for("main.request_quote_personal") }}';
+
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var target = btn.getAttribute('data-target');
+      btns.forEach(function(b) { b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+
+      if (target === 'business') {
+        toggle.classList.add('is-business');
+        var form = document.getElementById('business-form');
+        if (form) {
+          setTimeout(function() {
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 350);
+        }
+      } else {
+        toggle.classList.remove('is-business');
+        setTimeout(function() {
+          window.location.href = personalUrl;
+        }, 350);
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}
