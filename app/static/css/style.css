@@ -398,14 +398,14 @@ p { margin: 0 0 16px; }
   opacity: 1;
 }
 
-/* Dropdown — Glassmorphism */
+/* Dropdown — Glassmorphism (no border frame) */
 .navbar-main .dropdown-menu {
-  background: linear-gradient(160deg, rgba(13, 23, 40, 0.95), rgba(8, 14, 26, 0.92));
-  backdrop-filter: blur(18px) saturate(155%);
-  -webkit-backdrop-filter: blur(18px) saturate(155%);
-  border: 1px solid rgba(122, 158, 228, 0.33);
+  background: linear-gradient(160deg, rgba(13, 23, 40, 0.96), rgba(8, 14, 26, 0.94));
+  backdrop-filter: blur(20px) saturate(155%);
+  -webkit-backdrop-filter: blur(20px) saturate(155%);
+  border: none !important;
   border-radius: 16px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), 0 8px 22px rgba(26, 56, 115, 0.2), inset 0 1px 0 rgba(255,255,255,.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,.06);
   padding: 8px;
   margin-top: 10px;
   min-width: 270px;
@@ -433,11 +433,14 @@ p { margin: 0 0 16px; }
 }
 /* Kill every Bootstrap dropdown variable */
 .navbar-main .dropdown-menu {
+  --bs-dropdown-border-color: transparent;
+  --bs-dropdown-border-width: 0;
   --bs-dropdown-link-hover-bg: transparent;
   --bs-dropdown-link-hover-color: #8dccff;
   --bs-dropdown-link-active-bg: transparent;
   --bs-dropdown-link-active-color: #a0d4ff;
   --bs-dropdown-link-color: rgba(210, 226, 250, 0.70);
+  --bs-dropdown-box-shadow: none;
 }
 .navbar-main .dropdown-item,
 .navbar-main .dropdown-item:link,
@@ -454,6 +457,7 @@ p { margin: 0 0 16px; }
 }
 .navbar-main .dropdown-item:hover,
 .navbar-main .dropdown-item:focus,
+.navbar-main .dropdown-item:focus-visible,
 .navbar-main .dropdown-item:active,
 .navbar-main .dropdown-item.active {
   background: transparent !important; background-color: transparent !important;
