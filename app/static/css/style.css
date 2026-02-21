@@ -3047,7 +3047,7 @@ p { margin: 0 0 16px; }
   position: absolute;
   top: 5px;
   left: 5px;
-  width: calc(50% - 5px);
+  width: calc(50% - 3px);
   height: calc(100% - 10px);
   border-radius: var(--radius-full);
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), background 0.45s ease, box-shadow 0.45s ease;
@@ -3057,9 +3057,9 @@ p { margin: 0 0 16px; }
   box-shadow: 0 6px 24px rgba(0, 212, 170, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .quote-toggle.is-business .quote-toggle-slider {
-  transform: translateX(100%);
-  background: linear-gradient(135deg, #3a3a3a, #5c5c5c, #787878, #5c5c5c);
-  box-shadow: 0 6px 24px rgba(100, 100, 100, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  transform: translateX(calc(100% + 1px));
+  background: linear-gradient(135deg, #3a3a42, #5c5c66, #787880, #5c5c66);
+  box-shadow: 0 6px 24px rgba(100, 100, 110, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.30);
 }
 .quote-toggle-btn {
   position: relative;
@@ -3095,6 +3095,19 @@ p { margin: 0 0 16px; }
 }
 .quote-toggle-btn:not(.is-active):hover {
   color: rgba(230, 240, 255, 0.85);
+}
+.quote-toggle-btn:focus-visible {
+  outline: 2px solid rgba(0, 212, 170, 0.7);
+  outline-offset: 2px;
+}
+.quote-toggle-label {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 0.76rem;
+  color: rgba(180, 200, 230, 0.45);
+  letter-spacing: 0.06em;
+  font-weight: 500;
 }
 @media (max-width: 767px) {
   .quote-toggle-btn {
@@ -3221,80 +3234,90 @@ p { margin: 0 0 16px; }
 }
 .quote-chooser-cta i {
   font-size: 0.78rem;
-  animation: crosslinkArrow 1.5s ease-in-out infinite;
 }
 .quote-chooser-card:hover .quote-chooser-cta {
   animation: crosslinkShimmer 2s linear infinite;
 }
+.quote-chooser-card:hover .quote-chooser-cta i {
+  animation: crosslinkArrow 1.5s ease-in-out infinite;
+}
 
-/* Personal chooser card (warm amber) */
+/* Personal chooser card (turquoise) */
 .quote-chooser-card--personal {
-  border: 1px solid rgba(255, 170, 60, 0.40);
-  background: linear-gradient(135deg, rgba(50, 28, 8, 0.92) 0%, rgba(60, 35, 12, 0.88) 50%, rgba(45, 25, 10, 0.92) 100%);
-  box-shadow: 0 0 18px rgba(255, 170, 60, 0.10), 0 8px 28px rgba(255, 130, 50, 0.08);
+  border: 1px solid rgba(0, 212, 170, 0.35);
+  background: linear-gradient(135deg, rgba(4, 32, 26, 0.92) 0%, rgba(6, 42, 34, 0.88) 50%, rgba(4, 28, 22, 0.92) 100%);
+  box-shadow: 0 0 18px rgba(0, 212, 170, 0.10), 0 8px 28px rgba(0, 180, 140, 0.08);
 }
 .quote-chooser-card--personal:hover {
-  border-color: rgba(255, 180, 70, 0.7);
-  box-shadow: 0 0 32px rgba(255, 160, 50, 0.25), 0 16px 40px rgba(255, 120, 40, 0.20);
+  border-color: rgba(0, 230, 195, 0.65);
+  box-shadow: 0 0 32px rgba(0, 212, 170, 0.22), 0 16px 40px rgba(0, 180, 140, 0.18);
 }
 .quote-chooser-card--personal .quote-chooser-card-glow {
-  background: linear-gradient(135deg, rgba(255, 170, 60, 0.08), rgba(255, 120, 40, 0.06));
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.08), rgba(32, 240, 208, 0.05));
 }
 .quote-chooser-card--personal .quote-chooser-icon {
-  background: linear-gradient(135deg, #ff9d2f, #ffb347);
-  box-shadow: 0 6px 20px rgba(255, 150, 40, 0.35);
+  background: linear-gradient(135deg, #00d4aa, #20f0d0);
+  box-shadow: 0 6px 20px rgba(0, 212, 170, 0.35);
 }
 .quote-chooser-card--personal .quote-chooser-badge {
-  color: rgba(255, 190, 100, 0.85);
+  color: rgba(100, 240, 210, 0.85);
 }
 .quote-chooser-card--personal .quote-chooser-title {
-  color: #ffd6a0;
+  color: #80f0d0;
 }
 .quote-chooser-card--personal .quote-chooser-features li i {
-  color: #ffb347;
+  color: #20f0d0;
 }
 .quote-chooser-card--personal .quote-chooser-cta {
-  background: linear-gradient(135deg, #ff9d2f 0%, #ffb854 50%, #ff9d2f 100%);
-  color: #1a0e02;
-  box-shadow: 0 4px 16px rgba(255, 150, 40, 0.35);
+  background: linear-gradient(135deg, #00d4aa 0%, #20f0d0 50%, #00d4aa 100%);
+  background-size: 200% auto;
+  color: #042a22;
+  box-shadow: 0 4px 16px rgba(0, 212, 170, 0.35);
 }
 .quote-chooser-card--personal:hover .quote-chooser-cta {
-  box-shadow: 0 6px 22px rgba(255, 150, 40, 0.50);
+  box-shadow: 0 6px 22px rgba(0, 212, 170, 0.50);
 }
 
-/* Business chooser card (cool blue) */
+/* Business chooser card (platinum) */
 .quote-chooser-card--business {
-  border: 1px solid rgba(100, 160, 255, 0.40);
-  background: linear-gradient(135deg, rgba(10, 22, 48, 0.92) 0%, rgba(15, 30, 60, 0.88) 50%, rgba(10, 20, 44, 0.92) 100%);
-  box-shadow: 0 0 18px rgba(80, 140, 255, 0.10), 0 8px 28px rgba(60, 120, 220, 0.08);
+  border: 1px solid rgba(160, 160, 170, 0.30);
+  background: linear-gradient(135deg, rgba(22, 22, 26, 0.94) 0%, rgba(32, 32, 38, 0.90) 50%, rgba(20, 20, 24, 0.94) 100%);
+  box-shadow: 0 0 18px rgba(120, 120, 130, 0.08), 0 8px 28px rgba(0, 0, 0, 0.15);
 }
 .quote-chooser-card--business:hover {
-  border-color: rgba(120, 175, 255, 0.65);
-  box-shadow: 0 0 30px rgba(80, 140, 255, 0.22), 0 14px 36px rgba(60, 120, 220, 0.18);
+  border-color: rgba(190, 190, 200, 0.55);
+  box-shadow: 0 0 30px rgba(150, 150, 160, 0.16), 0 14px 36px rgba(0, 0, 0, 0.22);
 }
 .quote-chooser-card--business .quote-chooser-card-glow {
-  background: linear-gradient(135deg, rgba(80, 140, 255, 0.08), rgba(60, 120, 220, 0.06));
+  background: linear-gradient(135deg, rgba(180, 180, 190, 0.06), rgba(140, 140, 150, 0.04));
 }
 .quote-chooser-card--business .quote-chooser-icon {
-  background: linear-gradient(135deg, #4f8bff, #6da8ff);
-  box-shadow: 0 6px 20px rgba(70, 130, 240, 0.30);
+  background: linear-gradient(135deg, #4a4a52, #6e6e78, #4a4a52);
+  box-shadow: 0 6px 20px rgba(80, 80, 90, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.20);
 }
 .quote-chooser-card--business .quote-chooser-badge {
-  color: rgba(160, 200, 255, 0.85);
+  color: rgba(200, 200, 210, 0.80);
 }
 .quote-chooser-card--business .quote-chooser-title {
-  color: #b8d4ff;
+  color: #d0d0d8;
 }
 .quote-chooser-card--business .quote-chooser-features li i {
-  color: #6da8ff;
+  color: #9a9aa4;
 }
 .quote-chooser-card--business .quote-chooser-cta {
-  background: linear-gradient(135deg, #4f8bff 0%, #6da8ff 50%, #4f8bff 100%);
-  color: #020d1e;
-  box-shadow: 0 4px 16px rgba(70, 130, 240, 0.30);
+  background: linear-gradient(135deg, #3a3a42 0%, #5c5c66 50%, #3a3a42 100%);
+  background-size: 200% auto;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(80, 80, 90, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .quote-chooser-card--business:hover .quote-chooser-cta {
-  box-shadow: 0 6px 22px rgba(70, 130, 240, 0.45);
+  box-shadow: 0 6px 22px rgba(100, 100, 110, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+/* Chooser card focus-visible for keyboard navigation */
+.quote-chooser-card:focus-visible {
+  outline: 2px solid rgba(0, 212, 170, 0.7);
+  outline-offset: 3px;
 }
 
 /* ============================================================

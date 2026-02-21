@@ -97,14 +97,17 @@
     </div>
 
     <div class="quote-toggle-wrap reveal">
-      <div class="quote-toggle" id="quoteToggle">
-        <div class="quote-toggle-slider"></div>
-        <button type="button" class="quote-toggle-btn is-active" data-target="personal">
-          <i class="fa-solid fa-user"></i> Personal
-        </button>
-        <button type="button" class="quote-toggle-btn" data-target="business">
-          <i class="fa-solid fa-building"></i> Business
-        </button>
+      <div>
+        <div class="quote-toggle" id="quoteToggle" role="tablist" aria-label="Quote type">
+          <div class="quote-toggle-slider" aria-hidden="true"></div>
+          <button type="button" class="quote-toggle-btn is-active" data-target="personal" role="tab" aria-selected="true">
+            <i class="fa-solid fa-user"></i> Personal
+          </button>
+          <button type="button" class="quote-toggle-btn" data-target="business" role="tab" aria-selected="false">
+            <i class="fa-solid fa-building"></i> Business
+          </button>
+        </div>
+        <span class="quote-toggle-label">Choose your quote type</span>
       </div>
     </div>
 
@@ -123,7 +126,7 @@
         </ul>
         <span class="quote-chooser-cta">Get Started <i class="fa-solid fa-arrow-right"></i></span>
       </a>
-      <a href="#business-form" class="quote-chooser-card quote-chooser-card--business reveal-right stagger-1">
+      <a href="#business-form" id="businessChooserCard" class="quote-chooser-card quote-chooser-card--business reveal-right stagger-1">
         <div class="quote-chooser-card-glow"></div>
         <div class="quote-chooser-icon"><i class="fa-solid fa-building"></i></div>
         <span class="quote-chooser-badge">For Companies</span>
@@ -349,12 +352,21 @@
   if (!toggle) return;
   var btns = toggle.querySelectorAll('.quote-toggle-btn');
   var personalUrl = '{{ url_for("main.request_quote_personal") }}';
+  var navigating = false;
+
+  function setActive(activeBtn) {
+    btns.forEach(function(b) {
+      var isActive = b === activeBtn;
+      b.classList.toggle('is-active', isActive);
+      b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+  }
 
   btns.forEach(function(btn) {
     btn.addEventListener('click', function() {
+      if (navigating) return;
       var target = btn.getAttribute('data-target');
-      btns.forEach(function(b) { b.classList.remove('is-active'); });
-      btn.classList.add('is-active');
+      setActive(btn);
 
       if (target === 'business') {
         toggle.classList.add('is-business');
@@ -362,16 +374,27 @@
         if (form) {
           setTimeout(function() {
             form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 350);
+          }, 300);
         }
       } else {
         toggle.classList.remove('is-business');
+        navigating = true;
         setTimeout(function() {
           window.location.href = personalUrl;
-        }, 350);
+        }, 300);
       }
     });
   });
+
+  /* Smooth-scroll the business chooser card instead of hard-jumping */
+  var bizCard = document.getElementById('businessChooserCard');
+  if (bizCard) {
+    bizCard.addEventListener('click', function(e) {
+      e.preventDefault();
+      var form = document.getElementById('business-form');
+      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 })();
 </script>
 {% endblock %}
