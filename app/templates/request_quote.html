@@ -45,10 +45,14 @@
       </div>
     </div>
 
-    <div class="quote-personal-business-link reveal">
-      <i class="fa-solid fa-user"></i>
-      Looking for a quick personal quote? <a href="{{ url_for('main.request_quote_personal') }}">Click here</a> for a simpler form.
-    </div>
+    <a href="{{ url_for('main.request_quote_personal') }}" class="quote-crosslink-banner quote-crosslink-banner--personal reveal">
+      <span class="quote-crosslink-icon"><i class="fa-solid fa-user"></i></span>
+      <span class="quote-crosslink-body">
+        <span class="quote-crosslink-title">Looking for a quick personal quote?</span>
+        <span class="quote-crosslink-desc">Device repair, home setup, or individual support — get a quote in under a minute.</span>
+      </span>
+      <span class="quote-crosslink-cta">Get Started <i class="fa-solid fa-arrow-right"></i></span>
+    </a>
 
     <div class="row g-4 mt-1">
       <div class="col-xl-8 reveal-left">

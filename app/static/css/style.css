@@ -2859,30 +2859,166 @@ p { margin: 0 0 16px; }
   color: #031425;
   box-shadow: 0 20px 40px rgba(36, 140, 225, 0.52);
 }
-.quote-personal-business-link {
+/* Cross-link banners between personal / business quote pages */
+@keyframes crosslinkShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes crosslinkArrow {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+@keyframes crosslinkGlow {
+  0%, 100% { box-shadow: 0 0 18px rgba(255, 170, 60, 0.12), 0 8px 28px rgba(255, 130, 50, 0.10); }
+  50% { box-shadow: 0 0 28px rgba(255, 170, 60, 0.22), 0 12px 36px rgba(255, 130, 50, 0.18); }
+}
+.quote-crosslink-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  margin-bottom: 20px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(105, 148, 237, 0.28);
-  background: rgba(10, 19, 34, 0.88);
-  color: var(--text-muted);
-  font-size: 0.92rem;
+  gap: 16px;
+  padding: 18px 24px;
+  margin-bottom: 24px;
+  border-radius: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
-.quote-personal-business-link i {
-  color: #8ab6ff;
+.quote-crosslink-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.quote-crosslink-banner:hover {
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+.quote-crosslink-banner:hover::before {
+  opacity: 1;
+}
+
+/* Personal quote banner (warm amber/orange) */
+.quote-crosslink-banner--personal {
+  border: 1px solid rgba(255, 170, 60, 0.45);
+  background: linear-gradient(135deg, rgba(50, 28, 8, 0.92) 0%, rgba(60, 35, 12, 0.88) 50%, rgba(45, 25, 10, 0.92) 100%);
+  animation: crosslinkGlow 3.5s ease-in-out infinite;
+}
+.quote-crosslink-banner--personal::before {
+  background: linear-gradient(135deg, rgba(255, 170, 60, 0.08), rgba(255, 120, 40, 0.06));
+}
+.quote-crosslink-banner--personal:hover {
+  border-color: rgba(255, 180, 70, 0.7);
+  box-shadow: 0 0 32px rgba(255, 160, 50, 0.28), 0 16px 40px rgba(255, 120, 40, 0.22);
+}
+.quote-crosslink-banner--personal .quote-crosslink-icon {
+  background: linear-gradient(135deg, #ff9d2f, #ffb347);
+  box-shadow: 0 6px 20px rgba(255, 150, 40, 0.35);
+}
+.quote-crosslink-banner--personal .quote-crosslink-title {
+  color: #ffd6a0;
+}
+.quote-crosslink-banner--personal .quote-crosslink-cta {
+  background: linear-gradient(135deg, #ff9d2f 0%, #ffb854 50%, #ff9d2f 100%);
+  background-size: 200% auto;
+  color: #1a0e02;
+  box-shadow: 0 4px 16px rgba(255, 150, 40, 0.35);
+}
+.quote-crosslink-banner--personal:hover .quote-crosslink-cta {
+  animation: crosslinkShimmer 2s linear infinite;
+  box-shadow: 0 6px 22px rgba(255, 150, 40, 0.50);
+}
+
+/* Business quote banner (cool blue) */
+.quote-crosslink-banner--business {
+  border: 1px solid rgba(100, 160, 255, 0.40);
+  background: linear-gradient(135deg, rgba(10, 22, 48, 0.92) 0%, rgba(15, 30, 60, 0.88) 50%, rgba(10, 20, 44, 0.92) 100%);
+  box-shadow: 0 0 18px rgba(80, 140, 255, 0.10), 0 8px 28px rgba(60, 120, 220, 0.08);
+}
+.quote-crosslink-banner--business::before {
+  background: linear-gradient(135deg, rgba(80, 140, 255, 0.08), rgba(60, 120, 220, 0.06));
+}
+.quote-crosslink-banner--business:hover {
+  border-color: rgba(120, 175, 255, 0.65);
+  box-shadow: 0 0 30px rgba(80, 140, 255, 0.22), 0 14px 36px rgba(60, 120, 220, 0.18);
+}
+.quote-crosslink-banner--business .quote-crosslink-icon {
+  background: linear-gradient(135deg, #4f8bff, #6da8ff);
+  box-shadow: 0 6px 20px rgba(70, 130, 240, 0.30);
+}
+.quote-crosslink-banner--business .quote-crosslink-title {
+  color: #b8d4ff;
+}
+.quote-crosslink-banner--business .quote-crosslink-cta {
+  background: linear-gradient(135deg, #4f8bff 0%, #6da8ff 50%, #4f8bff 100%);
+  background-size: 200% auto;
+  color: #020d1e;
+  box-shadow: 0 4px 16px rgba(70, 130, 240, 0.30);
+}
+.quote-crosslink-banner--business:hover .quote-crosslink-cta {
+  animation: crosslinkShimmer 2s linear infinite;
+  box-shadow: 0 6px 22px rgba(70, 130, 240, 0.45);
+}
+
+/* Shared inner elements */
+.quote-crosslink-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  color: #fff;
+}
+.quote-crosslink-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.quote-crosslink-title {
   font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
-.quote-personal-business-link a {
-  color: #8fb9ff;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.quote-crosslink-desc {
+  font-size: 0.84rem;
+  color: rgba(220, 230, 250, 0.6);
+  line-height: 1.4;
 }
-.quote-personal-business-link a:hover {
-  color: #c4dcff;
+.quote-crosslink-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  transition: box-shadow 0.3s ease;
+}
+.quote-crosslink-cta i {
+  font-size: 0.78rem;
+  animation: crosslinkArrow 1.5s ease-in-out infinite;
+}
+@media (max-width: 640px) {
+  .quote-crosslink-banner {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 18px;
+  }
+  .quote-crosslink-cta {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* ============================================================
