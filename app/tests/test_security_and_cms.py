@@ -53,6 +53,8 @@ def build_test_app(tmp_path, monkeypatch, overrides=None):
         "SECRET_KEY": "test-secret-key",
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}",
         "UPLOAD_FOLDER": str(upload_path),
+        "TURNSTILE_SITE_KEY": "",
+        "TURNSTILE_SECRET_KEY": "",
     }
     if overrides:
         config.update(overrides)
@@ -124,7 +126,7 @@ def test_public_pages_and_security_headers(client):
 def test_hsts_header_on_https_requests(client):
     response = client.get("/", base_url="https://example.com")
     assert response.status_code == 200
-    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
+    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains; preload"
 
 
 def test_hsts_header_on_trusted_forwarded_proto(tmp_path, monkeypatch):
@@ -132,7 +134,7 @@ def test_hsts_header_on_trusted_forwarded_proto(tmp_path, monkeypatch):
     proxied_client = proxied_app.test_client()
     response = proxied_client.get("/", base_url="http://example.com", headers={"X-Forwarded-Proto": "https"})
     assert response.status_code == 200
-    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
+    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains; preload"
 
 
 def test_health_endpoint_reports_ok(client):
@@ -246,6 +248,7 @@ def test_contact_form_rate_limit_blocks_second_submission(client, app):
             "_csrf_token": first_csrf,
             "name": "Rate Limited Contact 1",
             "email": email_one,
+            "phone": "+1 (555) 100-1000",
             "subject": "Rate Test 1",
             "message": "First message should pass.",
         },
@@ -262,6 +265,7 @@ def test_contact_form_rate_limit_blocks_second_submission(client, app):
             "_csrf_token": second_csrf,
             "name": "Rate Limited Contact 2",
             "email": email_two,
+            "phone": "+1 (555) 200-2000",
             "subject": "Rate Test 2",
             "message": "Second message should be blocked by rate limit.",
         },

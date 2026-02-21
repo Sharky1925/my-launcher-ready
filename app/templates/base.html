@@ -25,7 +25,7 @@
   <meta name="twitter:title" content="{{ self.og_title() }}">
   <meta name="twitter:description" content="{{ self.og_description() }}">
   <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}">
-  {% set asset_v = '20260220-compact-v9' %}
+  {% set asset_v = '20260221-vibrant-pro-v10' %}
   <!-- Fonts & CSS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -60,6 +60,9 @@
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
 <div class="scroll-progress"></div>
+<div class="ambient-orb ambient-orb--one" aria-hidden="true"></div>
+<div class="ambient-orb ambient-orb--two" aria-hidden="true"></div>
+<div class="ambient-grid" aria-hidden="true"></div>
 
 <header class="site-header sticky-top">
   <!-- Topbar — desktop only -->
