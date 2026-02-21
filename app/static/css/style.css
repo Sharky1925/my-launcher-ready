@@ -3024,82 +3024,90 @@ p { margin: 0 0 16px; }
 /* ============================================================
    QUOTE TOGGLE SWITCH
    ============================================================ */
+@keyframes toggleGlow {
+  0%, 100% { box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+  50% { box-shadow: 0 8px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+}
 .quote-toggle-wrap {
   display: flex;
   justify-content: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 .quote-toggle {
   position: relative;
   display: inline-flex;
-  padding: 4px;
+  padding: 5px;
   border-radius: var(--radius-full);
-  border: 1px solid rgba(120, 160, 230, 0.28);
-  background: rgba(10, 19, 34, 0.85);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(160, 200, 240, 0.18);
+  background: linear-gradient(145deg, rgba(14, 24, 42, 0.95), rgba(8, 14, 28, 0.98));
+  animation: toggleGlow 4s ease-in-out infinite;
   gap: 0;
 }
 .quote-toggle-slider {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: calc(50% - 4px);
-  height: calc(100% - 8px);
+  top: 5px;
+  left: 5px;
+  width: calc(50% - 5px);
+  height: calc(100% - 10px);
   border-radius: var(--radius-full);
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.4s ease, box-shadow 0.4s ease;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), background 0.45s ease, box-shadow 0.45s ease;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(135deg, #ff9d2f, #ffb347);
-  box-shadow: 0 4px 18px rgba(255, 150, 40, 0.35);
+  background: linear-gradient(135deg, #00d4aa, #00e6c3, #20f0d0);
+  box-shadow: 0 6px 24px rgba(0, 212, 170, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .quote-toggle.is-business .quote-toggle-slider {
   transform: translateX(100%);
-  background: linear-gradient(135deg, #4f8bff, #6da8ff);
-  box-shadow: 0 4px 18px rgba(70, 130, 240, 0.35);
+  background: linear-gradient(135deg, #3a3a3a, #5c5c5c, #787878, #5c5c5c);
+  box-shadow: 0 6px 24px rgba(100, 100, 100, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.30);
 }
 .quote-toggle-btn {
   position: relative;
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
+  gap: 10px;
+  padding: 16px 40px;
   border: none;
   border-radius: var(--radius-full);
   background: transparent;
-  color: rgba(200, 215, 240, 0.6);
-  font-size: 0.88rem;
-  font-weight: 600;
+  color: rgba(200, 215, 240, 0.50);
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: color 0.35s ease;
+  transition: color 0.35s ease, text-shadow 0.35s ease;
   white-space: nowrap;
   text-decoration: none;
   line-height: 1.4;
+  letter-spacing: 0.02em;
 }
 .quote-toggle-btn i {
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   transition: color 0.35s ease;
 }
 .quote-toggle-btn.is-active {
-  color: #1a0e02;
+  color: #042a22;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .quote-toggle.is-business .quote-toggle-btn.is-active {
-  color: #020d1e;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 .quote-toggle-btn:not(.is-active):hover {
-  color: rgba(220, 230, 250, 0.9);
+  color: rgba(230, 240, 255, 0.85);
 }
 @media (max-width: 767px) {
   .quote-toggle-btn {
-    padding: 10px 20px;
-    font-size: 0.82rem;
-    gap: 6px;
+    padding: 13px 28px;
+    font-size: 0.9rem;
+    gap: 8px;
   }
 }
 @media (max-width: 400px) {
   .quote-toggle-btn {
-    padding: 9px 14px;
-    font-size: 0.78rem;
+    padding: 11px 18px;
+    font-size: 0.82rem;
+    gap: 6px;
   }
 }
 
