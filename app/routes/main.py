@@ -4,6 +4,7 @@ import re
 import secrets
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+from xml.sax.saxutils import escape as xml_escape
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app
 
 try:
@@ -935,6 +936,43 @@ def get_service_profile(service):
     }
 
 
+def get_public_base_url():
+    configured = (current_app.config.get('APP_BASE_URL') or '').strip()
+    if configured.startswith('http://') or configured.startswith('https://'):
+        return configured.rstrip('/')
+    return request.url_root.rstrip('/')
+
+
+def absolute_public_url(path):
+    if path.startswith('http://') or path.startswith('https://'):
+        return path
+    if not path.startswith('/'):
+        path = f'/{path}'
+    return f"{get_public_base_url()}{path}"
+
+
+def format_sitemap_lastmod(dt_value):
+    if not dt_value:
+        return None
+    return dt_value.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def build_sitemap_entry(path, lastmod=None, changefreq='weekly', priority='0.6'):
+    lines = [
+        '  <url>',
+        f"    <loc>{xml_escape(absolute_public_url(path))}</loc>",
+    ]
+    formatted_lastmod = format_sitemap_lastmod(lastmod)
+    if formatted_lastmod:
+        lines.append(f"    <lastmod>{formatted_lastmod}</lastmod>")
+    if changefreq:
+        lines.append(f"    <changefreq>{changefreq}</changefreq>")
+    if priority:
+        lines.append(f"    <priority>{priority}</priority>")
+    lines.append('  </url>')
+    return '\n'.join(lines)
+
+
 @main_bp.route('/')
 def index():
     pro_services = normalize_icon_attr(
@@ -1597,3 +1635,85 @@ def contact():
         return redirect(url_for('main.contact'))
     cb = get_page_content('contact')
     return render_template('contact.html', cb=cb)
+
+
+@main_bp.route('/sitemap.xml')
+def sitemap_xml():
+    entries = [
+        build_sitemap_entry(url_for('main.index'), changefreq='weekly', priority='1.0'),
+        build_sitemap_entry(url_for('main.about'), changefreq='monthly', priority='0.6'),
+        build_sitemap_entry(url_for('main.services'), changefreq='weekly', priority='0.9'),
+        build_sitemap_entry(url_for('main.industries'), changefreq='weekly', priority='0.8'),
+        build_sitemap_entry(url_for('main.blog'), changefreq='weekly', priority='0.8'),
+        build_sitemap_entry(url_for('main.request_quote'), changefreq='weekly', priority='0.7'),
+        build_sitemap_entry(url_for('main.request_quote_personal'), changefreq='weekly', priority='0.6'),
+        build_sitemap_entry(url_for('main.contact'), changefreq='weekly', priority='0.7'),
+    ]
+
+    try:
+        services = Service.query.order_by(Service.sort_order.asc(), Service.id.asc()).all()
+        for service in services:
+            entries.append(
+                build_sitemap_entry(
+                    url_for('main.service_detail', slug=service.slug),
+                    lastmod=service.created_at,
+                    changefreq='monthly',
+                    priority='0.8',
+                )
+            )
+
+        industries = Industry.query.order_by(Industry.sort_order.asc(), Industry.id.asc()).all()
+        for industry in industries:
+            entries.append(
+                build_sitemap_entry(
+                    url_for('main.industry_detail', slug=industry.slug),
+                    lastmod=industry.created_at,
+                    changefreq='monthly',
+                    priority='0.7',
+                )
+            )
+
+        posts = Post.query.filter_by(is_published=True).order_by(Post.updated_at.desc(), Post.id.desc()).all()
+        for post_item in posts:
+            entries.append(
+                build_sitemap_entry(
+                    url_for('main.post', slug=post_item.slug),
+                    lastmod=post_item.updated_at or post_item.created_at,
+                    changefreq='monthly',
+                    priority='0.7',
+                )
+            )
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Failed to build full sitemap dynamic entries; serving core entries only.')
+
+    xml_body = '\n'.join([
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        *entries,
+        '</urlset>',
+    ])
+    response = current_app.response_class(xml_body, mimetype='application/xml')
+    response.headers['Cache-Control'] = 'public, max-age=3600'
+    return response
+
+
+@main_bp.route('/robots.txt')
+def robots_txt():
+    sitemap_url = absolute_public_url(url_for('main.sitemap_xml'))
+    body = '\n'.join([
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /admin/',
+        'Disallow: /remote-support',
+        'Disallow: /remote-support/',
+        'Disallow: /remote-support/register',
+        'Disallow: /remote-support/tickets',
+        'Disallow: /remote-support/logout',
+        '',
+        f'Sitemap: {sitemap_url}',
+        '',
+    ])
+    response = current_app.response_class(body, mimetype='text/plain')
+    response.headers['Cache-Control'] = 'public, max-age=3600'
+    return response

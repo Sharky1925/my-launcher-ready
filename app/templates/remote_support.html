@@ -4,6 +4,8 @@
 {% block og_title %}Remote Support Portal — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
 {% block og_description %}Create and track support tickets through the secure client portal.{% endblock %}
 {% block meta_keywords %}remote support portal, support ticket tracking, client login IT support, managed IT ticket system{% endblock %}
+{% block meta_robots %}noindex, nofollow, noarchive{% endblock %}
+{% block meta_googlebot %}noindex, nofollow, noarchive{% endblock %}
 
 {% block structured_data %}
 <script nonce="{{ csp_nonce }}" type="application/ld+json">

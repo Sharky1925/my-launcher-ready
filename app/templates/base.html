@@ -7,8 +7,8 @@
   <meta name="description" content="{% block meta_description %}{{ site_settings.get('meta_description', 'Orange County IT services: managed IT, cybersecurity, cloud solutions, software and web development, surveillance camera installation, and device repairs. Same-day support.') }}{% endblock %}">
   <meta name="author" content="{{ site_settings.get('company_name', 'Right On Repair') }}">
   <meta name="keywords" content="{% block meta_keywords %}IT services Orange County, managed IT Orange County, cybersecurity Orange County, cloud solutions Orange County, computer repair Orange County, business IT support, software development Orange County, web development Orange County{% endblock %}">
-  <meta name="robots" content="index, follow">
-  <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1">
+  <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+  <meta name="googlebot" content="{% block meta_googlebot %}index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1{% endblock %}">
   <meta name="format-detection" content="telephone=no, email=no">
   <link rel="canonical" href="{{ request.base_url }}">
   {% block meta_extra %}{% endblock %}
