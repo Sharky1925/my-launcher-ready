@@ -54,6 +54,20 @@ try:
         ROLE_SUPPORT,
         USER_ROLE_CHOICES,
         USER_ROLE_LABELS,
+        SUPPORT_TICKET_STATUS_OPEN,
+        SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+        SUPPORT_TICKET_STATUS_RESOLVED,
+        SUPPORT_TICKET_STATUS_CLOSED,
+        SUPPORT_TICKET_STATUSES,
+        SUPPORT_TICKET_STATUS_LABELS,
+        SUPPORT_TICKET_STAGE_PENDING,
+        SUPPORT_TICKET_STAGE_DONE,
+        SUPPORT_TICKET_STAGE_CLOSED,
+        SUPPORT_TICKET_STAGE_LABELS,
+        normalize_support_ticket_status,
+        normalize_support_ticket_stage,
+        support_ticket_stage_for_status,
         normalize_workflow_status,
         normalize_user_role,
     )
@@ -101,6 +115,20 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         ROLE_SUPPORT,
         USER_ROLE_CHOICES,
         USER_ROLE_LABELS,
+        SUPPORT_TICKET_STATUS_OPEN,
+        SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+        SUPPORT_TICKET_STATUS_RESOLVED,
+        SUPPORT_TICKET_STATUS_CLOSED,
+        SUPPORT_TICKET_STATUSES,
+        SUPPORT_TICKET_STATUS_LABELS,
+        SUPPORT_TICKET_STAGE_PENDING,
+        SUPPORT_TICKET_STAGE_DONE,
+        SUPPORT_TICKET_STAGE_CLOSED,
+        SUPPORT_TICKET_STAGE_LABELS,
+        normalize_support_ticket_status,
+        normalize_support_ticket_stage,
+        support_ticket_stage_for_status,
         normalize_workflow_status,
         normalize_user_role,
     )
@@ -134,6 +162,11 @@ WORKFLOW_STATUS_BADGES = {
     WORKFLOW_REVIEW: 'bg-info text-dark',
     WORKFLOW_APPROVED: 'bg-primary',
     WORKFLOW_PUBLISHED: 'bg-success',
+}
+SUPPORT_TICKET_STAGE_BADGES = {
+    SUPPORT_TICKET_STAGE_PENDING: 'bg-warning text-dark',
+    SUPPORT_TICKET_STAGE_DONE: 'bg-success',
+    SUPPORT_TICKET_STAGE_CLOSED: 'bg-secondary',
 }
 ADMIN_PERMISSION_MAP = {
     'admin.dashboard': 'dashboard:view',
@@ -189,6 +222,7 @@ ADMIN_PERMISSION_MAP = {
     'admin.contact_delete': 'support:manage',
     'admin.support_tickets': 'support:manage',
     'admin.support_ticket_view': 'support:manage',
+    'admin.support_ticket_review': 'support:manage',
     'admin.security_events': 'security:view',
     'admin.settings': 'settings:manage',
     'admin.users': 'users:manage',
@@ -354,6 +388,55 @@ def apply_workflow_form_fields(item, form, user, default_status=WORKFLOW_DRAFT):
     if hasattr(item, 'updated_at'):
         item.updated_at = now
     return True, None
+
+
+def support_ticket_status_label(status):
+    normalized = normalize_support_ticket_status(status, default=SUPPORT_TICKET_STATUS_OPEN)
+    return SUPPORT_TICKET_STATUS_LABELS.get(normalized, SUPPORT_TICKET_STATUS_LABELS[SUPPORT_TICKET_STATUS_OPEN])
+
+
+def support_ticket_stage_label(stage):
+    normalized = normalize_support_ticket_stage(stage, default=SUPPORT_TICKET_STAGE_PENDING)
+    return SUPPORT_TICKET_STAGE_LABELS.get(normalized, SUPPORT_TICKET_STAGE_LABELS[SUPPORT_TICKET_STAGE_PENDING])
+
+
+def support_ticket_stage_badge(stage):
+    normalized = normalize_support_ticket_stage(stage, default=SUPPORT_TICKET_STAGE_PENDING)
+    return SUPPORT_TICKET_STAGE_BADGES.get(normalized, SUPPORT_TICKET_STAGE_BADGES[SUPPORT_TICKET_STAGE_PENDING])
+
+
+def support_ticket_stage_for_item(item):
+    return support_ticket_stage_for_status(getattr(item, 'status', SUPPORT_TICKET_STATUS_OPEN))
+
+
+def support_ticket_status_badge(status):
+    stage = support_ticket_stage_for_status(status)
+    return support_ticket_stage_badge(stage)
+
+
+def _append_internal_note(existing, extra):
+    cleaned = clean_text(extra, 4000)
+    if not cleaned:
+        return existing
+    timestamp = utc_now_naive().strftime('%Y-%m-%d %H:%M UTC')
+    note_line = f"[{timestamp}] {cleaned}"
+    current = (existing or '').strip()
+    if not current:
+        return note_line
+    return f"{current}\n{note_line}"
+
+
+def apply_ticket_review_action(item, action, review_note=''):
+    normalized_action = normalize_support_ticket_stage(action, default=SUPPORT_TICKET_STAGE_PENDING)
+    target_status = {
+        SUPPORT_TICKET_STAGE_PENDING: SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        SUPPORT_TICKET_STAGE_DONE: SUPPORT_TICKET_STATUS_RESOLVED,
+        SUPPORT_TICKET_STAGE_CLOSED: SUPPORT_TICKET_STATUS_CLOSED,
+    }[normalized_action]
+    item.status = target_status
+    item.internal_notes = _append_internal_note(item.internal_notes, review_note)
+    item.updated_at = utc_now_naive()
+    return normalized_action, target_status
 
 
 def is_strong_password(value):
@@ -826,6 +909,13 @@ def inject_admin_template_helpers():
         'workflow_status_labels': WORKFLOW_STATUS_LABELS,
         'role_labels': USER_ROLE_LABELS,
         'format_datetime_local': format_datetime_local,
+        'support_ticket_status_label': support_ticket_status_label,
+        'support_ticket_stage_label': support_ticket_stage_label,
+        'support_ticket_stage_badge': support_ticket_stage_badge,
+        'support_ticket_stage_for_status': support_ticket_stage_for_status,
+        'support_ticket_status_badge': support_ticket_status_badge,
+        'support_ticket_stage_labels': SUPPORT_TICKET_STAGE_LABELS,
+        'support_ticket_status_labels': SUPPORT_TICKET_STATUS_LABELS,
     }
 
 
@@ -879,7 +969,11 @@ def dashboard():
     last_24h = now - timedelta(hours=24)
     last_7d = now - timedelta(days=7)
     stale_cutoff = now - timedelta(days=14)
-    open_ticket_statuses = ['open', 'in_progress', 'waiting_customer']
+    open_ticket_statuses = [
+        SUPPORT_TICKET_STATUS_OPEN,
+        SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+    ]
     quote_filter = quote_ticket_filter_expression()
 
     site_settings = {s.key: s.value for s in SiteSetting.query.all()}
@@ -892,7 +986,7 @@ def dashboard():
     draft_posts_count = Post.query.filter(Post.workflow_status != WORKFLOW_PUBLISHED).count()
     contacts_24h = ContactSubmission.query.filter(ContactSubmission.created_at >= last_24h).count()
     tickets_24h = SupportTicket.query.filter(SupportTicket.created_at >= last_24h).count()
-    support_waiting_count = SupportTicket.query.filter(SupportTicket.status == 'waiting_customer').count()
+    support_waiting_count = SupportTicket.query.filter(SupportTicket.status == SUPPORT_TICKET_STATUS_WAITING_CUSTOMER).count()
     critical_open_tickets = SupportTicket.query.filter(
         SupportTicket.status.in_(open_ticket_statuses),
         SupportTicket.priority.in_(['high', 'critical']),
@@ -912,7 +1006,7 @@ def dashboard():
         SupportTicket.status.in_(open_ticket_statuses),
     ).count()
     resolved_7d_count = SupportTicket.query.filter(
-        SupportTicket.status == 'resolved',
+        SupportTicket.status == SUPPORT_TICKET_STATUS_RESOLVED,
         SupportTicket.updated_at >= last_7d,
     ).count()
 
@@ -953,11 +1047,11 @@ def dashboard():
     ).group_by(SupportTicket.status).all()
     status_map = {status: count for status, count in status_rows}
     ticket_status = [
-        {'key': 'open', 'label': 'Open', 'count': status_map.get('open', 0)},
-        {'key': 'in_progress', 'label': 'In Progress', 'count': status_map.get('in_progress', 0)},
-        {'key': 'waiting_customer', 'label': 'Waiting Client', 'count': status_map.get('waiting_customer', 0)},
-        {'key': 'resolved', 'label': 'Resolved', 'count': status_map.get('resolved', 0)},
-        {'key': 'closed', 'label': 'Closed', 'count': status_map.get('closed', 0)},
+        {'key': SUPPORT_TICKET_STATUS_OPEN, 'label': support_ticket_status_label(SUPPORT_TICKET_STATUS_OPEN), 'count': status_map.get(SUPPORT_TICKET_STATUS_OPEN, 0)},
+        {'key': SUPPORT_TICKET_STATUS_IN_PROGRESS, 'label': support_ticket_status_label(SUPPORT_TICKET_STATUS_IN_PROGRESS), 'count': status_map.get(SUPPORT_TICKET_STATUS_IN_PROGRESS, 0)},
+        {'key': SUPPORT_TICKET_STATUS_WAITING_CUSTOMER, 'label': support_ticket_status_label(SUPPORT_TICKET_STATUS_WAITING_CUSTOMER), 'count': status_map.get(SUPPORT_TICKET_STATUS_WAITING_CUSTOMER, 0)},
+        {'key': SUPPORT_TICKET_STATUS_RESOLVED, 'label': support_ticket_status_label(SUPPORT_TICKET_STATUS_RESOLVED), 'count': status_map.get(SUPPORT_TICKET_STATUS_RESOLVED, 0)},
+        {'key': SUPPORT_TICKET_STATUS_CLOSED, 'label': support_ticket_status_label(SUPPORT_TICKET_STATUS_CLOSED), 'count': status_map.get(SUPPORT_TICKET_STATUS_CLOSED, 0)},
     ]
     max_status_count = max(1, *(item['count'] for item in ticket_status))
     for item in ticket_status:
@@ -1926,7 +2020,9 @@ def contact_delete(id):
 @admin_bp.route('/support-tickets')
 @login_required
 def support_tickets():
-    status_filter = request.args.get('status', '').strip().lower()
+    status_filter_raw = request.args.get('status', '').strip().lower()
+    status_filter = normalize_support_ticket_status(status_filter_raw, default='') if status_filter_raw else ''
+    stage_filter = normalize_support_ticket_stage(request.args.get('stage', ''), default='') if request.args.get('stage', '').strip() else ''
     type_filter = request.args.get('type', 'all').strip().lower()
     if type_filter not in {'all', 'support', 'quote'}:
         type_filter = 'all'
@@ -1939,11 +2035,23 @@ def support_tickets():
         query = query.filter(~quote_filter)
     if status_filter:
         query = query.filter(SupportTicket.status == status_filter)
+    if stage_filter:
+        if stage_filter == SUPPORT_TICKET_STAGE_PENDING:
+            query = query.filter(SupportTicket.status.in_([
+                SUPPORT_TICKET_STATUS_OPEN,
+                SUPPORT_TICKET_STATUS_IN_PROGRESS,
+                SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+            ]))
+        elif stage_filter == SUPPORT_TICKET_STAGE_DONE:
+            query = query.filter(SupportTicket.status == SUPPORT_TICKET_STATUS_RESOLVED)
+        elif stage_filter == SUPPORT_TICKET_STAGE_CLOSED:
+            query = query.filter(SupportTicket.status == SUPPORT_TICKET_STATUS_CLOSED)
     items = query.order_by(SupportTicket.updated_at.desc(), SupportTicket.created_at.desc()).all()
     return render_template(
         'admin/support_tickets.html',
         items=items,
         status_filter=status_filter,
+        stage_filter=stage_filter,
         type_filter=type_filter,
         is_quote_ticket=is_quote_ticket,
     )
@@ -2008,19 +2116,41 @@ def security_events():
 def support_ticket_view(id):
     item = SupportTicket.query.get_or_404(id)
     if request.method == 'POST':
-        allowed_status = {'open', 'in_progress', 'waiting_customer', 'resolved', 'closed'}
         allowed_priority = {'low', 'normal', 'high', 'critical'}
-        next_status = clean_text(request.form.get('status', item.status), 30)
+        requested_status = clean_text(request.form.get('status', item.status), 30)
         next_priority = clean_text(request.form.get('priority', item.priority), 20)
-        if next_status in allowed_status:
+        next_status = normalize_support_ticket_status(requested_status, default=item.status)
+        if next_status in SUPPORT_TICKET_STATUSES:
             item.status = next_status
         if next_priority in allowed_priority:
             item.priority = next_priority
-        item.internal_notes = clean_text(request.form.get('internal_notes', ''), 4000)
+        review_note = request.form.get('review_note', '')
+        item.internal_notes = _append_internal_note(
+            request.form.get('internal_notes', ''),
+            review_note,
+        )
+        item.updated_at = utc_now_naive()
         db.session.commit()
         flash('Support ticket updated.', 'success')
         return redirect(url_for('admin.support_ticket_view', id=item.id))
-    return render_template('admin/support_ticket_view.html', item=item, is_quote_ticket=is_quote_ticket(item))
+    return render_template(
+        'admin/support_ticket_view.html',
+        item=item,
+        is_quote_ticket=is_quote_ticket(item),
+        current_ticket_stage=support_ticket_stage_for_item(item),
+    )
+
+
+@admin_bp.route('/support-tickets/<int:id>/review', methods=['POST'])
+@login_required
+def support_ticket_review(id):
+    item = SupportTicket.query.get_or_404(id)
+    review_action = clean_text(request.form.get('review_action', ''), 20)
+    review_note = request.form.get('review_note', '')
+    stage_key, _ = apply_ticket_review_action(item, review_action, review_note=review_note)
+    db.session.commit()
+    flash(f'Ticket marked as {support_ticket_stage_label(stage_key)}.', 'success')
+    return redirect(url_for('admin.support_ticket_view', id=item.id))
 
 
 # Industry CRUD

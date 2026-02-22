@@ -132,6 +132,79 @@ def normalize_user_role(value, default=ROLE_DEFAULT):
     return default
 
 
+SUPPORT_TICKET_STATUS_OPEN = 'open'
+SUPPORT_TICKET_STATUS_IN_PROGRESS = 'in_progress'
+SUPPORT_TICKET_STATUS_WAITING_CUSTOMER = 'waiting_customer'
+SUPPORT_TICKET_STATUS_RESOLVED = 'resolved'
+SUPPORT_TICKET_STATUS_CLOSED = 'closed'
+SUPPORT_TICKET_STATUSES = (
+    SUPPORT_TICKET_STATUS_OPEN,
+    SUPPORT_TICKET_STATUS_IN_PROGRESS,
+    SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+    SUPPORT_TICKET_STATUS_RESOLVED,
+    SUPPORT_TICKET_STATUS_CLOSED,
+)
+SUPPORT_TICKET_STATUS_LABELS = {
+    SUPPORT_TICKET_STATUS_OPEN: 'Open',
+    SUPPORT_TICKET_STATUS_IN_PROGRESS: 'In Progress',
+    SUPPORT_TICKET_STATUS_WAITING_CUSTOMER: 'Waiting on Client',
+    SUPPORT_TICKET_STATUS_RESOLVED: 'Done',
+    SUPPORT_TICKET_STATUS_CLOSED: 'Closed',
+}
+SUPPORT_TICKET_STAGE_PENDING = 'pending'
+SUPPORT_TICKET_STAGE_DONE = 'done'
+SUPPORT_TICKET_STAGE_CLOSED = 'closed'
+SUPPORT_TICKET_STAGE_LABELS = {
+    SUPPORT_TICKET_STAGE_PENDING: 'Pending',
+    SUPPORT_TICKET_STAGE_DONE: 'Done',
+    SUPPORT_TICKET_STAGE_CLOSED: 'Closed',
+}
+SUPPORT_TICKET_PENDING_STATUSES = {
+    SUPPORT_TICKET_STATUS_OPEN,
+    SUPPORT_TICKET_STATUS_IN_PROGRESS,
+    SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+}
+SUPPORT_TICKET_STAGE_TO_STATUS = {
+    SUPPORT_TICKET_STAGE_PENDING: SUPPORT_TICKET_STATUS_IN_PROGRESS,
+    SUPPORT_TICKET_STAGE_DONE: SUPPORT_TICKET_STATUS_RESOLVED,
+    SUPPORT_TICKET_STAGE_CLOSED: SUPPORT_TICKET_STATUS_CLOSED,
+}
+
+
+def normalize_support_ticket_status(value, default=SUPPORT_TICKET_STATUS_OPEN):
+    candidate = (value or '').strip().lower()
+    alias_map = {
+        'pending': SUPPORT_TICKET_STAGE_TO_STATUS[SUPPORT_TICKET_STAGE_PENDING],
+        'in-progress': SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        'waiting': SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+        'waiting-on-client': SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+        'done': SUPPORT_TICKET_STAGE_TO_STATUS[SUPPORT_TICKET_STAGE_DONE],
+        'complete': SUPPORT_TICKET_STAGE_TO_STATUS[SUPPORT_TICKET_STAGE_DONE],
+        'completed': SUPPORT_TICKET_STAGE_TO_STATUS[SUPPORT_TICKET_STAGE_DONE],
+        'close': SUPPORT_TICKET_STAGE_TO_STATUS[SUPPORT_TICKET_STAGE_CLOSED],
+    }
+    normalized = alias_map.get(candidate, candidate)
+    if normalized in SUPPORT_TICKET_STATUSES:
+        return normalized
+    return default
+
+
+def support_ticket_stage_for_status(status):
+    normalized = normalize_support_ticket_status(status, default=SUPPORT_TICKET_STATUS_OPEN)
+    if normalized in SUPPORT_TICKET_PENDING_STATUSES:
+        return SUPPORT_TICKET_STAGE_PENDING
+    if normalized == SUPPORT_TICKET_STATUS_RESOLVED:
+        return SUPPORT_TICKET_STAGE_DONE
+    return SUPPORT_TICKET_STAGE_CLOSED
+
+
+def normalize_support_ticket_stage(value, default=SUPPORT_TICKET_STAGE_PENDING):
+    candidate = (value or '').strip().lower()
+    if candidate in SUPPORT_TICKET_STAGE_TO_STATUS:
+        return candidate
+    return default
+
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -278,7 +351,7 @@ class SupportTicket(db.Model):
     subject = db.Column(db.String(300), nullable=False)
     service_slug = db.Column(db.String(200))
     priority = db.Column(db.String(20), default='normal', nullable=False)  # low, normal, high, critical
-    status = db.Column(db.String(30), default='open', nullable=False)      # open, in_progress, waiting_customer, resolved, closed
+    status = db.Column(db.String(30), default=SUPPORT_TICKET_STATUS_OPEN, nullable=False)  # open, in_progress, waiting_customer, resolved, closed
     details = db.Column(db.Text, nullable=False)
     internal_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utc_now_naive)

@@ -25,6 +25,10 @@ try:
         AcpPageDocument,
         AcpDashboardDocument,
         WORKFLOW_PUBLISHED,
+        SUPPORT_TICKET_STATUS_OPEN,
+        SUPPORT_TICKET_STATUS_LABELS,
+        SUPPORT_TICKET_STAGE_LABELS,
+        support_ticket_stage_for_status,
     )
     from ..notifications import send_contact_notification, send_ticket_notification
     from ..service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -46,6 +50,10 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         AcpPageDocument,
         AcpDashboardDocument,
         WORKFLOW_PUBLISHED,
+        SUPPORT_TICKET_STATUS_OPEN,
+        SUPPORT_TICKET_STATUS_LABELS,
+        SUPPORT_TICKET_STAGE_LABELS,
+        support_ticket_stage_for_status,
     )
     from notifications import send_contact_notification, send_ticket_notification
     from service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -57,14 +65,6 @@ REMOTE_AUTH_WINDOW_SECONDS = 300
 TICKET_CREATE_LIMIT = 20
 TICKET_CREATE_WINDOW_SECONDS = 3600
 TICKET_CREATE_SCOPE = 'ticket_create'
-
-TICKET_STATUS_LABELS = {
-    'open': 'Open',
-    'in_progress': 'In Progress',
-    'waiting_customer': 'Waiting on Client',
-    'resolved': 'Resolved',
-    'closed': 'Closed',
-}
 
 TICKET_PRIORITY_LABELS = {
     'low': 'Low',
@@ -1677,18 +1677,29 @@ def remote_support():
         'fa-solid fa-gear',
     )
     tickets = []
+    stage_counts = {
+        'pending': 0,
+        'done': 0,
+        'closed': 0,
+    }
 
     if portal_client:
         tickets = SupportTicket.query.filter_by(client_id=portal_client.id)\
             .order_by(SupportTicket.updated_at.desc(), SupportTicket.created_at.desc()).all()
+        for ticket in tickets:
+            stage_key = support_ticket_stage_for_status(ticket.status)
+            stage_counts[stage_key] = stage_counts.get(stage_key, 0) + 1
 
     return render_template(
         'remote_support.html',
         portal_client=portal_client,
         services=services,
         tickets=tickets,
-        ticket_status_labels=TICKET_STATUS_LABELS,
+        ticket_status_labels=SUPPORT_TICKET_STATUS_LABELS,
         ticket_priority_labels=TICKET_PRIORITY_LABELS,
+        ticket_stage_labels=SUPPORT_TICKET_STAGE_LABELS,
+        ticket_stage_for_status=support_ticket_stage_for_status,
+        ticket_stage_counts=stage_counts,
     )
 
 
@@ -1841,7 +1852,7 @@ def remote_support_create_ticket():
         subject=subject,
         service_slug=service_slug or None,
         priority=priority,
-        status='open',
+        status=SUPPORT_TICKET_STATUS_OPEN,
         details=details,
     )
     db.session.add(ticket)
@@ -2007,7 +2018,7 @@ def request_quote():
             subject=ticket_subject,
             service_slug=primary_service_slug,
             priority=ticket_priority,
-            status='open',
+            status=SUPPORT_TICKET_STATUS_OPEN,
             details=build_quote_ticket_details(quote_payload),
         )
         db.session.add(ticket)
@@ -2116,7 +2127,7 @@ def request_quote_personal():
             subject=ticket_subject,
             service_slug=service_slug,
             priority='normal',
-            status='open',
+            status=SUPPORT_TICKET_STATUS_OPEN,
             details=build_personal_quote_ticket_details(quote_payload),
         )
         db.session.add(ticket)

@@ -3,17 +3,16 @@
 {% block content %}
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
   <div class="d-flex flex-wrap gap-2">
-    <div class="btn-group btn-group-sm" role="group" aria-label="Filter by status">
-      <a href="{{ url_for('admin.support_tickets', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Statuses</a>
-      <a href="{{ url_for('admin.support_tickets', status='open', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if status_filter == 'open' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Open</a>
-      <a href="{{ url_for('admin.support_tickets', status='in_progress', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if status_filter == 'in_progress' %}btn-primary{% else %}btn-outline-secondary{% endif %}">In Progress</a>
-      <a href="{{ url_for('admin.support_tickets', status='resolved', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if status_filter == 'resolved' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Resolved</a>
-      <a href="{{ url_for('admin.support_tickets', status='closed', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if status_filter == 'closed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Closed</a>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Filter by review stage">
+      <a href="{{ url_for('admin.support_tickets', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if not stage_filter and not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Stages</a>
+      <a href="{{ url_for('admin.support_tickets', stage='pending', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if stage_filter == 'pending' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Pending</a>
+      <a href="{{ url_for('admin.support_tickets', stage='done', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if stage_filter == 'done' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Done</a>
+      <a href="{{ url_for('admin.support_tickets', stage='closed', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if stage_filter == 'closed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Closed</a>
     </div>
     <div class="btn-group btn-group-sm" role="group" aria-label="Filter by ticket type">
-      <a href="{{ url_for('admin.support_tickets', status=status_filter or None) }}" class="btn {% if type_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Types</a>
-      <a href="{{ url_for('admin.support_tickets', status=status_filter or None, type='support') }}" class="btn {% if type_filter == 'support' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Support</a>
-      <a href="{{ url_for('admin.support_tickets', status=status_filter or None, type='quote') }}" class="btn {% if type_filter == 'quote' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Quote Requests</a>
+      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None) }}" class="btn {% if type_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Types</a>
+      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, type='support') }}" class="btn {% if type_filter == 'support' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Support</a>
+      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, type='quote') }}" class="btn {% if type_filter == 'quote' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Quote Requests</a>
     </div>
   </div>
 </div>
@@ -28,13 +27,14 @@
           <th>Subject</th>
           <th>Type</th>
           <th>Priority</th>
-          <th>Status</th>
+          <th>Stage</th>
           <th>Updated</th>
-          <th>Actions</th>
+          <th>Review Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for t in items %}
+        {% set stage_key = support_ticket_stage_for_status(t.status) %}
         <tr>
           <td><code>{{ t.ticket_number }}</code></td>
           <td>
@@ -61,21 +61,29 @@
             {% endif %}
           </td>
           <td>
-            {% if t.status == 'open' %}
-            <span class="badge bg-primary">Open</span>
-            {% elif t.status == 'in_progress' %}
-            <span class="badge bg-warning text-dark">In Progress</span>
-            {% elif t.status == 'waiting_customer' %}
-            <span class="badge bg-secondary">Waiting Client</span>
-            {% elif t.status == 'resolved' %}
-            <span class="badge bg-success">Resolved</span>
-            {% else %}
-            <span class="badge bg-dark">Closed</span>
-            {% endif %}
+            <span class="badge {{ support_ticket_stage_badge(stage_key) }}">{{ support_ticket_stage_label(stage_key) }}</span>
+            <small class="d-block text-muted mt-1">{{ support_ticket_status_label(t.status) }}</small>
           </td>
           <td>{{ t.updated_at.strftime('%b %d, %Y %I:%M %p') }}</td>
           <td>
-            <a href="{{ url_for('admin.support_ticket_view', id=t.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-eye"></i></a>
+            <div class="d-flex flex-wrap gap-1">
+              <form method="POST" action="{{ url_for('admin.support_ticket_review', id=t.id) }}" class="d-inline">
+                {{ csrf_input() }}
+                <input type="hidden" name="review_action" value="pending">
+                <button type="submit" class="btn btn-sm btn-outline-warning" title="Mark as Pending">Pending</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.support_ticket_review', id=t.id) }}" class="d-inline">
+                {{ csrf_input() }}
+                <input type="hidden" name="review_action" value="done">
+                <button type="submit" class="btn btn-sm btn-outline-success" title="Mark as Done">Done</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.support_ticket_review', id=t.id) }}" class="d-inline">
+                {{ csrf_input() }}
+                <input type="hidden" name="review_action" value="closed">
+                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Close Ticket">Close</button>
+              </form>
+              <a href="{{ url_for('admin.support_ticket_view', id=t.id) }}" class="btn btn-sm btn-outline-primary" title="Open ticket details"><i class="fa-solid fa-eye"></i></a>
+            </div>
           </td>
         </tr>
         {% else %}

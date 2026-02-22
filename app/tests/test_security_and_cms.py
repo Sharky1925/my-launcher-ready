@@ -27,6 +27,9 @@ try:
         WORKFLOW_DRAFT,
         ROLE_EDITOR,
         ROLE_SUPPORT,
+        SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        SUPPORT_TICKET_STATUS_RESOLVED,
+        SUPPORT_TICKET_STATUS_CLOSED,
         db,
     )
     from app.utils import utc_now_naive
@@ -53,6 +56,9 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         WORKFLOW_DRAFT,
         ROLE_EDITOR,
         ROLE_SUPPORT,
+        SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        SUPPORT_TICKET_STATUS_RESOLVED,
+        SUPPORT_TICKET_STATUS_CLOSED,
         db,
     )
     from utils import utc_now_naive
@@ -799,6 +805,144 @@ def test_admin_support_ticket_type_filtering(client, app):
     support_html = support_only.get_data(as_text=True)
     assert support_number in support_html
     assert quote_number not in support_html
+
+
+def test_admin_ticket_review_actions_sync_pending_done_closed(client, app):
+    with app.app_context():
+        service = Service.query.first()
+        assert service is not None
+        ticket_client = SupportClient(
+            full_name="Review User",
+            email=f"review-{uuid.uuid4().hex[:8]}@example.com",
+            company="Review Corp",
+            phone="+1 (555) 222-2222",
+        )
+        ticket_client.set_password("review-secret")
+        db.session.add(ticket_client)
+        db.session.commit()
+
+        ticket = SupportTicket(
+            ticket_number=f"RS-R-{uuid.uuid4().hex[:10].upper()}",
+            client_id=ticket_client.id,
+            subject="Need quick admin review",
+            service_slug=service.slug,
+            priority="normal",
+            status="open",
+            details="Testing pending/done/closed workflow sync.",
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        ticket_id = ticket.id
+
+    admin_login(client)
+
+    ticket_page = client.get(f"/admin/support-tickets/{ticket_id}")
+    csrf_token = extract_csrf_token(ticket_page.get_data(as_text=True))
+    assert csrf_token
+
+    pending_resp = client.post(
+        f"/admin/support-tickets/{ticket_id}/review",
+        data={"_csrf_token": csrf_token, "review_action": "pending"},
+        follow_redirects=False,
+    )
+    assert pending_resp.status_code in (302, 303)
+
+    with app.app_context():
+        pending_ticket = SupportTicket.query.get(ticket_id)
+        assert pending_ticket.status == SUPPORT_TICKET_STATUS_IN_PROGRESS
+
+    ticket_page = client.get(f"/admin/support-tickets/{ticket_id}")
+    csrf_token = extract_csrf_token(ticket_page.get_data(as_text=True))
+    assert csrf_token
+    done_resp = client.post(
+        f"/admin/support-tickets/{ticket_id}/review",
+        data={"_csrf_token": csrf_token, "review_action": "done", "review_note": "Issue completed"},
+        follow_redirects=False,
+    )
+    assert done_resp.status_code in (302, 303)
+
+    with app.app_context():
+        done_ticket = SupportTicket.query.get(ticket_id)
+        assert done_ticket.status == SUPPORT_TICKET_STATUS_RESOLVED
+        assert "Issue completed" in (done_ticket.internal_notes or "")
+
+    ticket_page = client.get(f"/admin/support-tickets/{ticket_id}")
+    csrf_token = extract_csrf_token(ticket_page.get_data(as_text=True))
+    assert csrf_token
+    close_resp = client.post(
+        f"/admin/support-tickets/{ticket_id}/review",
+        data={"_csrf_token": csrf_token, "review_action": "closed"},
+        follow_redirects=False,
+    )
+    assert close_resp.status_code in (302, 303)
+
+    with app.app_context():
+        closed_ticket = SupportTicket.query.get(ticket_id)
+        assert closed_ticket.status == SUPPORT_TICKET_STATUS_CLOSED
+
+
+def test_remote_support_uses_stage_labels_for_ticket_sync(client, app):
+    email = f"portal-{uuid.uuid4().hex[:8]}@example.com"
+    with app.app_context():
+        portal_client = SupportClient(
+            full_name="Portal Sync User",
+            email=email,
+            company="Portal Co",
+            phone="+1 (555) 333-3333",
+        )
+        portal_client.set_password("PortalSync123!")
+        db.session.add(portal_client)
+        db.session.commit()
+
+        db.session.add_all([
+            SupportTicket(
+                ticket_number=f"RS-P-{uuid.uuid4().hex[:10].upper()}",
+                client_id=portal_client.id,
+                subject="Pending ticket",
+                priority="normal",
+                status="in_progress",
+                details="Pending state ticket.",
+            ),
+            SupportTicket(
+                ticket_number=f"RS-D-{uuid.uuid4().hex[:10].upper()}",
+                client_id=portal_client.id,
+                subject="Done ticket",
+                priority="normal",
+                status="resolved",
+                details="Done state ticket.",
+            ),
+            SupportTicket(
+                ticket_number=f"RS-C-{uuid.uuid4().hex[:10].upper()}",
+                client_id=portal_client.id,
+                subject="Closed ticket",
+                priority="normal",
+                status="closed",
+                details="Closed state ticket.",
+            ),
+        ])
+        db.session.commit()
+
+    login_page = client.get("/remote-support")
+    csrf_token = extract_csrf_token(login_page.get_data(as_text=True))
+    assert csrf_token
+
+    login_resp = client.post(
+        "/remote-support/login",
+        data={
+            "_csrf_token": csrf_token,
+            "email": email,
+            "password": "PortalSync123!",
+        },
+        follow_redirects=False,
+    )
+    assert login_resp.status_code in (302, 303)
+
+    portal = client.get("/remote-support")
+    assert portal.status_code == 200
+    html = portal.get_data(as_text=True)
+    assert "Pending" in html
+    assert "Done" in html
+    assert "Closed" in html
 
 
 def test_admin_validation_paths_no_500(client, app):

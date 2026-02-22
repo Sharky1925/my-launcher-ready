@@ -74,21 +74,9 @@
 <section class="section pt-0 remote-support-section">
   <div class="container">
     {% if portal_client %}
-    {% set counts = namespace(open=0, in_progress=0, waiting_customer=0, resolved=0, closed=0) %}
-    {% for ticket in tickets %}
-      {% if ticket.status == 'open' %}
-        {% set counts.open = counts.open + 1 %}
-      {% elif ticket.status == 'in_progress' %}
-        {% set counts.in_progress = counts.in_progress + 1 %}
-      {% elif ticket.status == 'waiting_customer' %}
-        {% set counts.waiting_customer = counts.waiting_customer + 1 %}
-      {% elif ticket.status == 'resolved' %}
-        {% set counts.resolved = counts.resolved + 1 %}
-      {% elif ticket.status == 'closed' %}
-        {% set counts.closed = counts.closed + 1 %}
-      {% endif %}
-    {% endfor %}
-    {% set active_count = counts.open + counts.in_progress + counts.waiting_customer %}
+    {% set pending_count = ticket_stage_counts.get('pending', 0) %}
+    {% set done_count = ticket_stage_counts.get('done', 0) %}
+    {% set closed_count = ticket_stage_counts.get('closed', 0) %}
 
     <div class="service-visual-panel remote-dashboard-top mb-4">
       <div class="remote-dashboard-head">
@@ -112,19 +100,19 @@
 
     <div class="remote-metric-grid mb-4">
       <article class="remote-metric-card">
-        <span class="remote-metric-label">Open</span>
-        <strong class="remote-metric-value">{{ counts.open }}</strong>
-        <p class="remote-metric-note">New tickets awaiting triage</p>
+        <span class="remote-metric-label">{{ ticket_stage_labels.get('pending', 'Pending') }}</span>
+        <strong class="remote-metric-value">{{ pending_count }}</strong>
+        <p class="remote-metric-note">Still pending and actively tracked</p>
       </article>
       <article class="remote-metric-card">
-        <span class="remote-metric-label">Active</span>
-        <strong class="remote-metric-value">{{ active_count }}</strong>
-        <p class="remote-metric-note">Open, in progress, waiting on client</p>
+        <span class="remote-metric-label">{{ ticket_stage_labels.get('done', 'Done') }}</span>
+        <strong class="remote-metric-value">{{ done_count }}</strong>
+        <p class="remote-metric-note">Completed and ready for closeout</p>
       </article>
       <article class="remote-metric-card">
-        <span class="remote-metric-label">Resolved</span>
-        <strong class="remote-metric-value">{{ counts.resolved }}</strong>
-        <p class="remote-metric-note">Completed tickets ready for closeout</p>
+        <span class="remote-metric-label">{{ ticket_stage_labels.get('closed', 'Closed') }}</span>
+        <strong class="remote-metric-value">{{ closed_count }}</strong>
+        <p class="remote-metric-note">Archived/closed tickets</p>
       </article>
       <article class="remote-metric-card">
         <span class="remote-metric-label">Total Tickets</span>
@@ -272,19 +260,17 @@
                 <span class="remote-ticket-chip {{ priority_class }}">{{ ticket_priority_labels.get(ticket.priority, ticket.priority | title) }}</span>
               </td>
               <td>
+                {% set stage_key = ticket_stage_for_status(ticket.status) %}
                 {% set status_class = 'remote-status-open' %}
-                {% if ticket.status == 'open' %}
-                {% set status_class = 'remote-status-open' %}
-                {% elif ticket.status == 'in_progress' %}
+                {% if stage_key == 'pending' %}
                 {% set status_class = 'remote-status-progress' %}
-                {% elif ticket.status == 'waiting_customer' %}
-                {% set status_class = 'remote-status-waiting' %}
-                {% elif ticket.status == 'resolved' %}
+                {% elif stage_key == 'done' %}
                 {% set status_class = 'remote-status-resolved' %}
-                {% else %}
+                {% elif stage_key == 'closed' %}
                 {% set status_class = 'remote-status-closed' %}
                 {% endif %}
-                <span class="remote-ticket-chip {{ status_class }}">{{ ticket_status_labels.get(ticket.status, ticket.status | title) }}</span>
+                <span class="remote-ticket-chip {{ status_class }}">{{ ticket_stage_labels.get(stage_key, stage_key | title) }}</span>
+                <small class="d-block text-muted mt-1">{{ ticket_status_labels.get(ticket.status, ticket.status | replace('_', ' ') | title) }}</small>
               </td>
               <td>{{ ticket.updated_at.strftime('%b %d, %Y %I:%M %p') }}</td>
             </tr>
