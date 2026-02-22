@@ -184,8 +184,8 @@ p { margin: 0 0 16px; }
   gap: 6px;
   padding: 5px 10px;
   border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 138, 166, 0.55);
-  background: linear-gradient(132deg, rgba(255, 84, 117, 0.18), rgba(92, 150, 255, 0.2), rgba(36, 197, 164, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  background: linear-gradient(132deg, rgba(255, 255, 255, 0.16), rgba(92, 150, 255, 0.2), rgba(36, 197, 164, 0.16));
   box-shadow: 0 10px 20px rgba(31, 52, 96, 0.24);
   color: #f4faff;
   font-family: var(--font-slogan);
@@ -200,9 +200,9 @@ p { margin: 0 0 16px; }
   overflow-wrap: anywhere;
 }
 .hero-slogan-banner i {
-  color: #ff5f86;
+  color: #ffffff;
   font-size: 0.78em;
-  filter: drop-shadow(0 0 7px rgba(255, 95, 134, 0.42));
+  filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.42));
 }
 .hero-slogan-text {
   display: inline-flex;
@@ -223,10 +223,13 @@ p { margin: 0 0 16px; }
   width: 10px;
   height: 10px;
   margin: 0 1px;
-  color: #ff9ab7;
+  color: #f5c84b;
   font-size: 0.52em;
   line-height: 1;
-  filter: drop-shadow(0 0 8px rgba(255, 142, 172, 0.5));
+  filter: drop-shadow(0 0 8px rgba(245, 200, 75, 0.58));
+}
+.hero-slogan-sep i {
+  color: inherit;
 }
 .page-header .hero-slogan-wrap {
   margin-top: 5px;
