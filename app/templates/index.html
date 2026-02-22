@@ -24,7 +24,7 @@
     <div class="hero-slogan-landing reveal reveal-scale">
       {% include "_hero_slogan.html" %}
     </div>
-    <div class="row align-items-start g-4">
+    <div class="row align-items-start g-4 hero-command-row">
       <div class="col-12 col-lg-6 hero-content">
         <div class="signal-strip" aria-hidden="true">
           {% for pill in cb.get('signal_pills', {}).get('items', ['OC RESPONSE < 2H', '24/7 MONITORING', 'SECURITY-FIRST']) %}
@@ -43,7 +43,7 @@
           {% endif %}
         </div>
       </div>
-      <div class="col-12 col-lg-5 ms-lg-auto hero-visual">
+      <div class="col-12 col-lg-5 ms-lg-auto hero-visual hero-visual--command">
         <div class="hero-visual-grid">
           {% for card in hero_cards %}
           <a class="hero-icon-card" href="{{ card.href }}" aria-label="{{ card.aria_label }}">
