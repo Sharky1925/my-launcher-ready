@@ -4,7 +4,7 @@
     <i class="fa-solid fa-bolt-lightning"></i>
     <span class="hero-slogan-text">
       {% for item in slogan_segments %}
-      <span class="hero-slogan-word">{{ item }}</span>{% if not loop.last %}<span class="hero-slogan-dot" aria-hidden="true">○</span>{% endif %}
+      <span class="hero-slogan-word">{{ item }}</span>{% if not loop.last %}<span class="hero-slogan-sep" aria-hidden="true"></span>{% endif %}
       {% endfor %}
     </span>
   </span>

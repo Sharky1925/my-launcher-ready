@@ -206,10 +206,14 @@ p { margin: 0 0 16px; }
   flex-wrap: wrap;
   gap: 6px;
 }
-.hero-slogan-dot {
-  color: #ff86a4;
-  font-size: 0.86em;
-  line-height: 1;
+.hero-slogan-sep {
+  width: 14px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 115, 143, 0.95), rgba(132, 196, 255, 0.92));
+  box-shadow: 0 0 10px rgba(144, 186, 255, 0.42);
+  margin: 0 2px;
+  transform: translateY(1px);
 }
 .page-header .hero-slogan-wrap {
   margin-top: 7px;
