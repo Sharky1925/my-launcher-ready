@@ -28,7 +28,9 @@ try:
         SUPPORT_TICKET_STATUS_OPEN,
         SUPPORT_TICKET_STATUS_LABELS,
         SUPPORT_TICKET_STAGE_LABELS,
+        SUPPORT_TICKET_EVENT_CREATED,
         support_ticket_stage_for_status,
+        create_support_ticket_event,
     )
     from ..notifications import send_contact_notification, send_ticket_notification
     from ..service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -53,7 +55,9 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SUPPORT_TICKET_STATUS_OPEN,
         SUPPORT_TICKET_STATUS_LABELS,
         SUPPORT_TICKET_STAGE_LABELS,
+        SUPPORT_TICKET_EVENT_CREATED,
         support_ticket_stage_for_status,
+        create_support_ticket_event,
     )
     from notifications import send_contact_notification, send_ticket_notification
     from service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -1856,6 +1860,21 @@ def remote_support_create_ticket():
         details=details,
     )
     db.session.add(ticket)
+    db.session.flush()
+    create_support_ticket_event(
+        ticket,
+        SUPPORT_TICKET_EVENT_CREATED,
+        'Ticket created from remote support portal.',
+        actor_type='client',
+        actor_name=portal_client.full_name or portal_client.email,
+        actor_client_id=portal_client.id,
+        status_to=ticket.status,
+        stage_to=support_ticket_stage_for_status(ticket.status),
+        metadata={
+            'source': 'remote_support',
+            'ticket_kind': 'support',
+        },
+    )
     db.session.commit()
     send_ticket_notification(ticket, ticket_kind='support')
 
@@ -2022,6 +2041,22 @@ def request_quote():
             details=build_quote_ticket_details(quote_payload),
         )
         db.session.add(ticket)
+        db.session.flush()
+        create_support_ticket_event(
+            ticket,
+            SUPPORT_TICKET_EVENT_CREATED,
+            'Quote request converted to internal support ticket.',
+            actor_type='quote_form',
+            actor_name=full_name or email or 'Quote Intake',
+            actor_client_id=quote_client.id,
+            status_to=ticket.status,
+            stage_to=support_ticket_stage_for_status(ticket.status),
+            metadata={
+                'source': 'request_quote',
+                'ticket_kind': 'quote',
+                'company': company or '',
+            },
+        )
         db.session.commit()
         send_ticket_notification(ticket, ticket_kind='quote')
 
@@ -2131,6 +2166,21 @@ def request_quote_personal():
             details=build_personal_quote_ticket_details(quote_payload),
         )
         db.session.add(ticket)
+        db.session.flush()
+        create_support_ticket_event(
+            ticket,
+            SUPPORT_TICKET_EVENT_CREATED,
+            'Personal quote request converted to internal support ticket.',
+            actor_type='quote_form',
+            actor_name=full_name or email or 'Quote Intake',
+            actor_client_id=quote_client.id,
+            status_to=ticket.status,
+            stage_to=support_ticket_stage_for_status(ticket.status),
+            metadata={
+                'source': 'request_quote_personal',
+                'ticket_kind': 'quote',
+            },
+        )
         db.session.commit()
         send_ticket_notification(ticket, ticket_kind='quote')
 

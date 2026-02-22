@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -169,6 +170,9 @@ SUPPORT_TICKET_STAGE_TO_STATUS = {
     SUPPORT_TICKET_STAGE_DONE: SUPPORT_TICKET_STATUS_RESOLVED,
     SUPPORT_TICKET_STAGE_CLOSED: SUPPORT_TICKET_STATUS_CLOSED,
 }
+SUPPORT_TICKET_EVENT_CREATED = 'created'
+SUPPORT_TICKET_EVENT_REVIEW_ACTION = 'review_action'
+SUPPORT_TICKET_EVENT_ADMIN_UPDATE = 'admin_update'
 
 
 def normalize_support_ticket_status(value, default=SUPPORT_TICKET_STATUS_OPEN):
@@ -356,6 +360,83 @@ class SupportTicket(db.Model):
     internal_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
     updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
+    events = db.relationship(
+        'SupportTicketEvent',
+        backref='ticket',
+        lazy=True,
+        cascade='all, delete-orphan',
+        order_by='SupportTicketEvent.created_at.desc()',
+    )
+
+
+class SupportTicketEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('support_ticket.id'), nullable=False, index=True)
+    event_type = db.Column(db.String(40), nullable=False, index=True)  # created, review_action, admin_update
+    message = db.Column(db.Text)
+    actor_type = db.Column(db.String(30), nullable=False, default='system', index=True)  # system, admin, client, quote_form
+    actor_name = db.Column(db.String(200), nullable=False, default='System')
+    actor_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    actor_client_id = db.Column(db.Integer, db.ForeignKey('support_client.id'), index=True)
+    status_from = db.Column(db.String(30))
+    status_to = db.Column(db.String(30))
+    stage_from = db.Column(db.String(20))
+    stage_to = db.Column(db.String(20))
+    metadata_json = db.Column(db.Text, nullable=False, default='{}')
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    __table_args__ = (
+        db.Index('ix_support_ticket_event_ticket_created', 'ticket_id', 'created_at'),
+    )
+
+
+def create_support_ticket_event(
+    ticket,
+    event_type,
+    message='',
+    *,
+    actor_type='system',
+    actor_name='System',
+    actor_user_id=None,
+    actor_client_id=None,
+    status_from='',
+    status_to='',
+    stage_from='',
+    stage_to='',
+    metadata=None,
+):
+    if ticket is None:
+        return None
+    if not ticket.id:
+        db.session.flush()
+
+    normalized_status_from = normalize_support_ticket_status(status_from, default='') if status_from else ''
+    normalized_status_to = normalize_support_ticket_status(status_to, default='') if status_to else ''
+    normalized_stage_from = normalize_support_ticket_stage(stage_from, default='') if stage_from else ''
+    normalized_stage_to = normalize_support_ticket_stage(stage_to, default='') if stage_to else ''
+
+    if not normalized_stage_from and normalized_status_from:
+        normalized_stage_from = support_ticket_stage_for_status(normalized_status_from)
+    if not normalized_stage_to and normalized_status_to:
+        normalized_stage_to = support_ticket_stage_for_status(normalized_status_to)
+
+    safe_metadata = metadata if isinstance(metadata, dict) else {}
+    event = SupportTicketEvent(
+        ticket_id=ticket.id,
+        event_type=((event_type or 'updated').strip().lower()[:40] or 'updated'),
+        message=(message or '').strip()[:1000],
+        actor_type=((actor_type or 'system').strip().lower()[:30] or 'system'),
+        actor_name=(actor_name or 'System').strip()[:200] or 'System',
+        actor_user_id=actor_user_id,
+        actor_client_id=actor_client_id,
+        status_from=normalized_status_from or None,
+        status_to=normalized_status_to or None,
+        stage_from=normalized_stage_from or None,
+        stage_to=normalized_stage_to or None,
+        metadata_json=json.dumps(safe_metadata, ensure_ascii=False),
+    )
+    db.session.add(event)
+    return event
 
 
 class Industry(db.Model):

@@ -26,6 +26,7 @@ try:
         SiteSetting,
         SupportClient,
         SupportTicket,
+        SupportTicketEvent,
         AuthRateLimitBucket,
         SecurityEvent,
         Industry,
@@ -65,9 +66,13 @@ try:
         SUPPORT_TICKET_STAGE_DONE,
         SUPPORT_TICKET_STAGE_CLOSED,
         SUPPORT_TICKET_STAGE_LABELS,
+        SUPPORT_TICKET_EVENT_CREATED,
+        SUPPORT_TICKET_EVENT_REVIEW_ACTION,
+        SUPPORT_TICKET_EVENT_ADMIN_UPDATE,
         normalize_support_ticket_status,
         normalize_support_ticket_stage,
         support_ticket_stage_for_status,
+        create_support_ticket_event,
         normalize_workflow_status,
         normalize_user_role,
     )
@@ -87,6 +92,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SiteSetting,
         SupportClient,
         SupportTicket,
+        SupportTicketEvent,
         AuthRateLimitBucket,
         SecurityEvent,
         Industry,
@@ -126,9 +132,13 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SUPPORT_TICKET_STAGE_DONE,
         SUPPORT_TICKET_STAGE_CLOSED,
         SUPPORT_TICKET_STAGE_LABELS,
+        SUPPORT_TICKET_EVENT_CREATED,
+        SUPPORT_TICKET_EVENT_REVIEW_ACTION,
+        SUPPORT_TICKET_EVENT_ADMIN_UPDATE,
         normalize_support_ticket_status,
         normalize_support_ticket_stage,
         support_ticket_stage_for_status,
+        create_support_ticket_event,
         normalize_workflow_status,
         normalize_user_role,
     )
@@ -167,6 +177,16 @@ SUPPORT_TICKET_STAGE_BADGES = {
     SUPPORT_TICKET_STAGE_PENDING: 'bg-warning text-dark',
     SUPPORT_TICKET_STAGE_DONE: 'bg-success',
     SUPPORT_TICKET_STAGE_CLOSED: 'bg-secondary',
+}
+SUPPORT_TICKET_EVENT_LABELS = {
+    SUPPORT_TICKET_EVENT_CREATED: 'Created',
+    SUPPORT_TICKET_EVENT_REVIEW_ACTION: 'Review Action',
+    SUPPORT_TICKET_EVENT_ADMIN_UPDATE: 'Admin Update',
+}
+SUPPORT_TICKET_EVENT_BADGES = {
+    SUPPORT_TICKET_EVENT_CREATED: 'bg-primary',
+    SUPPORT_TICKET_EVENT_REVIEW_ACTION: 'bg-info text-dark',
+    SUPPORT_TICKET_EVENT_ADMIN_UPDATE: 'bg-secondary',
 }
 ADMIN_PERMISSION_MAP = {
     'admin.dashboard': 'dashboard:view',
@@ -412,6 +432,16 @@ def support_ticket_stage_for_item(item):
 def support_ticket_status_badge(status):
     stage = support_ticket_stage_for_status(status)
     return support_ticket_stage_badge(stage)
+
+
+def support_ticket_event_label(event_type):
+    normalized = (event_type or '').strip().lower()
+    return SUPPORT_TICKET_EVENT_LABELS.get(normalized, 'Update')
+
+
+def support_ticket_event_badge(event_type):
+    normalized = (event_type or '').strip().lower()
+    return SUPPORT_TICKET_EVENT_BADGES.get(normalized, 'bg-dark')
 
 
 def _append_internal_note(existing, extra):
@@ -914,6 +944,8 @@ def inject_admin_template_helpers():
         'support_ticket_stage_badge': support_ticket_stage_badge,
         'support_ticket_stage_for_status': support_ticket_stage_for_status,
         'support_ticket_status_badge': support_ticket_status_badge,
+        'support_ticket_event_label': support_ticket_event_label,
+        'support_ticket_event_badge': support_ticket_event_badge,
         'support_ticket_stage_labels': SUPPORT_TICKET_STAGE_LABELS,
         'support_ticket_status_labels': SUPPORT_TICKET_STATUS_LABELS,
     }
@@ -2116,6 +2148,9 @@ def security_events():
 def support_ticket_view(id):
     item = SupportTicket.query.get_or_404(id)
     if request.method == 'POST':
+        previous_status = item.status
+        previous_priority = item.priority
+        previous_notes = item.internal_notes or ''
         allowed_priority = {'low', 'normal', 'high', 'critical'}
         requested_status = clean_text(request.form.get('status', item.status), 30)
         next_priority = clean_text(request.form.get('priority', item.priority), 20)
@@ -2125,19 +2160,56 @@ def support_ticket_view(id):
         if next_priority in allowed_priority:
             item.priority = next_priority
         review_note = request.form.get('review_note', '')
+        clean_review_note = clean_text(review_note, 4000)
         item.internal_notes = _append_internal_note(
             request.form.get('internal_notes', ''),
             review_note,
         )
         item.updated_at = utc_now_naive()
+        if (
+            previous_status != item.status
+            or previous_priority != item.priority
+            or previous_notes.strip() != (item.internal_notes or '').strip()
+        ):
+            change_summary = []
+            if previous_status != item.status:
+                change_summary.append(
+                    f"Status: {support_ticket_status_label(previous_status)} -> {support_ticket_status_label(item.status)}"
+                )
+            if previous_priority != item.priority:
+                change_summary.append(f"Priority: {previous_priority.title()} -> {item.priority.title()}")
+            if clean_review_note:
+                change_summary.append('Review note added')
+            create_support_ticket_event(
+                item,
+                SUPPORT_TICKET_EVENT_ADMIN_UPDATE,
+                '; '.join(change_summary) if change_summary else 'Ticket updated from admin view.',
+                actor_type='admin',
+                actor_name=current_user.username,
+                actor_user_id=current_user.id,
+                status_from=previous_status,
+                status_to=item.status,
+                metadata={
+                    'priority_from': previous_priority,
+                    'priority_to': item.priority,
+                    'review_note_added': bool(clean_review_note),
+                },
+            )
         db.session.commit()
         flash('Support ticket updated.', 'success')
         return redirect(url_for('admin.support_ticket_view', id=item.id))
+    ticket_events = (
+        SupportTicketEvent.query
+        .filter(SupportTicketEvent.ticket_id == item.id)
+        .order_by(SupportTicketEvent.created_at.desc(), SupportTicketEvent.id.desc())
+        .all()
+    )
     return render_template(
         'admin/support_ticket_view.html',
         item=item,
         is_quote_ticket=is_quote_ticket(item),
         current_ticket_stage=support_ticket_stage_for_item(item),
+        ticket_events=ticket_events,
     )
 
 
@@ -2145,9 +2217,30 @@ def support_ticket_view(id):
 @login_required
 def support_ticket_review(id):
     item = SupportTicket.query.get_or_404(id)
+    previous_status = item.status
     review_action = clean_text(request.form.get('review_action', ''), 20)
     review_note = request.form.get('review_note', '')
+    clean_review_note = clean_text(review_note, 4000)
     stage_key, _ = apply_ticket_review_action(item, review_action, review_note=review_note)
+    summary = f"Marked as {support_ticket_stage_label(stage_key)}."
+    if clean_review_note:
+        summary = f"{summary} Review note added."
+    create_support_ticket_event(
+        item,
+        SUPPORT_TICKET_EVENT_REVIEW_ACTION,
+        summary,
+        actor_type='admin',
+        actor_name=current_user.username,
+        actor_user_id=current_user.id,
+        status_from=previous_status,
+        status_to=item.status,
+        stage_from=support_ticket_stage_for_status(previous_status),
+        stage_to=stage_key,
+        metadata={
+            'action': stage_key,
+            'review_note_added': bool(clean_review_note),
+        },
+    )
     db.session.commit()
     flash(f'Ticket marked as {support_ticket_stage_label(stage_key)}.', 'success')
     return redirect(url_for('admin.support_ticket_view', id=item.id))

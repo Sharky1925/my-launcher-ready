@@ -17,6 +17,7 @@ try:
         User,
         SupportClient,
         SupportTicket,
+        SupportTicketEvent,
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
@@ -46,6 +47,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         User,
         SupportClient,
         SupportTicket,
+        SupportTicketEvent,
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
@@ -879,6 +881,87 @@ def test_admin_ticket_review_actions_sync_pending_done_closed(client, app):
     with app.app_context():
         closed_ticket = SupportTicket.query.get(ticket_id)
         assert closed_ticket.status == SUPPORT_TICKET_STATUS_CLOSED
+        ticket_events = (
+            SupportTicketEvent.query
+            .filter(SupportTicketEvent.ticket_id == ticket_id)
+            .order_by(SupportTicketEvent.created_at.asc(), SupportTicketEvent.id.asc())
+            .all()
+        )
+        assert len(ticket_events) == 3
+        assert [event.event_type for event in ticket_events] == ['review_action', 'review_action', 'review_action']
+        assert ticket_events[0].status_from == 'open'
+        assert ticket_events[0].status_to == SUPPORT_TICKET_STATUS_IN_PROGRESS
+        assert ticket_events[1].status_from == SUPPORT_TICKET_STATUS_IN_PROGRESS
+        assert ticket_events[1].status_to == SUPPORT_TICKET_STATUS_RESOLVED
+        assert 'Review note added.' in (ticket_events[1].message or '')
+        assert ticket_events[2].status_to == SUPPORT_TICKET_STATUS_CLOSED
+
+    timeline_page = client.get(f"/admin/support-tickets/{ticket_id}")
+    timeline_html = timeline_page.get_data(as_text=True)
+    assert "Activity Timeline" in timeline_html
+    assert "Review Action" in timeline_html
+
+
+def test_admin_ticket_view_post_records_admin_update_timeline_event(client, app):
+    with app.app_context():
+        service = Service.query.first()
+        assert service is not None
+        ticket_client = SupportClient(
+            full_name="Ticket Editor",
+            email=f"editor-{uuid.uuid4().hex[:8]}@example.com",
+            company="Editor Corp",
+            phone="+1 (555) 444-4444",
+        )
+        ticket_client.set_password("editor-secret")
+        db.session.add(ticket_client)
+        db.session.commit()
+
+        ticket = SupportTicket(
+            ticket_number=f"RS-U-{uuid.uuid4().hex[:10].upper()}",
+            client_id=ticket_client.id,
+            subject="Update from admin view",
+            service_slug=service.slug,
+            priority="normal",
+            status="open",
+            details="Testing timeline for admin update POST.",
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        ticket_id = ticket.id
+
+    admin_login(client)
+    ticket_page = client.get(f"/admin/support-tickets/{ticket_id}")
+    csrf_token = extract_csrf_token(ticket_page.get_data(as_text=True))
+    assert csrf_token
+
+    update_resp = client.post(
+        f"/admin/support-tickets/{ticket_id}",
+        data={
+            "_csrf_token": csrf_token,
+            "status": "waiting_customer",
+            "priority": "high",
+            "internal_notes": "Pending client callback",
+            "review_note": "Waiting for customer confirmation",
+        },
+        follow_redirects=False,
+    )
+    assert update_resp.status_code in (302, 303)
+
+    with app.app_context():
+        updated = SupportTicket.query.get(ticket_id)
+        assert updated.status == 'waiting_customer'
+        assert updated.priority == 'high'
+        events = (
+            SupportTicketEvent.query
+            .filter(SupportTicketEvent.ticket_id == ticket_id)
+            .order_by(SupportTicketEvent.created_at.asc(), SupportTicketEvent.id.asc())
+            .all()
+        )
+        assert len(events) == 1
+        assert events[0].event_type == 'admin_update'
+        assert events[0].status_from == 'open'
+        assert events[0].status_to == 'waiting_customer'
+        assert 'Review note added' in (events[0].message or '')
 
 
 def test_remote_support_uses_stage_labels_for_ticket_sync(client, app):
