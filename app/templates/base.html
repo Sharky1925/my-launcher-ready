@@ -146,7 +146,7 @@
             </ul>
           </li>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="{{ url_for('main.services') }}" aria-expanded="false">Repair Services</a>
+            <a class="nav-link dropdown-toggle" href="{{ url_for('main.services') }}" aria-expanded="false">Technical Repair Services</a>
             <ul class="dropdown-menu">
               {% for s in nav_repair %}
               <li><a class="dropdown-item" href="{{ url_for('main.service_detail', slug=s.slug) }}"><i class="{{ s.icon_class }} me-2 dropdown-item-icon"></i>{{ s.title }}</a></li>

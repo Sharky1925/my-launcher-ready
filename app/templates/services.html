@@ -48,14 +48,14 @@
           <p>Strategy, security, cloud, and managed operations.</p>
         </article>
         <article class="services-layout-stat">
-          <span>Technical Repair</span>
+          <span>Technical Repair Services</span>
           <strong>{{ repair_services|length }} Services</strong>
           <p>Diagnostics, recovery, and certified hardware repairs.</p>
         </article>
       </div>
       <div class="services-layout-actions">
         <a href="#professional" class="services-layout-link"><i class="fa-solid fa-cube"></i> Browse Professional IT</a>
-        <a href="#repair" class="services-layout-link"><i class="fa-solid fa-screwdriver-wrench"></i> Browse Technical Repair</a>
+        <a href="#repair" class="services-layout-link"><i class="fa-solid fa-screwdriver-wrench"></i> Browse Technical Repair Services</a>
         <a href="{{ url_for('main.request_quote') }}" class="services-layout-link services-layout-link--cta"><i class="fa-solid fa-file-invoice-dollar"></i> Request Quote</a>
       </div>
     </div>
@@ -92,7 +92,7 @@
 <section class="section section--alt services-layout-section" id="repair">
   <div class="container">
     <div class="section-heading reveal services-layout-heading">
-      <div class="section-label"><i class="fa-solid fa-wrench"></i> {{ cb.get('repair_heading', {}).get('label', 'Technical Repair') }}</div>
+      <div class="section-label"><i class="fa-solid fa-wrench"></i> {{ cb.get('repair_heading', {}).get('label', 'Technical Repair Services') }}</div>
       <h2>{{ cb.get('repair_heading', {}).get('title', 'Expert Repair & Recovery') }}</h2>
       <p>Rapid, transparent repair workflows for laptops, phones, game consoles, and data-critical devices.</p>
     </div>
