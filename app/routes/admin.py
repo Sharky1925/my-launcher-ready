@@ -38,6 +38,14 @@ try:
         AcpComponentDefinition,
         AcpWidgetDefinition,
         AcpMetricDefinition,
+        AcpContentType,
+        AcpContentTypeVersion,
+        AcpContentEntry,
+        AcpContentEntryVersion,
+        AcpThemeTokenSet,
+        AcpThemeTokenVersion,
+        AcpMcpServer,
+        AcpMcpAuditEvent,
         AcpEnvironment,
         AcpPromotionEvent,
         AcpAuditEvent,
@@ -105,6 +113,14 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         AcpComponentDefinition,
         AcpWidgetDefinition,
         AcpMetricDefinition,
+        AcpContentType,
+        AcpContentTypeVersion,
+        AcpContentEntry,
+        AcpContentEntryVersion,
+        AcpThemeTokenSet,
+        AcpThemeTokenVersion,
+        AcpMcpServer,
+        AcpMcpAuditEvent,
         AcpEnvironment,
         AcpPromotionEvent,
         AcpAuditEvent,
@@ -233,12 +249,29 @@ ADMIN_PERMISSION_MAP = {
     'admin.acp_dashboard_preview': 'acp:studio:view',
     'admin.acp_dashboard_snapshot': 'acp:dashboards:manage',
     'admin.acp_dashboard_publish': 'acp:publish',
+    'admin.acp_content_types': 'acp:content:manage',
+    'admin.acp_content_type_add': 'acp:content:manage',
+    'admin.acp_content_type_edit': 'acp:content:manage',
+    'admin.acp_content_entries': 'acp:content:manage',
+    'admin.acp_content_entry_add': 'acp:content:manage',
+    'admin.acp_content_entry_edit': 'acp:content:manage',
+    'admin.acp_theme_tokens': 'acp:theme:manage',
+    'admin.acp_theme_token_add': 'acp:theme:manage',
+    'admin.acp_theme_token_edit': 'acp:theme:manage',
+    'admin.acp_mcp_servers': 'acp:mcp:manage',
+    'admin.acp_mcp_server_add': 'acp:mcp:manage',
+    'admin.acp_mcp_server_edit': 'acp:mcp:manage',
+    'admin.acp_mcp_audit': 'acp:mcp:audit:view',
     'admin.acp_registry': 'acp:registry:manage',
     'admin.acp_metrics': 'acp:metrics:manage',
     'admin.acp_audit': 'acp:audit:view',
     'admin.acp_promote': 'acp:environments:manage',
     'admin.acp_admin_page_api': 'acp:studio:view',
     'admin.acp_admin_dashboard_api': 'acp:studio:view',
+    'admin.acp_admin_content_type_api': 'acp:content:manage',
+    'admin.acp_admin_content_entry_api': 'acp:content:manage',
+    'admin.acp_admin_theme_token_api': 'acp:theme:manage',
+    'admin.acp_admin_mcp_server_api': 'acp:mcp:manage',
     'admin.contacts': 'support:manage',
     'admin.contact_view': 'support:manage',
     'admin.contact_delete': 'support:manage',
@@ -565,6 +598,66 @@ def _serialize_acp_dashboard(dashboard):
     }
 
 
+def _serialize_acp_content_type(content_type):
+    return {
+        'id': content_type.id,
+        'key': content_type.key,
+        'name': content_type.name,
+        'description': content_type.description,
+        'schema': _safe_json_loads(content_type.schema_json, {}),
+        'is_enabled': bool(content_type.is_enabled),
+        'updated_at': content_type.updated_at.isoformat() if content_type.updated_at else None,
+    }
+
+
+def _serialize_acp_content_entry(entry):
+    content_type = getattr(entry, 'content_type', None)
+    return {
+        'id': entry.id,
+        'content_type_id': entry.content_type_id,
+        'content_type_key': getattr(content_type, 'key', ''),
+        'content_type_name': getattr(content_type, 'name', ''),
+        'entry_key': entry.entry_key,
+        'title': entry.title,
+        'locale': entry.locale,
+        'status': entry.status,
+        'data': _safe_json_loads(entry.data_json, {}),
+        'scheduled_publish_at': entry.scheduled_publish_at.isoformat() if entry.scheduled_publish_at else None,
+        'published_at': entry.published_at.isoformat() if entry.published_at else None,
+        'updated_at': entry.updated_at.isoformat() if entry.updated_at else None,
+    }
+
+
+def _serialize_acp_theme_token_set(item):
+    return {
+        'id': item.id,
+        'key': item.key,
+        'name': item.name,
+        'status': item.status,
+        'tokens': _safe_json_loads(item.tokens_json, {}),
+        'scheduled_publish_at': item.scheduled_publish_at.isoformat() if item.scheduled_publish_at else None,
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+
+
+def _serialize_acp_mcp_server(item):
+    return {
+        'id': item.id,
+        'key': item.key,
+        'name': item.name,
+        'server_url': item.server_url,
+        'transport': item.transport,
+        'auth_mode': item.auth_mode,
+        'environment': item.environment,
+        'allowed_tools': _safe_json_loads(item.allowed_tools_json, []),
+        'require_approval': item.require_approval,
+        'is_enabled': bool(item.is_enabled),
+        'notes': item.notes,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+
+
 def _create_acp_audit_event(domain, action, entity_type, entity_id, before_state, after_state):
     actor_username = getattr(current_user, 'username', 'system')
     event = AcpAuditEvent(
@@ -595,6 +688,27 @@ def _next_dashboard_version_number(dashboard_document_id):
     return int(latest or 0) + 1
 
 
+def _next_content_type_version_number(content_type_id):
+    latest = db.session.query(func.max(AcpContentTypeVersion.version_number)).filter_by(
+        content_type_id=content_type_id
+    ).scalar()
+    return int(latest or 0) + 1
+
+
+def _next_content_entry_version_number(content_entry_id):
+    latest = db.session.query(func.max(AcpContentEntryVersion.version_number)).filter_by(
+        content_entry_id=content_entry_id
+    ).scalar()
+    return int(latest or 0) + 1
+
+
+def _next_theme_token_version_number(token_set_id):
+    latest = db.session.query(func.max(AcpThemeTokenVersion.version_number)).filter_by(
+        token_set_id=token_set_id
+    ).scalar()
+    return int(latest or 0) + 1
+
+
 def _create_page_version(page, note=''):
     snapshot = _serialize_acp_page(page)
     version = AcpPageVersion(
@@ -613,6 +727,45 @@ def _create_dashboard_version(dashboard, note=''):
     version = AcpDashboardVersion(
         dashboard_document_id=dashboard.id,
         version_number=_next_dashboard_version_number(dashboard.id),
+        snapshot_json=_safe_json_dumps(snapshot, {}),
+        change_note=clean_text(note, 260) or None,
+        created_by_id=getattr(current_user, 'id', None),
+    )
+    db.session.add(version)
+    return version
+
+
+def _create_content_type_version(item, note=''):
+    snapshot = _serialize_acp_content_type(item)
+    version = AcpContentTypeVersion(
+        content_type_id=item.id,
+        version_number=_next_content_type_version_number(item.id),
+        snapshot_json=_safe_json_dumps(snapshot, {}),
+        change_note=clean_text(note, 260) or None,
+        created_by_id=getattr(current_user, 'id', None),
+    )
+    db.session.add(version)
+    return version
+
+
+def _create_content_entry_version(item, note=''):
+    snapshot = _serialize_acp_content_entry(item)
+    version = AcpContentEntryVersion(
+        content_entry_id=item.id,
+        version_number=_next_content_entry_version_number(item.id),
+        snapshot_json=_safe_json_dumps(snapshot, {}),
+        change_note=clean_text(note, 260) or None,
+        created_by_id=getattr(current_user, 'id', None),
+    )
+    db.session.add(version)
+    return version
+
+
+def _create_theme_token_version(item, note=''):
+    snapshot = _serialize_acp_theme_token_set(item)
+    version = AcpThemeTokenVersion(
+        token_set_id=item.id,
+        version_number=_next_theme_token_version_number(item.id),
         snapshot_json=_safe_json_dumps(snapshot, {}),
         change_note=clean_text(note, 260) or None,
         created_by_id=getattr(current_user, 'id', None),
@@ -2492,6 +2645,10 @@ def content_edit(page, section):
 def acp_studio():
     page_count = AcpPageDocument.query.count()
     dashboard_count = AcpDashboardDocument.query.count()
+    content_type_count = AcpContentType.query.filter_by(is_enabled=True).count()
+    content_entry_count = AcpContentEntry.query.count()
+    theme_token_count = AcpThemeTokenSet.query.count()
+    mcp_server_count = AcpMcpServer.query.count()
     component_count = AcpComponentDefinition.query.filter_by(is_enabled=True).count()
     widget_count = AcpWidgetDefinition.query.filter_by(is_enabled=True).count()
     metric_count = AcpMetricDefinition.query.filter_by(is_enabled=True).count()
@@ -2506,6 +2663,10 @@ def acp_studio():
         stats={
             'pages': page_count,
             'dashboards': dashboard_count,
+            'content_types': content_type_count,
+            'content_entries': content_entry_count,
+            'theme_tokens': theme_token_count,
+            'mcp_servers': mcp_server_count,
             'components': component_count,
             'widgets': widget_count,
             'metrics': metric_count,
@@ -2941,6 +3102,614 @@ def acp_dashboard_publish(id):
     return redirect(url_for('admin.acp_dashboard_edit', id=item.id))
 
 
+@admin_bp.route('/acp/content-types')
+@login_required
+def acp_content_types():
+    q = clean_text(request.args.get('q', ''), 120)
+    query = AcpContentType.query
+    if q:
+        like = f"%{escape_like(q.lower())}%"
+        query = query.filter(or_(
+            func.lower(AcpContentType.name).like(like),
+            func.lower(AcpContentType.key).like(like),
+        ))
+    items = query.order_by(AcpContentType.updated_at.desc(), AcpContentType.id.desc()).all()
+    return render_template('admin/acp/content_types.html', items=items, q=q)
+
+
+@admin_bp.route('/acp/content-types/new', methods=['GET', 'POST'])
+@login_required
+def acp_content_type_add():
+    if request.method == 'POST':
+        name = clean_text(request.form.get('name'), 180)
+        key = clean_text(request.form.get('key'), 120) or slugify(name)
+        description = clean_text(request.form.get('description'), 800)
+        schema_json = request.form.get('schema_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+        is_enabled = bool(request.form.get('is_enabled'))
+
+        if not name or not key:
+            flash('Name and key are required.', 'danger')
+            return render_template('admin/acp/content_type_form.html', item=None)
+        if AcpContentType.query.filter_by(key=key).first():
+            flash('A content type with this key already exists.', 'danger')
+            return render_template('admin/acp/content_type_form.html', item=None)
+        schema_payload = _safe_json_loads(schema_json, None)
+        if not isinstance(schema_payload, dict):
+            flash('Schema JSON must be a valid JSON object.', 'danger')
+            return render_template('admin/acp/content_type_form.html', item=None)
+
+        item = AcpContentType(
+            key=key,
+            name=name,
+            description=description or None,
+            schema_json=_safe_json_dumps(schema_payload, {}),
+            is_enabled=is_enabled,
+            created_by_id=current_user.id,
+            updated_by_id=current_user.id,
+        )
+        db.session.add(item)
+        db.session.flush()
+        _create_content_type_version(item, note=change_note or 'Initial content type definition')
+        _create_acp_audit_event(
+            'content_models',
+            'create',
+            'acp_content_type',
+            item.key,
+            {},
+            _serialize_acp_content_type(item),
+        )
+        db.session.commit()
+        flash('Content type created.', 'success')
+        return redirect(url_for('admin.acp_content_type_edit', id=item.id))
+
+    return render_template('admin/acp/content_type_form.html', item=None)
+
+
+@admin_bp.route('/acp/content-types/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def acp_content_type_edit(id):
+    item = AcpContentType.query.get_or_404(id)
+    if request.method == 'POST':
+        before_state = _serialize_acp_content_type(item)
+        name = clean_text(request.form.get('name'), 180)
+        key = clean_text(request.form.get('key'), 120) or slugify(name)
+        description = clean_text(request.form.get('description'), 800)
+        schema_json = request.form.get('schema_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+        is_enabled = bool(request.form.get('is_enabled'))
+
+        if not name or not key:
+            flash('Name and key are required.', 'danger')
+            return render_template('admin/acp/content_type_form.html', item=item)
+        duplicate = AcpContentType.query.filter(
+            AcpContentType.key == key,
+            AcpContentType.id != item.id,
+        ).first()
+        if duplicate:
+            flash('Another content type already uses this key.', 'danger')
+            return render_template('admin/acp/content_type_form.html', item=item)
+        schema_payload = _safe_json_loads(schema_json, None)
+        if not isinstance(schema_payload, dict):
+            flash('Schema JSON must be a valid JSON object.', 'danger')
+            return render_template('admin/acp/content_type_form.html', item=item)
+
+        item.name = name
+        item.key = key
+        item.description = description or None
+        item.schema_json = _safe_json_dumps(schema_payload, {})
+        item.is_enabled = is_enabled
+        item.updated_by_id = current_user.id
+        item.updated_at = utc_now_naive()
+        _create_content_type_version(item, note=change_note or 'Content type updated')
+        _create_acp_audit_event(
+            'content_models',
+            'update',
+            'acp_content_type',
+            item.key,
+            before_state,
+            _serialize_acp_content_type(item),
+        )
+        db.session.commit()
+        flash('Content type updated.', 'success')
+        return redirect(url_for('admin.acp_content_type_edit', id=item.id))
+
+    versions = AcpContentTypeVersion.query.filter_by(
+        content_type_id=item.id
+    ).order_by(AcpContentTypeVersion.version_number.desc()).limit(12).all()
+    return render_template('admin/acp/content_type_form.html', item=item, versions=versions)
+
+
+@admin_bp.route('/acp/content-entries')
+@login_required
+def acp_content_entries():
+    q = clean_text(request.args.get('q', ''), 120)
+    content_type_id = parse_positive_int(request.args.get('content_type_id'))
+    query = AcpContentEntry.query.join(AcpContentType)
+    if content_type_id:
+        query = query.filter(AcpContentEntry.content_type_id == content_type_id)
+    if q:
+        like = f"%{escape_like(q.lower())}%"
+        query = query.filter(or_(
+            func.lower(AcpContentEntry.title).like(like),
+            func.lower(AcpContentEntry.entry_key).like(like),
+            func.lower(AcpContentType.key).like(like),
+            func.lower(AcpContentType.name).like(like),
+        ))
+    items = query.order_by(AcpContentEntry.updated_at.desc(), AcpContentEntry.id.desc()).all()
+    content_types = AcpContentType.query.order_by(AcpContentType.name.asc()).all()
+    return render_template(
+        'admin/acp/content_entries.html',
+        items=items,
+        q=q,
+        content_types=content_types,
+        selected_content_type_id=content_type_id,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/content-entries/new', methods=['GET', 'POST'])
+@login_required
+def acp_content_entry_add():
+    content_types = AcpContentType.query.filter_by(is_enabled=True).order_by(AcpContentType.name.asc()).all()
+    if request.method == 'POST':
+        content_type_id = parse_positive_int(request.form.get('content_type_id'))
+        content_type = AcpContentType.query.get(content_type_id) if content_type_id else None
+        title = clean_text(request.form.get('title'), 220)
+        entry_key = clean_text(request.form.get('entry_key'), 140) or slugify(title)
+        locale = clean_text(request.form.get('locale'), 20) or 'en-US'
+        data_json = request.form.get('data_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+        if not content_type:
+            flash('Select a valid content type.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=None,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+        if not title or not entry_key:
+            flash('Title and entry key are required.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=None,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+        duplicate = AcpContentEntry.query.filter_by(
+            content_type_id=content_type.id,
+            entry_key=entry_key,
+            locale=locale,
+        ).first()
+        if duplicate:
+            flash('An entry with this key and locale already exists for this content type.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=None,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+        data_payload = _safe_json_loads(data_json, None)
+        if data_payload is None:
+            flash('Data JSON must be valid JSON.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=None,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+
+        item = AcpContentEntry(
+            content_type_id=content_type.id,
+            entry_key=entry_key,
+            title=title,
+            locale=locale,
+            data_json=_safe_json_dumps(data_payload, {}),
+            created_by_id=current_user.id,
+            updated_by_id=current_user.id,
+        )
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status'),
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=None,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+
+        db.session.add(item)
+        db.session.flush()
+        _create_content_entry_version(item, note=change_note or 'Initial content entry')
+        _create_acp_audit_event(
+            'content_entries',
+            'create',
+            'acp_content_entry',
+            f'{content_type.key}:{item.entry_key}:{item.locale}',
+            {},
+            _serialize_acp_content_entry(item),
+        )
+        db.session.commit()
+        flash('Content entry created.', 'success')
+        return redirect(url_for('admin.acp_content_entry_edit', id=item.id))
+
+    return render_template(
+        'admin/acp/content_entry_form.html',
+        item=None,
+        content_types=content_types,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/content-entries/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def acp_content_entry_edit(id):
+    item = AcpContentEntry.query.get_or_404(id)
+    content_types = AcpContentType.query.filter_by(is_enabled=True).order_by(AcpContentType.name.asc()).all()
+    if request.method == 'POST':
+        before_state = _serialize_acp_content_entry(item)
+        content_type_id = parse_positive_int(request.form.get('content_type_id'))
+        content_type = AcpContentType.query.get(content_type_id) if content_type_id else None
+        title = clean_text(request.form.get('title'), 220)
+        entry_key = clean_text(request.form.get('entry_key'), 140) or slugify(title)
+        locale = clean_text(request.form.get('locale'), 20) or 'en-US'
+        data_json = request.form.get('data_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+
+        if not content_type:
+            flash('Select a valid content type.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=item,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+        if not title or not entry_key:
+            flash('Title and entry key are required.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=item,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+        duplicate = AcpContentEntry.query.filter(
+            AcpContentEntry.content_type_id == content_type.id,
+            AcpContentEntry.entry_key == entry_key,
+            AcpContentEntry.locale == locale,
+            AcpContentEntry.id != item.id,
+        ).first()
+        if duplicate:
+            flash('Another entry with this key and locale already exists for this content type.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=item,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+        data_payload = _safe_json_loads(data_json, None)
+        if data_payload is None:
+            flash('Data JSON must be valid JSON.', 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=item,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+
+        item.content_type_id = content_type.id
+        item.entry_key = entry_key
+        item.title = title
+        item.locale = locale
+        item.data_json = _safe_json_dumps(data_payload, {})
+        item.updated_by_id = current_user.id
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status') or item.status,
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template(
+                'admin/acp/content_entry_form.html',
+                item=item,
+                content_types=content_types,
+                workflow_options=get_workflow_status_options(current_user),
+            )
+
+        _create_content_entry_version(item, note=change_note or 'Content entry updated')
+        _create_acp_audit_event(
+            'content_entries',
+            'update',
+            'acp_content_entry',
+            f'{content_type.key}:{item.entry_key}:{item.locale}',
+            before_state,
+            _serialize_acp_content_entry(item),
+        )
+        db.session.commit()
+        flash('Content entry updated.', 'success')
+        return redirect(url_for('admin.acp_content_entry_edit', id=item.id))
+
+    versions = AcpContentEntryVersion.query.filter_by(
+        content_entry_id=item.id
+    ).order_by(AcpContentEntryVersion.version_number.desc()).limit(12).all()
+    return render_template(
+        'admin/acp/content_entry_form.html',
+        item=item,
+        versions=versions,
+        content_types=content_types,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/theme')
+@login_required
+def acp_theme_tokens():
+    q = clean_text(request.args.get('q', ''), 120)
+    query = AcpThemeTokenSet.query
+    if q:
+        like = f"%{escape_like(q.lower())}%"
+        query = query.filter(or_(
+            func.lower(AcpThemeTokenSet.name).like(like),
+            func.lower(AcpThemeTokenSet.key).like(like),
+        ))
+    items = query.order_by(AcpThemeTokenSet.updated_at.desc(), AcpThemeTokenSet.id.desc()).all()
+    return render_template(
+        'admin/acp/theme_tokens.html',
+        items=items,
+        q=q,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/theme/new', methods=['GET', 'POST'])
+@login_required
+def acp_theme_token_add():
+    if request.method == 'POST':
+        key = clean_text(request.form.get('key'), 80) or slugify(clean_text(request.form.get('name'), 180))
+        name = clean_text(request.form.get('name'), 180)
+        tokens_json = request.form.get('tokens_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+        if not key or not name:
+            flash('Name and key are required.', 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+        if AcpThemeTokenSet.query.filter_by(key=key).first():
+            flash('A theme token set with this key already exists.', 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+        tokens_payload = _safe_json_loads(tokens_json, None)
+        if not isinstance(tokens_payload, dict):
+            flash('Tokens JSON must be a valid JSON object.', 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        item = AcpThemeTokenSet(
+            key=key,
+            name=name,
+            tokens_json=_safe_json_dumps(tokens_payload, {}),
+            created_by_id=current_user.id,
+            updated_by_id=current_user.id,
+        )
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status'),
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        db.session.add(item)
+        db.session.flush()
+        _create_theme_token_version(item, note=change_note or 'Initial token set')
+        _create_acp_audit_event('theme', 'create', 'acp_theme_token_set', item.key, {}, _serialize_acp_theme_token_set(item))
+        db.session.commit()
+        flash('Theme token set created.', 'success')
+        return redirect(url_for('admin.acp_theme_token_edit', id=item.id))
+
+    return render_template('admin/acp/theme_token_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+
+@admin_bp.route('/acp/theme/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def acp_theme_token_edit(id):
+    item = AcpThemeTokenSet.query.get_or_404(id)
+    if request.method == 'POST':
+        before_state = _serialize_acp_theme_token_set(item)
+        key = clean_text(request.form.get('key'), 80) or slugify(clean_text(request.form.get('name'), 180))
+        name = clean_text(request.form.get('name'), 180)
+        tokens_json = request.form.get('tokens_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+        if not key or not name:
+            flash('Name and key are required.', 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+        duplicate = AcpThemeTokenSet.query.filter(
+            AcpThemeTokenSet.key == key,
+            AcpThemeTokenSet.id != item.id,
+        ).first()
+        if duplicate:
+            flash('Another token set already uses this key.', 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+        tokens_payload = _safe_json_loads(tokens_json, None)
+        if not isinstance(tokens_payload, dict):
+            flash('Tokens JSON must be a valid JSON object.', 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        item.key = key
+        item.name = name
+        item.tokens_json = _safe_json_dumps(tokens_payload, {})
+        item.updated_by_id = current_user.id
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status') or item.status,
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/acp/theme_token_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        _create_theme_token_version(item, note=change_note or 'Token set updated')
+        _create_acp_audit_event('theme', 'update', 'acp_theme_token_set', item.key, before_state, _serialize_acp_theme_token_set(item))
+        db.session.commit()
+        flash('Theme token set updated.', 'success')
+        return redirect(url_for('admin.acp_theme_token_edit', id=item.id))
+
+    versions = AcpThemeTokenVersion.query.filter_by(
+        token_set_id=item.id
+    ).order_by(AcpThemeTokenVersion.version_number.desc()).limit(12).all()
+    return render_template(
+        'admin/acp/theme_token_form.html',
+        item=item,
+        versions=versions,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/mcp/servers')
+@login_required
+def acp_mcp_servers():
+    q = clean_text(request.args.get('q', ''), 120)
+    query = AcpMcpServer.query
+    if q:
+        like = f"%{escape_like(q.lower())}%"
+        query = query.filter(or_(
+            func.lower(AcpMcpServer.name).like(like),
+            func.lower(AcpMcpServer.key).like(like),
+            func.lower(AcpMcpServer.server_url).like(like),
+        ))
+    items = query.order_by(AcpMcpServer.updated_at.desc(), AcpMcpServer.id.desc()).all()
+    return render_template('admin/acp/mcp_servers.html', items=items, q=q)
+
+
+@admin_bp.route('/acp/mcp/servers/new', methods=['GET', 'POST'])
+@login_required
+def acp_mcp_server_add():
+    if request.method == 'POST':
+        name = clean_text(request.form.get('name'), 180)
+        key = clean_text(request.form.get('key'), 120) or slugify(name)
+        server_url = clean_text(request.form.get('server_url'), 500)
+        transport = clean_text(request.form.get('transport'), 40) or 'http'
+        auth_mode = clean_text(request.form.get('auth_mode'), 40) or 'oauth'
+        environment = clean_text(request.form.get('environment'), 40) or 'production'
+        allowed_tools_json = request.form.get('allowed_tools_json', '[]')
+        require_approval = clean_text(request.form.get('require_approval'), 24) or 'always'
+        notes = clean_text(request.form.get('notes'), 400)
+        is_enabled = bool(request.form.get('is_enabled'))
+
+        if not name or not key or not server_url:
+            flash('Name, key, and server URL are required.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=None)
+        if AcpMcpServer.query.filter_by(key=key).first():
+            flash('An MCP server with this key already exists.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=None)
+        allowed_tools_payload = _safe_json_loads(allowed_tools_json, None)
+        if not isinstance(allowed_tools_payload, list):
+            flash('Allowed tools JSON must be a valid JSON array.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=None)
+        if require_approval not in {'always', 'never', 'selective'}:
+            flash('Require approval must be always, never, or selective.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=None)
+
+        item = AcpMcpServer(
+            name=name,
+            key=key,
+            server_url=server_url,
+            transport=transport,
+            auth_mode=auth_mode,
+            environment=environment,
+            allowed_tools_json=_safe_json_dumps(allowed_tools_payload, []),
+            require_approval=require_approval,
+            notes=notes or None,
+            is_enabled=is_enabled,
+            created_by_id=current_user.id,
+            updated_by_id=current_user.id,
+        )
+        db.session.add(item)
+        _create_acp_audit_event('mcp', 'create', 'acp_mcp_server', item.key, {}, _serialize_acp_mcp_server(item))
+        db.session.commit()
+        flash('MCP server created.', 'success')
+        return redirect(url_for('admin.acp_mcp_server_edit', id=item.id))
+
+    return render_template('admin/acp/mcp_server_form.html', item=None)
+
+
+@admin_bp.route('/acp/mcp/servers/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def acp_mcp_server_edit(id):
+    item = AcpMcpServer.query.get_or_404(id)
+    if request.method == 'POST':
+        before_state = _serialize_acp_mcp_server(item)
+        name = clean_text(request.form.get('name'), 180)
+        key = clean_text(request.form.get('key'), 120) or slugify(name)
+        server_url = clean_text(request.form.get('server_url'), 500)
+        transport = clean_text(request.form.get('transport'), 40) or 'http'
+        auth_mode = clean_text(request.form.get('auth_mode'), 40) or 'oauth'
+        environment = clean_text(request.form.get('environment'), 40) or 'production'
+        allowed_tools_json = request.form.get('allowed_tools_json', '[]')
+        require_approval = clean_text(request.form.get('require_approval'), 24) or 'always'
+        notes = clean_text(request.form.get('notes'), 400)
+        is_enabled = bool(request.form.get('is_enabled'))
+
+        if not name or not key or not server_url:
+            flash('Name, key, and server URL are required.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=item)
+        duplicate = AcpMcpServer.query.filter(
+            AcpMcpServer.key == key,
+            AcpMcpServer.id != item.id,
+        ).first()
+        if duplicate:
+            flash('Another MCP server already uses this key.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=item)
+        allowed_tools_payload = _safe_json_loads(allowed_tools_json, None)
+        if not isinstance(allowed_tools_payload, list):
+            flash('Allowed tools JSON must be a valid JSON array.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=item)
+        if require_approval not in {'always', 'never', 'selective'}:
+            flash('Require approval must be always, never, or selective.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=item)
+
+        item.name = name
+        item.key = key
+        item.server_url = server_url
+        item.transport = transport
+        item.auth_mode = auth_mode
+        item.environment = environment
+        item.allowed_tools_json = _safe_json_dumps(allowed_tools_payload, [])
+        item.require_approval = require_approval
+        item.notes = notes or None
+        item.is_enabled = is_enabled
+        item.updated_by_id = current_user.id
+        item.updated_at = utc_now_naive()
+        _create_acp_audit_event('mcp', 'update', 'acp_mcp_server', item.key, before_state, _serialize_acp_mcp_server(item))
+        db.session.commit()
+        flash('MCP server updated.', 'success')
+        return redirect(url_for('admin.acp_mcp_server_edit', id=item.id))
+
+    return render_template('admin/acp/mcp_server_form.html', item=item)
+
+
+@admin_bp.route('/acp/mcp/audit')
+@login_required
+def acp_mcp_audit():
+    server_id = parse_positive_int(request.args.get('server_id'))
+    status = clean_text(request.args.get('status', ''), 30)
+    query = AcpMcpAuditEvent.query
+    if server_id:
+        query = query.filter(AcpMcpAuditEvent.server_id == server_id)
+    if status:
+        query = query.filter(AcpMcpAuditEvent.status == status)
+    items = query.order_by(AcpMcpAuditEvent.created_at.desc()).limit(200).all()
+    servers = AcpMcpServer.query.order_by(AcpMcpServer.name.asc()).all()
+    return render_template(
+        'admin/acp/mcp_audit.html',
+        items=items,
+        servers=servers,
+        selected_server_id=server_id,
+        status=status,
+    )
+
+
 @admin_bp.route('/acp/registry')
 @login_required
 def acp_registry():
@@ -3023,3 +3792,31 @@ def acp_admin_page_api(slug):
 def acp_admin_dashboard_api(dashboard_id):
     item = AcpDashboardDocument.query.filter_by(dashboard_id=dashboard_id).first_or_404()
     return jsonify(_serialize_acp_dashboard(item))
+
+
+@admin_bp.route('/acp/api/content-types/<key>')
+@login_required
+def acp_admin_content_type_api(key):
+    item = AcpContentType.query.filter_by(key=clean_text(key, 120)).first_or_404()
+    return jsonify(_serialize_acp_content_type(item))
+
+
+@admin_bp.route('/acp/api/content-entries/<int:id>')
+@login_required
+def acp_admin_content_entry_api(id):
+    item = AcpContentEntry.query.get_or_404(id)
+    return jsonify(_serialize_acp_content_entry(item))
+
+
+@admin_bp.route('/acp/api/theme/<key>')
+@login_required
+def acp_admin_theme_token_api(key):
+    item = AcpThemeTokenSet.query.filter_by(key=clean_text(key, 80)).first_or_404()
+    return jsonify(_serialize_acp_theme_token_set(item))
+
+
+@admin_bp.route('/acp/api/mcp/servers/<key>')
+@login_required
+def acp_admin_mcp_server_api(key):
+    item = AcpMcpServer.query.filter_by(key=clean_text(key, 120)).first_or_404()
+    return jsonify(_serialize_acp_mcp_server(item))

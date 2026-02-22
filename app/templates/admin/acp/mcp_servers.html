@@ -1,0 +1,69 @@
+{% extends "admin/base.html" %}
+{% block page_title %}MCP Servers{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-7">
+        <label class="form-label">Search MCP servers</label>
+        <input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Search by name, key, or URL...">
+      </div>
+      <div class="col-md-5 d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit"><i class="fa-solid fa-magnifying-glass me-1"></i>Search</button>
+        <a class="btn btn-primary" href="{{ url_for('admin.acp_mcp_server_add') }}"><i class="fa-solid fa-plus me-1"></i>New MCP Server</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>MCP Server Registry</strong>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.acp_mcp_audit') }}" class="btn btn-sm btn-outline-primary">MCP Audit</a>
+      <a href="{{ url_for('admin.acp_studio') }}" class="btn btn-sm btn-outline-secondary">Back to ACP Studio</a>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Key</th>
+            <th>Environment</th>
+            <th>Approval</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td><code>{{ item.key }}</code></td>
+            <td>{{ item.environment }}</td>
+            <td><span class="badge bg-info text-dark">{{ item.require_approval }}</span></td>
+            <td>
+              {% if item.is_enabled %}
+              <span class="badge bg-success">Enabled</span>
+              {% else %}
+              <span class="badge bg-secondary">Disabled</span>
+              {% endif %}
+            </td>
+            <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else '—' }}</td>
+            <td class="text-end">
+              <a href="{{ url_for('admin.acp_mcp_server_edit', id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-muted">No MCP servers found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

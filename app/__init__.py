@@ -1,6 +1,7 @@
 import os
 import re
 import secrets
+import json
 from urllib.parse import urlparse
 from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
 from flask_login import LoginManager
@@ -10,11 +11,31 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     from .config import Config
-    from .models import db, User, Service, SiteSetting, Industry, ContentBlock, WORKFLOW_PUBLISHED, run_scheduled_publication_cycle
+    from .models import (
+        db,
+        User,
+        Service,
+        SiteSetting,
+        Industry,
+        ContentBlock,
+        AcpThemeTokenSet,
+        WORKFLOW_PUBLISHED,
+        run_scheduled_publication_cycle,
+    )
     from .utils import get_page_content, utc_now_naive
 except ImportError:  # pragma: no cover - fallback when running from app/ as script root
     from config import Config
-    from models import db, User, Service, SiteSetting, Industry, ContentBlock, WORKFLOW_PUBLISHED, run_scheduled_publication_cycle
+    from models import (
+        db,
+        User,
+        Service,
+        SiteSetting,
+        Industry,
+        ContentBlock,
+        AcpThemeTokenSet,
+        WORKFLOW_PUBLISHED,
+        run_scheduled_publication_cycle,
+    )
     from utils import get_page_content, utc_now_naive
 
 login_manager = LoginManager()
@@ -28,6 +49,7 @@ _ICON_CLASS_ALIASES = {
     'fa-shield-check': 'fa-shield-halved',
 }
 _ICON_STYLES = {'fa-solid', 'fa-regular', 'fa-brands'}
+_CSS_VAR_NAME_RE = re.compile(r"^--[a-zA-Z0-9_-]{1,64}$")
 _sentry_initialized = False
 WORKFLOW_SCHEDULE_POLL_SECONDS = 30
 
@@ -121,6 +143,54 @@ def _normalize_icon_attr(items, fallback):
     for item in items:
         item.icon_class = _normalize_icon_class(getattr(item, 'icon_class', ''), fallback)
     return items
+
+
+def _safe_json_loads(raw_value, fallback):
+    if raw_value is None:
+        return fallback
+    if isinstance(raw_value, (dict, list)):
+        return raw_value
+    value = str(raw_value).strip()
+    if not value:
+        return fallback
+    try:
+        return json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return fallback
+
+
+def _sanitize_css_var_map(raw):
+    if not isinstance(raw, dict):
+        return {}
+    safe = {}
+    for key, value in raw.items():
+        key_text = str(key or '').strip()
+        if not _CSS_VAR_NAME_RE.match(key_text):
+            continue
+        value_text = str(value or '').strip()[:200]
+        if not value_text:
+            continue
+        if any(token in value_text for token in ('{', '}', '<', '>', ';')):
+            continue
+        safe[key_text] = value_text
+    return safe
+
+
+def _get_active_theme_css_vars():
+    default_theme = AcpThemeTokenSet.query.filter_by(
+        key='default',
+        status=WORKFLOW_PUBLISHED,
+    ).first()
+    if default_theme:
+        tokens = _safe_json_loads(default_theme.tokens_json, {})
+        return _sanitize_css_var_map(tokens.get('css_vars', {}))
+    latest_theme = AcpThemeTokenSet.query.filter_by(
+        status=WORKFLOW_PUBLISHED,
+    ).order_by(AcpThemeTokenSet.updated_at.desc(), AcpThemeTokenSet.id.desc()).first()
+    if latest_theme:
+        tokens = _safe_json_loads(latest_theme.tokens_json, {})
+        return _sanitize_css_var_map(tokens.get('css_vars', {}))
+    return {}
 
 
 def init_sentry(app):
@@ -243,12 +313,17 @@ def create_app(config_overrides=None):
             footer_content = get_page_content('footer')
         except Exception:
             footer_content = {}
+        try:
+            theme_css_vars = _get_active_theme_css_vars()
+        except Exception:
+            theme_css_vars = {}
         return dict(
             site_settings=get_site_settings(),
             nav_professional=nav_professional,
             nav_repair=nav_repair,
             nav_industries=nav_industries,
             footer_content=footer_content,
+            theme_css_vars=theme_css_vars,
             csrf_token=get_csrf_token,
             csrf_input=csrf_input,
             csp_nonce=get_csp_nonce(),

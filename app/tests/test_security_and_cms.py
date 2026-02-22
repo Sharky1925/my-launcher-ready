@@ -22,6 +22,10 @@ try:
         SecurityEvent,
         AcpPageDocument,
         AcpDashboardDocument,
+        AcpContentType,
+        AcpContentEntry,
+        AcpThemeTokenSet,
+        AcpMcpServer,
         Industry,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
@@ -52,6 +56,10 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         SecurityEvent,
         AcpPageDocument,
         AcpDashboardDocument,
+        AcpContentType,
+        AcpContentEntry,
+        AcpThemeTokenSet,
+        AcpMcpServer,
         Industry,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
@@ -296,6 +304,84 @@ def test_acp_delivery_api_returns_only_published_documents(client, app):
 
     draft_dash_resp = client.get(f"/api/delivery/dashboards/{draft_dashboard_id}")
     assert draft_dash_resp.status_code == 404
+
+
+def test_acp_phase1_admin_sections_render(client):
+    admin_login(client)
+    assert client.get("/admin/acp/content-types").status_code == 200
+    assert client.get("/admin/acp/content-entries").status_code == 200
+    assert client.get("/admin/acp/theme").status_code == 200
+    assert client.get("/admin/acp/mcp/servers").status_code == 200
+    assert client.get("/admin/acp/mcp/audit").status_code == 200
+
+
+def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):
+    type_key = f"type-{uuid.uuid4().hex[:8]}"
+    published_key = f"entry-{uuid.uuid4().hex[:8]}"
+    draft_key = f"draft-{uuid.uuid4().hex[:8]}"
+    theme_key = f"theme-{uuid.uuid4().hex[:8]}"
+    draft_theme_key = f"theme-draft-{uuid.uuid4().hex[:8]}"
+
+    with app.app_context():
+        content_type = AcpContentType(
+            key=type_key,
+            name="Delivery Test Type",
+            schema_json='{"type":"object","properties":{"headline":{"type":"string"}}}',
+            is_enabled=True,
+        )
+        db.session.add(content_type)
+        db.session.flush()
+
+        db.session.add(AcpContentEntry(
+            content_type_id=content_type.id,
+            entry_key=published_key,
+            title="Published Entry",
+            locale="en-US",
+            status=WORKFLOW_PUBLISHED,
+            data_json='{"headline":"Published headline"}',
+            published_at=utc_now_naive(),
+        ))
+        db.session.add(AcpContentEntry(
+            content_type_id=content_type.id,
+            entry_key=draft_key,
+            title="Draft Entry",
+            locale="en-US",
+            status=WORKFLOW_DRAFT,
+            data_json='{"headline":"Draft headline"}',
+        ))
+        db.session.add(AcpThemeTokenSet(
+            key=theme_key,
+            name="Delivery Theme",
+            status=WORKFLOW_PUBLISHED,
+            tokens_json='{"css_vars":{"--accent-cyan":"#123456"}}',
+            published_at=utc_now_naive(),
+        ))
+        db.session.add(AcpThemeTokenSet(
+            key=draft_theme_key,
+            name="Draft Theme",
+            status=WORKFLOW_DRAFT,
+            tokens_json='{"css_vars":{"--accent-cyan":"#abcdef"}}',
+        ))
+        db.session.commit()
+
+    published_entry_resp = client.get(f"/api/delivery/content/{type_key}/{published_key}")
+    assert published_entry_resp.status_code == 200
+    published_entry_payload = published_entry_resp.get_json()
+    assert published_entry_payload["entry_key"] == published_key
+    assert published_entry_payload["content_type"]["key"] == type_key
+    assert published_entry_payload["data"]["headline"] == "Published headline"
+
+    draft_entry_resp = client.get(f"/api/delivery/content/{type_key}/{draft_key}")
+    assert draft_entry_resp.status_code == 404
+
+    published_theme_resp = client.get(f"/api/delivery/theme/{theme_key}")
+    assert published_theme_resp.status_code == 200
+    published_theme_payload = published_theme_resp.get_json()
+    assert published_theme_payload["key"] == theme_key
+    assert published_theme_payload["tokens"]["css_vars"]["--accent-cyan"] == "#123456"
+
+    draft_theme_resp = client.get(f"/api/delivery/theme/{draft_theme_key}")
+    assert draft_theme_resp.status_code == 404
 
 
 def test_backfill_repairs_legacy_draft_only_service_and_industry_states(app):

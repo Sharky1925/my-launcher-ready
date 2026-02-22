@@ -489,6 +489,19 @@
       {% if current_user.has_permission('acp:dashboards:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}"><i class="fa-solid fa-chart-line"></i>Dashboard Studio</a>
       {% endif %}
+      {% if current_user.has_permission('acp:content:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.acp_content_types', 'admin.acp_content_type_add', 'admin.acp_content_type_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_content_types') }}"><i class="fa-solid fa-table-list"></i>Content Types</a>
+      <a class="nav-link {% if request.endpoint in ['admin.acp_content_entries', 'admin.acp_content_entry_add', 'admin.acp_content_entry_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_content_entries') }}"><i class="fa-solid fa-file-code"></i>Content Entries</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:theme:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.acp_theme_tokens', 'admin.acp_theme_token_add', 'admin.acp_theme_token_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_theme_tokens') }}"><i class="fa-solid fa-palette"></i>Theme Tokens</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:mcp:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.acp_mcp_servers', 'admin.acp_mcp_server_add', 'admin.acp_mcp_server_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_mcp_servers') }}"><i class="fa-solid fa-plug-circle-bolt"></i>MCP Servers</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:mcp:audit:view') %}
+      <a class="nav-link {% if request.endpoint == 'admin.acp_mcp_audit' %}active{% endif %}" href="{{ url_for('admin.acp_mcp_audit') }}"><i class="fa-solid fa-clipboard-list"></i>MCP Audit</a>
+      {% endif %}
       {% if current_user.has_permission('acp:registry:manage') %}
       <a class="nav-link {% if request.endpoint == 'admin.acp_registry' %}active{% endif %}" href="{{ url_for('admin.acp_registry') }}"><i class="fa-solid fa-puzzle-piece"></i>Registry</a>
       {% endif %}
@@ -549,6 +562,19 @@
           {% endif %}
           {% if current_user.has_permission('acp:dashboards:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}">Dashboard Studio</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:content:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_content_types', 'admin.acp_content_type_add', 'admin.acp_content_type_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_content_types') }}">Content Types</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_content_entries', 'admin.acp_content_entry_add', 'admin.acp_content_entry_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_content_entries') }}">Content Entries</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:theme:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_theme_tokens', 'admin.acp_theme_token_add', 'admin.acp_theme_token_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_theme_tokens') }}">Theme Tokens</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:mcp:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_mcp_servers', 'admin.acp_mcp_server_add', 'admin.acp_mcp_server_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_mcp_servers') }}">MCP Servers</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:mcp:audit:view') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_mcp_audit' %}active{% endif %}" href="{{ url_for('admin.acp_mcp_audit') }}">MCP Audit</a></li>
           {% endif %}
           {% if current_user.has_permission('acp:registry:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_registry' %}active{% endif %}" href="{{ url_for('admin.acp_registry') }}">Registry</a></li>

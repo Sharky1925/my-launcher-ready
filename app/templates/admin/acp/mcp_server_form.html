@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{% if item %}Edit MCP Server{% else %}New MCP Server{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><strong>{% if item %}Edit{% else %}Create{% endif %} MCP Server</strong></div>
+  <div class="card-body">
+    <form method="POST" class="row g-3">
+      {{ csrf_input() }}
+      <div class="col-md-6">
+        <label class="form-label">Name</label>
+        <input class="form-control" name="name" value="{{ item.name if item else '' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Key</label>
+        <input class="form-control" name="key" value="{{ item.key if item else '' }}" placeholder="righton-ops-mcp" required>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Server URL</label>
+        <input class="form-control" name="server_url" value="{{ item.server_url if item else '' }}" placeholder="https://example.com/mcp" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Transport</label>
+        <input class="form-control" name="transport" value="{{ item.transport if item else 'http' }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Auth Mode</label>
+        <input class="form-control" name="auth_mode" value="{{ item.auth_mode if item else 'oauth' }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Environment</label>
+        <input class="form-control" name="environment" value="{{ item.environment if item else 'production' }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Require Approval</label>
+        {% set current_approval = item.require_approval if item else 'always' %}
+        <select class="form-select" name="require_approval">
+          <option value="always" {% if current_approval == 'always' %}selected{% endif %}>always</option>
+          <option value="selective" {% if current_approval == 'selective' %}selected{% endif %}>selective</option>
+          <option value="never" {% if current_approval == 'never' %}selected{% endif %}>never</option>
+        </select>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Allowed Tools JSON</label>
+        <textarea class="form-control form-control-mono-sm" name="allowed_tools_json" rows="6">{{ item.allowed_tools_json if item else '[\n  "tickets.search",\n  "cms.read"\n]' }}</textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Notes</label>
+        <textarea class="form-control" name="notes" rows="2">{{ item.notes if item else '' }}</textarea>
+      </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="is_enabled" id="mcpEnabled" {% if item and item.is_enabled %}checked{% elif not item %}checked{% endif %}>
+          <label class="form-check-label" for="mcpEnabled">Enabled</label>
+        </div>
+      </div>
+      <div class="col-12 d-flex gap-2 flex-wrap">
+        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Save</button>
+        <a href="{{ url_for('admin.acp_mcp_servers') }}" class="btn btn-outline-secondary">Back to List</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

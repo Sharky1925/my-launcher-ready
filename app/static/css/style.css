@@ -74,7 +74,7 @@ html {
 }
 
 body {
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body, 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   color: var(--text);
   background: var(--bg-gradient);
   background-attachment: fixed;
@@ -170,7 +170,7 @@ select:focus-visible,
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Sora', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-heading, 'Sora', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.025em;

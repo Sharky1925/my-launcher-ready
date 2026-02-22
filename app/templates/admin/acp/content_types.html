@@ -1,0 +1,63 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Content Types{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-7">
+        <label class="form-label">Search content types</label>
+        <input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Search by name or key...">
+      </div>
+      <div class="col-md-5 d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit"><i class="fa-solid fa-magnifying-glass me-1"></i>Search</button>
+        <a class="btn btn-primary" href="{{ url_for('admin.acp_content_type_add') }}"><i class="fa-solid fa-plus me-1"></i>New Content Type</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>Content Type Schemas</strong>
+    <a href="{{ url_for('admin.acp_studio') }}" class="btn btn-sm btn-outline-secondary">Back to ACP Studio</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Key</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td><code>{{ item.key }}</code></td>
+            <td>
+              {% if item.is_enabled %}
+              <span class="badge bg-success">Enabled</span>
+              {% else %}
+              <span class="badge bg-secondary">Disabled</span>
+              {% endif %}
+            </td>
+            <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else '—' }}</td>
+            <td class="text-end">
+              <a href="{{ url_for('admin.acp_content_type_edit', id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+              <a href="{{ url_for('admin.acp_content_entry_add') }}?content_type_id={{ item.id }}" class="btn btn-sm btn-outline-secondary">New Entry</a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-muted">No content types found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

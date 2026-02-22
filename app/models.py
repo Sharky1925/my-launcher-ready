@@ -62,8 +62,12 @@ ROLE_PERMISSIONS = {
         'acp:dashboards:manage',
         'acp:registry:manage',
         'acp:metrics:manage',
+        'acp:content:manage',
+        'acp:theme:manage',
+        'acp:mcp:manage',
         'acp:publish',
         'acp:audit:view',
+        'acp:mcp:audit:view',
         'acp:environments:manage',
     },
     ROLE_ADMIN: {
@@ -80,8 +84,12 @@ ROLE_PERMISSIONS = {
         'acp:dashboards:manage',
         'acp:registry:manage',
         'acp:metrics:manage',
+        'acp:content:manage',
+        'acp:theme:manage',
+        'acp:mcp:manage',
         'acp:publish',
         'acp:audit:view',
+        'acp:mcp:audit:view',
         'acp:environments:manage',
     },
     ROLE_PUBLISHER: {
@@ -92,6 +100,8 @@ ROLE_PERMISSIONS = {
         'acp:studio:view',
         'acp:pages:manage',
         'acp:dashboards:manage',
+        'acp:content:manage',
+        'acp:theme:manage',
         'acp:publish',
     },
     ROLE_REVIEWER: {
@@ -101,12 +111,16 @@ ROLE_PERMISSIONS = {
         'acp:studio:view',
         'acp:pages:manage',
         'acp:dashboards:manage',
+        'acp:content:manage',
+        'acp:theme:manage',
     },
     ROLE_EDITOR: {
         'dashboard:view',
         'content:manage',
         'acp:studio:view',
         'acp:pages:manage',
+        'acp:content:manage',
+        'acp:theme:manage',
     },
     ROLE_SUPPORT: {
         'dashboard:view',
@@ -651,6 +665,156 @@ class AcpMetricDefinition(db.Model):
     updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
 
 
+class AcpContentType(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(180), nullable=False)
+    description = db.Column(db.Text)
+    schema_json = db.Column(db.Text, nullable=False, default='{}')
+    is_enabled = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+
+class AcpContentTypeVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content_type_id = db.Column(db.Integer, db.ForeignKey('acp_content_type.id'), nullable=False, index=True)
+    version_number = db.Column(db.Integer, nullable=False)
+    snapshot_json = db.Column(db.Text, nullable=False, default='{}')
+    change_note = db.Column(db.String(260))
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    content_type = db.relationship(
+        'AcpContentType',
+        backref=db.backref('versions', lazy=True, order_by='AcpContentTypeVersion.version_number.desc()'),
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint('content_type_id', 'version_number', name='uq_acp_content_type_version_type_number'),
+        db.Index('ix_acp_content_type_version_type_created', 'content_type_id', 'created_at'),
+    )
+
+
+class AcpContentEntry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content_type_id = db.Column(db.Integer, db.ForeignKey('acp_content_type.id'), nullable=False, index=True)
+    entry_key = db.Column(db.String(140), nullable=False, index=True)
+    title = db.Column(db.String(220), nullable=False, default='')
+    locale = db.Column(db.String(20), nullable=False, default='en-US')
+    status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
+    data_json = db.Column(db.Text, nullable=False, default='{}')
+    scheduled_publish_at = db.Column(db.DateTime, index=True)
+    published_at = db.Column(db.DateTime, index=True)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+    content_type = db.relationship('AcpContentType', backref=db.backref('entries', lazy=True))
+
+    __table_args__ = (
+        db.UniqueConstraint('content_type_id', 'entry_key', 'locale', name='uq_acp_content_entry_type_key_locale'),
+        db.Index('ix_acp_content_entry_status_key', 'status', 'entry_key'),
+    )
+
+
+class AcpContentEntryVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content_entry_id = db.Column(db.Integer, db.ForeignKey('acp_content_entry.id'), nullable=False, index=True)
+    version_number = db.Column(db.Integer, nullable=False)
+    snapshot_json = db.Column(db.Text, nullable=False, default='{}')
+    change_note = db.Column(db.String(260))
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    content_entry = db.relationship(
+        'AcpContentEntry',
+        backref=db.backref('versions', lazy=True, order_by='AcpContentEntryVersion.version_number.desc()'),
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint('content_entry_id', 'version_number', name='uq_acp_content_entry_version_entry_number'),
+        db.Index('ix_acp_content_entry_version_entry_created', 'content_entry_id', 'created_at'),
+    )
+
+
+class AcpThemeTokenSet(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(180), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
+    tokens_json = db.Column(db.Text, nullable=False, default='{}')
+    scheduled_publish_at = db.Column(db.DateTime, index=True)
+    published_at = db.Column(db.DateTime, index=True)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+    __table_args__ = (
+        db.Index('ix_acp_theme_token_set_status_key', 'status', 'key'),
+    )
+
+
+class AcpThemeTokenVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token_set_id = db.Column(db.Integer, db.ForeignKey('acp_theme_token_set.id'), nullable=False, index=True)
+    version_number = db.Column(db.Integer, nullable=False)
+    snapshot_json = db.Column(db.Text, nullable=False, default='{}')
+    change_note = db.Column(db.String(260))
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    token_set = db.relationship(
+        'AcpThemeTokenSet',
+        backref=db.backref('versions', lazy=True, order_by='AcpThemeTokenVersion.version_number.desc()'),
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint('token_set_id', 'version_number', name='uq_acp_theme_token_version_set_number'),
+        db.Index('ix_acp_theme_token_version_set_created', 'token_set_id', 'created_at'),
+    )
+
+
+class AcpMcpServer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(180), nullable=False)
+    server_url = db.Column(db.String(500), nullable=False)
+    transport = db.Column(db.String(40), nullable=False, default='http')
+    auth_mode = db.Column(db.String(40), nullable=False, default='oauth')
+    environment = db.Column(db.String(40), nullable=False, default='production', index=True)
+    allowed_tools_json = db.Column(db.Text, nullable=False, default='[]')
+    require_approval = db.Column(db.String(24), nullable=False, default='always')
+    is_enabled = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    notes = db.Column(db.String(400))
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+
+class AcpMcpAuditEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    server_id = db.Column(db.Integer, db.ForeignKey('acp_mcp_server.id'), index=True)
+    action = db.Column(db.String(40), nullable=False, index=True)  # approval_requested|approved|rejected|tool_call
+    tool_name = db.Column(db.String(160), index=True)
+    status = db.Column(db.String(30), nullable=False, default='ok', index=True)  # ok|error|blocked
+    request_json = db.Column(db.Text)
+    response_json = db.Column(db.Text)
+    actor_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    server = db.relationship('AcpMcpServer', backref=db.backref('audit_events', lazy=True))
+
+    __table_args__ = (
+        db.Index('ix_acp_mcp_audit_server_created', 'server_id', 'created_at'),
+    )
+
+
 class AcpEnvironment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(40), unique=True, nullable=False, index=True)
@@ -717,6 +881,20 @@ def run_scheduled_publication_cycle(now=None):
                 item.updated_at = now
         total_published += len(due_items)
     for model in (AcpPageDocument, AcpDashboardDocument):
+        due_items = model.query.filter(
+            model.status == WORKFLOW_APPROVED,
+            model.scheduled_publish_at.isnot(None),
+            model.scheduled_publish_at <= now,
+        ).all()
+        if not due_items:
+            continue
+        for item in due_items:
+            item.status = WORKFLOW_PUBLISHED
+            item.published_at = now
+            item.scheduled_publish_at = None
+            item.updated_at = now
+        total_published += len(due_items)
+    for model in (AcpContentEntry, AcpThemeTokenSet):
         due_items = model.query.filter(
             model.status == WORKFLOW_APPROVED,
             model.scheduled_publish_at.isnot(None),

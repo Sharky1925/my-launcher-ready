@@ -1,0 +1,75 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{% if item %}Edit Content Type{% else %}New Content Type{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><strong>{% if item %}Edit{% else %}Create{% endif %} Content Type</strong></div>
+  <div class="card-body">
+    <form method="POST" class="row g-3">
+      {{ csrf_input() }}
+      <div class="col-md-6">
+        <label class="form-label">Name</label>
+        <input class="form-control" name="name" value="{{ item.name if item else '' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Key</label>
+        <input class="form-control" name="key" value="{{ item.key if item else '' }}" placeholder="service_page" required>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" name="description" rows="2">{{ item.description if item else '' }}</textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Schema JSON</label>
+        <textarea class="form-control form-control-mono-sm" name="schema_json" rows="12">{{ item.schema_json if item else '{\n  "type": "object",\n  "properties": {\n    "headline": {"type": "string"},\n    "summary": {"type": "string"}\n  },\n  "required": ["headline"]\n}' }}</textarea>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" name="is_enabled" id="isEnabled" {% if not item or item.is_enabled %}checked{% endif %}>
+          <label class="form-check-label" for="isEnabled">Enabled</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Change Note</label>
+        <input class="form-control" name="change_note" placeholder="What changed in this schema?">
+      </div>
+      <div class="col-12 d-flex gap-2 flex-wrap">
+        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Save</button>
+        <a href="{{ url_for('admin.acp_content_types') }}" class="btn btn-outline-secondary">Back to List</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if item %}
+<div class="card">
+  <div class="card-header"><strong>Schema Versions</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Note</th>
+            <th>Created</th>
+            <th>User</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for version in versions or [] %}
+          <tr>
+            <td>#{{ version.version_number }}</td>
+            <td>{{ version.change_note or '—' }}</td>
+            <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else '—' }}</td>
+            <td>{{ version.created_by_id or 'system' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted">No versions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -23,6 +23,13 @@ try:
         AcpComponentDefinition,
         AcpWidgetDefinition,
         AcpMetricDefinition,
+        AcpContentType,
+        AcpContentTypeVersion,
+        AcpContentEntry,
+        AcpContentEntryVersion,
+        AcpThemeTokenSet,
+        AcpThemeTokenVersion,
+        AcpMcpServer,
         AcpEnvironment,
         AcpAuditEvent,
         ROLE_ADMIN,
@@ -50,6 +57,13 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         AcpComponentDefinition,
         AcpWidgetDefinition,
         AcpMetricDefinition,
+        AcpContentType,
+        AcpContentTypeVersion,
+        AcpContentEntry,
+        AcpContentEntryVersion,
+        AcpThemeTokenSet,
+        AcpThemeTokenVersion,
+        AcpMcpServer,
         AcpEnvironment,
         AcpAuditEvent,
         ROLE_ADMIN,
@@ -463,6 +477,180 @@ def seed_acp_defaults(owner_user=None):
                 ),
                 default_aggregation='count',
                 is_enabled=True,
+            )
+        )
+
+    content_type_key = 'service_page'
+    content_type = AcpContentType.query.filter_by(key=content_type_key).first()
+    if not content_type:
+        content_type = AcpContentType(
+            key=content_type_key,
+            name='Service Page',
+            description='Schema-driven service page metadata and highlights.',
+            schema_json=json.dumps(
+                {
+                    'type': 'object',
+                    'properties': {
+                        'headline': {'type': 'string'},
+                        'summary': {'type': 'string'},
+                        'highlights': {'type': 'array'},
+                        'ctaLabel': {'type': 'string'},
+                        'ctaHref': {'type': 'string'},
+                    },
+                    'required': ['headline', 'summary'],
+                },
+                ensure_ascii=False,
+            ),
+            is_enabled=True,
+            created_by_id=owner_id,
+            updated_by_id=owner_id,
+        )
+        db.session.add(content_type)
+        db.session.flush()
+    existing_content_type_version = AcpContentTypeVersion.query.filter_by(content_type_id=content_type.id).first()
+    if not existing_content_type_version:
+        type_snapshot = {
+            'id': content_type.id,
+            'key': content_type.key,
+            'name': content_type.name,
+            'description': content_type.description,
+            'schema': json.loads(content_type.schema_json),
+            'is_enabled': content_type.is_enabled,
+        }
+        db.session.add(
+            AcpContentTypeVersion(
+                content_type_id=content_type.id,
+                version_number=1,
+                snapshot_json=json.dumps(type_snapshot, ensure_ascii=False),
+                change_note='Seeded content type',
+                created_by_id=owner_id,
+            )
+        )
+
+    entry_key = 'managed-it-services'
+    entry = AcpContentEntry.query.filter_by(content_type_id=content_type.id, entry_key=entry_key, locale='en-US').first()
+    if not entry:
+        entry = AcpContentEntry(
+            content_type_id=content_type.id,
+            entry_key=entry_key,
+            title='Managed IT Services',
+            locale='en-US',
+            status=WORKFLOW_PUBLISHED,
+            data_json=json.dumps(
+                {
+                    'headline': 'Managed IT Services for Orange County',
+                    'summary': 'Proactive monitoring, security hardening, and operational support under one managed program.',
+                    'highlights': [
+                        '24/7 monitoring',
+                        'Patch compliance',
+                        'Identity security',
+                        'Quarterly roadmap reviews',
+                    ],
+                    'ctaLabel': 'Request Consultation',
+                    'ctaHref': '/contact',
+                },
+                ensure_ascii=False,
+            ),
+            published_at=utc_now_naive(),
+            created_by_id=owner_id,
+            updated_by_id=owner_id,
+        )
+        db.session.add(entry)
+        db.session.flush()
+    existing_entry_version = AcpContentEntryVersion.query.filter_by(content_entry_id=entry.id).first()
+    if not existing_entry_version:
+        entry_snapshot = {
+            'id': entry.id,
+            'content_type_key': content_type.key,
+            'entry_key': entry.entry_key,
+            'title': entry.title,
+            'locale': entry.locale,
+            'status': entry.status,
+            'data': json.loads(entry.data_json),
+        }
+        db.session.add(
+            AcpContentEntryVersion(
+                content_entry_id=entry.id,
+                version_number=1,
+                snapshot_json=json.dumps(entry_snapshot, ensure_ascii=False),
+                change_note='Seeded content entry',
+                created_by_id=owner_id,
+            )
+        )
+
+    token_set_key = 'default'
+    token_set = AcpThemeTokenSet.query.filter_by(key=token_set_key).first()
+    if not token_set:
+        token_set = AcpThemeTokenSet(
+            key=token_set_key,
+            name='Default Theme',
+            status=WORKFLOW_PUBLISHED,
+            tokens_json=json.dumps(
+                {
+                    'css_vars': {
+                        '--bg': '#05080f',
+                        '--surface': '#0e1623',
+                        '--text': '#eff7ff',
+                        '--text-muted': '#9db0c5',
+                        '--accent-cyan': '#4f7bff',
+                        '--accent-electric': '#74a0ff',
+                        '--radius-lg': '24px',
+                        '--radius-md': '18px',
+                        '--radius-sm': '14px',
+                        '--font-body': "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                        '--font-heading': "'Sora', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif",
+                        '--font-slogan': "'Orbitron', 'Sora', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif",
+                        '--motion-duration-base': '300ms',
+                        '--motion-ease-standard': 'cubic-bezier(0.4, 0, 0.2, 1)',
+                    }
+                },
+                ensure_ascii=False,
+            ),
+            published_at=utc_now_naive(),
+            created_by_id=owner_id,
+            updated_by_id=owner_id,
+        )
+        db.session.add(token_set)
+        db.session.flush()
+    existing_token_version = AcpThemeTokenVersion.query.filter_by(token_set_id=token_set.id).first()
+    if not existing_token_version:
+        token_snapshot = {
+            'id': token_set.id,
+            'key': token_set.key,
+            'name': token_set.name,
+            'status': token_set.status,
+            'tokens': json.loads(token_set.tokens_json),
+        }
+        db.session.add(
+            AcpThemeTokenVersion(
+                token_set_id=token_set.id,
+                version_number=1,
+                snapshot_json=json.dumps(token_snapshot, ensure_ascii=False),
+                change_note='Seeded default theme token set',
+                created_by_id=owner_id,
+            )
+        )
+
+    mcp_server_key = 'righton-ops-mcp'
+    mcp_server = AcpMcpServer.query.filter_by(key=mcp_server_key).first()
+    if not mcp_server:
+        db.session.add(
+            AcpMcpServer(
+                key=mcp_server_key,
+                name='Right On Operations MCP',
+                server_url='https://mcp.example.internal/mcp',
+                transport='http',
+                auth_mode='oauth',
+                environment='stage',
+                allowed_tools_json=json.dumps(
+                    ['tickets.search', 'tickets.update', 'cms.read', 'dashboard.read'],
+                    ensure_ascii=False,
+                ),
+                require_approval='always',
+                is_enabled=False,
+                notes='Seeded placeholder MCP server. Update URL and credentials before enabling.',
+                created_by_id=owner_id,
+                updated_by_id=owner_id,
             )
         )
 

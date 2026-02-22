@@ -24,6 +24,9 @@ try:
         SecurityEvent,
         AcpPageDocument,
         AcpDashboardDocument,
+        AcpContentType,
+        AcpContentEntry,
+        AcpThemeTokenSet,
         WORKFLOW_PUBLISHED,
         SUPPORT_TICKET_STATUS_OPEN,
         SUPPORT_TICKET_STATUS_LABELS,
@@ -52,6 +55,9 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SecurityEvent,
         AcpPageDocument,
         AcpDashboardDocument,
+        AcpContentType,
+        AcpContentEntry,
+        AcpThemeTokenSet,
         WORKFLOW_PUBLISHED,
         SUPPORT_TICKET_STATUS_OPEN,
         SUPPORT_TICKET_STATUS_LABELS,
@@ -2369,6 +2375,85 @@ def acp_delivery_page(slug):
         'seo': _safe_json_loads(item.seo_json, {}),
         'blocks_tree': _safe_json_loads(item.blocks_tree, {}),
         'theme_override': _safe_json_loads(item.theme_override_json, {}),
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+    response = jsonify(payload)
+    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
+    return response
+
+
+@main_bp.route('/api/delivery/content/<content_type_key>/<entry_key>')
+def acp_delivery_content_entry(content_type_key, entry_key):
+    type_key = clean_text(content_type_key, 120)
+    record_key = clean_text(entry_key, 140)
+    locale = clean_text(request.args.get('locale', 'en-US'), 20) or 'en-US'
+    if not type_key or not record_key:
+        abort(404)
+
+    content_type = AcpContentType.query.filter_by(key=type_key, is_enabled=True).first()
+    if not content_type:
+        abort(404)
+
+    item = AcpContentEntry.query.filter_by(
+        content_type_id=content_type.id,
+        entry_key=record_key,
+        locale=locale,
+        status=WORKFLOW_PUBLISHED,
+    ).first()
+    if not item and locale != 'en-US':
+        item = AcpContentEntry.query.filter_by(
+            content_type_id=content_type.id,
+            entry_key=record_key,
+            locale='en-US',
+            status=WORKFLOW_PUBLISHED,
+        ).first()
+    if not item:
+        abort(404)
+
+    payload = {
+        'id': item.id,
+        'content_type': {
+            'id': content_type.id,
+            'key': content_type.key,
+            'name': content_type.name,
+        },
+        'entry_key': item.entry_key,
+        'title': item.title,
+        'locale': item.locale,
+        'status': item.status,
+        'data': _safe_json_loads(item.data_json, {}),
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+    response = jsonify(payload)
+    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
+    return response
+
+
+@main_bp.route('/api/delivery/theme')
+def acp_delivery_theme_default():
+    return acp_delivery_theme('default')
+
+
+@main_bp.route('/api/delivery/theme/<token_set_key>')
+def acp_delivery_theme(token_set_key):
+    key = clean_text(token_set_key, 80)
+    if not key:
+        abort(404)
+    item = AcpThemeTokenSet.query.filter_by(
+        key=key,
+        status=WORKFLOW_PUBLISHED,
+    ).first()
+    if not item:
+        abort(404)
+
+    payload = {
+        'id': item.id,
+        'key': item.key,
+        'name': item.name,
+        'status': item.status,
+        'tokens': _safe_json_loads(item.tokens_json, {}),
         'published_at': item.published_at.isoformat() if item.published_at else None,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
     }

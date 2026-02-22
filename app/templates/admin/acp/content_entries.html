@@ -1,0 +1,72 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Content Entries{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label">Search entries</label>
+        <input class="form-control" type="text" name="q" value="{{ q }}" placeholder="Search title, entry key, or content type...">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Content Type</label>
+        <select class="form-select" name="content_type_id">
+          <option value="">All content types</option>
+          {% for ct in content_types %}
+          <option value="{{ ct.id }}" {% if selected_content_type_id == ct.id %}selected{% endif %}>{{ ct.name }} ({{ ct.key }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit"><i class="fa-solid fa-magnifying-glass me-1"></i>Search</button>
+        <a class="btn btn-primary" href="{{ url_for('admin.acp_content_entry_add') }}"><i class="fa-solid fa-plus me-1"></i>New Entry</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>Content Entries</strong>
+    <a href="{{ url_for('admin.acp_studio') }}" class="btn btn-sm btn-outline-secondary">Back to ACP Studio</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Entry Key</th>
+            <th>Content Type</th>
+            <th>Locale</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.title }}</td>
+            <td><code>{{ item.entry_key }}</code></td>
+            <td>{{ item.content_type.name if item.content_type else '—' }}</td>
+            <td>{{ item.locale }}</td>
+            <td><span class="badge {{ workflow_status_badge(item.status) }}">{{ workflow_status_label(item.status) }}</span></td>
+            <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else '—' }}</td>
+            <td class="text-end">
+              <a href="{{ url_for('admin.acp_content_entry_edit', id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+              {% if item.content_type %}
+              <a href="{{ url_for('main.acp_delivery_content_entry', content_type_key=item.content_type.key, entry_key=item.entry_key) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">Delivery API</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-muted">No content entries found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

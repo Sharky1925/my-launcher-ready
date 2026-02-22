@@ -1,0 +1,94 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{% if item %}Edit Content Entry{% else %}New Content Entry{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><strong>{% if item %}Edit{% else %}Create{% endif %} Content Entry</strong></div>
+  <div class="card-body">
+    <form method="POST" class="row g-3">
+      {{ csrf_input() }}
+      <div class="col-md-5">
+        <label class="form-label">Content Type</label>
+        <select class="form-select" name="content_type_id" required>
+          <option value="">Select type</option>
+          {% for ct in content_types %}
+          <option value="{{ ct.id }}" {% if item and item.content_type_id == ct.id %}selected{% endif %}>{{ ct.name }} ({{ ct.key }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Title</label>
+        <input class="form-control" name="title" value="{{ item.title if item else '' }}" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Locale</label>
+        <input class="form-control" name="locale" value="{{ item.locale if item else 'en-US' }}">
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Entry Key</label>
+        <input class="form-control" name="entry_key" value="{{ item.entry_key if item else '' }}" placeholder="managed-it-services" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Workflow Status</label>
+        <select class="form-select" name="workflow_status">
+          {% set selected_status = item.status if item else 'draft' %}
+          {% for status in workflow_options %}
+          <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ workflow_status_label(status) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Schedule</label>
+        <input class="form-control" type="datetime-local" name="scheduled_publish_at" value="{{ format_datetime_local(item.scheduled_publish_at) if item else '' }}">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Data JSON</label>
+        <textarea class="form-control form-control-mono-sm" name="data_json" rows="12">{{ item.data_json if item else '{\n  "headline": "",\n  "summary": "",\n  "highlights": []\n}' }}</textarea>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Change Note</label>
+        <input class="form-control" name="change_note" placeholder="What changed in this entry?">
+      </div>
+      <div class="col-12 d-flex gap-2 flex-wrap">
+        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Save</button>
+        <a href="{{ url_for('admin.acp_content_entries') }}" class="btn btn-outline-secondary">Back to List</a>
+        {% if item and item.content_type %}
+        <a href="{{ url_for('main.acp_delivery_content_entry', content_type_key=item.content_type.key, entry_key=item.entry_key) }}" target="_blank" rel="noopener" class="btn btn-outline-primary">Open Delivery API</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if item %}
+<div class="card">
+  <div class="card-header"><strong>Entry Versions</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Note</th>
+            <th>Created</th>
+            <th>User</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for version in versions or [] %}
+          <tr>
+            <td>#{{ version.version_number }}</td>
+            <td>{{ version.change_note or '—' }}</td>
+            <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else '—' }}</td>
+            <td>{{ version.created_by_id or 'system' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted">No versions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

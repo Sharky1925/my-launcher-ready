@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{% if item %}Edit Theme Tokens{% else %}New Theme Tokens{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-header"><strong>{% if item %}Edit{% else %}Create{% endif %} Theme Token Set</strong></div>
+  <div class="card-body">
+    <form method="POST" class="row g-3">
+      {{ csrf_input() }}
+      <div class="col-md-6">
+        <label class="form-label">Name</label>
+        <input class="form-control" name="name" value="{{ item.name if item else '' }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Key</label>
+        <input class="form-control" name="key" value="{{ item.key if item else 'default' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Workflow Status</label>
+        <select class="form-select" name="workflow_status">
+          {% set selected_status = item.status if item else 'draft' %}
+          {% for status in workflow_options %}
+          <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ workflow_status_label(status) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Schedule</label>
+        <input class="form-control" type="datetime-local" name="scheduled_publish_at" value="{{ format_datetime_local(item.scheduled_publish_at) if item else '' }}">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Tokens JSON</label>
+        <textarea class="form-control form-control-mono-sm" name="tokens_json" rows="12">{{ item.tokens_json if item else '{\n  "css_vars": {\n    "--accent-cyan": "#4f7bff",\n    "--font-body": "\\'Manrope\\', sans-serif"\n  }\n}' }}</textarea>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Change Note</label>
+        <input class="form-control" name="change_note" placeholder="What changed in this token set?">
+      </div>
+      <div class="col-12 d-flex gap-2 flex-wrap">
+        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Save</button>
+        <a href="{{ url_for('admin.acp_theme_tokens') }}" class="btn btn-outline-secondary">Back to List</a>
+        {% if item %}
+        <a href="{{ url_for('main.acp_delivery_theme', token_set_key=item.key) }}" target="_blank" rel="noopener" class="btn btn-outline-primary">Open Delivery API</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if item %}
+<div class="card">
+  <div class="card-header"><strong>Token Versions</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Note</th>
+            <th>Created</th>
+            <th>User</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for version in versions or [] %}
+          <tr>
+            <td>#{{ version.version_number }}</td>
+            <td>{{ version.change_note or '—' }}</td>
+            <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else '—' }}</td>
+            <td>{{ version.created_by_id or 'system' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted">No versions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

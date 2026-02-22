@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+{% block page_title %}MCP Audit{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Server</label>
+        <select class="form-select" name="server_id">
+          <option value="">All servers</option>
+          {% for server in servers %}
+          <option value="{{ server.id }}" {% if selected_server_id == server.id %}selected{% endif %}>{{ server.name }} ({{ server.key }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <input class="form-control" name="status" value="{{ status }}" placeholder="ok / error / blocked">
+      </div>
+      <div class="col-md-5 d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit"><i class="fa-solid fa-filter me-1"></i>Filter</button>
+        <a href="{{ url_for('admin.acp_mcp_servers') }}" class="btn btn-outline-secondary">MCP Servers</a>
+        <a href="{{ url_for('admin.acp_studio') }}" class="btn btn-outline-secondary">ACP Studio</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong>MCP Audit Events</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Server</th>
+            <th>Action</th>
+            <th>Tool</th>
+            <th>Status</th>
+            <th>Actor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in items %}
+          <tr>
+            <td>{{ event.created_at.strftime('%Y-%m-%d %H:%M') if event.created_at else '—' }}</td>
+            <td>{{ event.server.name if event.server else '—' }}</td>
+            <td>{{ event.action }}</td>
+            <td><code>{{ event.tool_name or '—' }}</code></td>
+            <td>
+              {% if event.status == 'ok' %}
+              <span class="badge bg-success">ok</span>
+              {% elif event.status == 'blocked' %}
+              <span class="badge bg-warning text-dark">blocked</span>
+              {% else %}
+              <span class="badge bg-danger">{{ event.status }}</span>
+              {% endif %}
+            </td>
+            <td>{{ event.actor_user_id or 'system' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-muted">No MCP audit events found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
