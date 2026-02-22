@@ -2060,6 +2060,47 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   color: #8fcbff;
   font-size: .78rem;
 }
+.service-hero-side-col {
+  display: flex;
+}
+.service-hero-side-stack {
+  width: 100%;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+.service-hero-metric-grid {
+  --bs-gutter-x: 12px;
+  --bs-gutter-y: 12px;
+  margin: 0;
+}
+.service-hero-metric-grid .metric-card {
+  height: 100%;
+  padding: 18px 14px;
+}
+.service-hero-metric-grid .mc-value {
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+}
+.service-hero-side-card {
+  padding: 18px;
+}
+.service-tool-cloud--compact {
+  gap: 8px;
+}
+.service-tool-cloud--compact .service-tool-pill {
+  font-size: .74rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(11, 25, 54, 0.22);
+}
+.brand-pill-grid--compact {
+  gap: 8px;
+}
+.brand-pill-grid--compact .brand-pill {
+  animation: none;
+  font-size: .74rem;
+  padding: 7px 10px;
+}
 
 .service-visual-panel {
   padding: 24px;
@@ -4198,6 +4239,19 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .service-hero-badges {
     grid-template-columns: 1fr;
   }
+  .service-hero-side-col {
+    display: block;
+  }
+  .service-hero-side-stack {
+    gap: 10px;
+  }
+  .service-hero-metric-grid {
+    --bs-gutter-x: 10px;
+    --bs-gutter-y: 10px;
+  }
+  .service-hero-side-card {
+    padding: 16px;
+  }
   .service-anchor-nav {
     justify-content: flex-start;
     row-gap: 8px;
@@ -4236,6 +4290,9 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .service-tool-pill {
     flex: 1 1 calc(50% - 10px);
     justify-content: center;
+  }
+  .service-tool-cloud--compact .service-tool-pill {
+    flex: 1 1 calc(50% - 8px);
   }
   .lead-time-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4375,6 +4432,10 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
   .service-tool-pill {
     flex: 1 1 100%;
+  }
+  .service-tool-cloud--compact .service-tool-pill {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
   }
   .lead-time-grid {
     grid-template-columns: 1fr;

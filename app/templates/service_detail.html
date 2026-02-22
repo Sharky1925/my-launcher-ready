@@ -24,6 +24,8 @@
 {% set related_services = related_services or [] %}
 {% set featured_industries = featured_industries or [] %}
 {% set related_posts = related_posts or [] %}
+{% set hero_tools = related_technologies if related_technologies else (tool_stack | map(attribute='name') | list) %}
+{% set hero_brands = supported_brands if supported_brands else (brand_services | map(attribute='brand') | list) %}
 
 {% block title %}{{ meta_title }}{% endblock %}
 {% block meta_description %}{{ meta_desc }}{% endblock %}
@@ -224,21 +226,49 @@
         </div>
         {% endif %}
       </div>
-      <div class="col-lg-5 reveal-right">
-        {% if deliverables %}
-        {% set mc_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
-        <div class="row g-3">
-          {% for outcome in deliverables %}
-          <div class="col-6">
-            <div class="metric-card">
-              <div class="mc-icon {{ mc_colors[(loop.index0) % 6] }}"><i class="{{ outcome.icon }}"></i></div>
-              <div class="mc-value">{{ outcome.value }}</div>
-              <div class="mc-label">{{ outcome.label }}</div>
+      <div class="col-lg-5 reveal-right service-hero-side-col">
+        <div class="service-hero-side-stack">
+          {% if deliverables %}
+          {% set mc_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
+          <div class="row g-3 service-hero-metric-grid">
+            {% for outcome in deliverables %}
+            <div class="col-6">
+              <div class="metric-card">
+                <div class="mc-icon {{ mc_colors[(loop.index0) % 6] }}"><i class="{{ outcome.icon }}"></i></div>
+                <div class="mc-value">{{ outcome.value }}</div>
+                <div class="mc-label">{{ outcome.label }}</div>
+              </div>
             </div>
+            {% endfor %}
           </div>
-          {% endfor %}
+          {% endif %}
+          {% if hero_tools %}
+          <aside class="service-visual-panel service-hero-side-card service-hero-tools-card">
+            <div class="service-panel-head">
+              <h2><i class="fa-solid fa-layer-group"></i> Tools &amp; Technologies</h2>
+              <p>Core platforms used to deliver {{ service.title | lower }} outcomes.</p>
+            </div>
+            <div class="service-tool-cloud service-tool-cloud--compact">
+              {% for technology in hero_tools[:8] %}
+              <span class="service-tool-pill"><i class="fa-solid fa-microchip"></i>{{ technology }}</span>
+              {% endfor %}
+            </div>
+          </aside>
+          {% endif %}
+          {% if hero_brands %}
+          <aside class="service-visual-panel service-hero-side-card service-hero-brands-card">
+            <div class="service-panel-head">
+              <h2><i class="fa-solid fa-certificate"></i> Supported Brands</h2>
+              <p>Validated service coverage for major hardware and platform vendors.</p>
+            </div>
+            <div class="brand-pill-grid brand-pill-grid--compact">
+              {% for brand in hero_brands[:10] %}
+              <span class="brand-pill">{{ brand }}</span>
+              {% endfor %}
+            </div>
+          </aside>
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
     <div class="service-snapshot-grid reveal mt-4">
@@ -250,12 +280,20 @@
       <article class="service-snapshot-card">
         <div class="snap-icon"><i class="fa-solid fa-cubes"></i></div>
         <h3>Specialized Modules</h3>
+        {% if service_modules %}
         <p>{{ service_modules | length }} service tracks aligned to {{ service.title | lower }} outcomes.</p>
+        {% else %}
+        <p>Structured delivery playbooks aligned to {{ service.title | lower }} business outcomes.</p>
+        {% endif %}
       </article>
       <article class="service-snapshot-card">
         <div class="snap-icon"><i class="fa-solid fa-location-dot"></i></div>
         <h3>Local Coverage</h3>
+        {% if local_cities %}
         <p>{{ local_cities | length }} Orange County cities with onsite and remote delivery support.</p>
+        {% else %}
+        <p>Orange County-wide onsite and remote delivery coverage for every service engagement.</p>
+        {% endif %}
       </article>
       <article class="service-snapshot-card">
         <div class="snap-icon"><i class="fa-solid fa-hourglass-half"></i></div>
@@ -275,6 +313,9 @@
       <a href="#service-workflow"><i class="fa-solid fa-diagram-project"></i> Workflow</a>
       <a href="#service-lead-time"><i class="fa-solid fa-hourglass-half"></i> Lead Time</a>
       <a href="#service-tools"><i class="fa-solid fa-layer-group"></i> Tools</a>
+      {% if supported_brands or brand_services %}
+      <a href="#service-brands"><i class="fa-solid fa-certificate"></i> Brands</a>
+      {% endif %}
       <a href="#service-trust"><i class="fa-solid fa-shield-halved"></i> Trust</a>
       <a href="#service-faq"><i class="fa-solid fa-circle-question"></i> FAQ</a>
       <a href="#service-contact"><i class="fa-solid fa-paper-plane"></i> Contact</a>
@@ -440,6 +481,9 @@
             {% for point in proof_points %}
             <li><i class="fa-solid fa-bullseye"></i><strong>{{ point.label }}:</strong> {{ point.value }}</li>
             {% endfor %}
+            {% if not compliance_frameworks and not proof_points %}
+            <li><i class="fa-solid fa-circle-check"></i>Security-first execution, documented escalation paths, and milestone-based reporting for every engagement.</li>
+            {% endif %}
           </ul>
         </div>
       </div>
