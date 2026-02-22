@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% block page_title %}ACP Audit{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Domain</label>
+        <input class="form-control" name="domain" value="{{ domain }}" placeholder="pages">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Action</label>
+        <input class="form-control" name="action" value="{{ action }}" placeholder="publish">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Environment</label>
+        <input class="form-control" name="environment" value="{{ environment }}" placeholder="production">
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit">Filter</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin.acp_audit') }}">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong>Audit Timeline</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Domain</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Actor</th>
+            <th>Environment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ev in items %}
+          <tr>
+            <td>{{ ev.created_at.strftime('%Y-%m-%d %H:%M:%S') if ev.created_at else '—' }}</td>
+            <td>{{ ev.domain }}</td>
+            <td>{{ ev.action }}</td>
+            <td><code>{{ ev.entity_type }}</code> <span class="text-muted">{{ ev.entity_id }}</span></td>
+            <td>
+              <strong>{{ ev.actor_username }}</strong>
+              <div class="small text-muted">{{ ev.actor_ip or 'n/a' }}</div>
+            </td>
+            <td>{{ ev.environment }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-muted">No audit events found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

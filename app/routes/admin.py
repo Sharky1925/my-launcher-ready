@@ -5,7 +5,7 @@ import re
 import uuid
 import bleach
 from sqlalchemy import func, or_
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, session, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, session, abort, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.exc import IntegrityError
@@ -30,6 +30,16 @@ try:
         SecurityEvent,
         Industry,
         ContentBlock,
+        AcpPageDocument,
+        AcpPageVersion,
+        AcpDashboardDocument,
+        AcpDashboardVersion,
+        AcpComponentDefinition,
+        AcpWidgetDefinition,
+        AcpMetricDefinition,
+        AcpEnvironment,
+        AcpPromotionEvent,
+        AcpAuditEvent,
         WORKFLOW_DRAFT,
         WORKFLOW_REVIEW,
         WORKFLOW_APPROVED,
@@ -67,6 +77,16 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SecurityEvent,
         Industry,
         ContentBlock,
+        AcpPageDocument,
+        AcpPageVersion,
+        AcpDashboardDocument,
+        AcpDashboardVersion,
+        AcpComponentDefinition,
+        AcpWidgetDefinition,
+        AcpMetricDefinition,
+        AcpEnvironment,
+        AcpPromotionEvent,
+        AcpAuditEvent,
         WORKFLOW_DRAFT,
         WORKFLOW_REVIEW,
         WORKFLOW_APPROVED,
@@ -146,6 +166,23 @@ ADMIN_PERMISSION_MAP = {
     'admin.industry_delete': 'content:manage',
     'admin.content_list': 'content:manage',
     'admin.content_edit': 'content:manage',
+    'admin.acp_studio': 'acp:studio:view',
+    'admin.acp_pages': 'acp:pages:manage',
+    'admin.acp_page_add': 'acp:pages:manage',
+    'admin.acp_page_edit': 'acp:pages:manage',
+    'admin.acp_page_snapshot': 'acp:pages:manage',
+    'admin.acp_page_publish': 'acp:publish',
+    'admin.acp_dashboards': 'acp:dashboards:manage',
+    'admin.acp_dashboard_add': 'acp:dashboards:manage',
+    'admin.acp_dashboard_edit': 'acp:dashboards:manage',
+    'admin.acp_dashboard_snapshot': 'acp:dashboards:manage',
+    'admin.acp_dashboard_publish': 'acp:publish',
+    'admin.acp_registry': 'acp:registry:manage',
+    'admin.acp_metrics': 'acp:metrics:manage',
+    'admin.acp_audit': 'acp:audit:view',
+    'admin.acp_promote': 'acp:environments:manage',
+    'admin.acp_admin_page_api': 'acp:studio:view',
+    'admin.acp_admin_dashboard_api': 'acp:studio:view',
     'admin.contacts': 'support:manage',
     'admin.contact_view': 'support:manage',
     'admin.contact_delete': 'support:manage',
@@ -343,6 +380,161 @@ def sanitize_html(value, max_length=100000):
         strip=True,
     )
     return cleaned[:max_length]
+
+
+def _safe_json_loads(raw_value, fallback):
+    if raw_value is None:
+        return fallback
+    if isinstance(raw_value, (dict, list)):
+        return raw_value
+    value = str(raw_value).strip()
+    if not value:
+        return fallback
+    try:
+        parsed = json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return fallback
+    return parsed
+
+
+def _safe_json_dumps(value, fallback):
+    payload = value if value is not None else fallback
+    try:
+        return json.dumps(payload, ensure_ascii=False)
+    except (TypeError, ValueError):
+        return json.dumps(fallback, ensure_ascii=False)
+
+
+def _current_environment_name():
+    return (
+        (current_app.config.get('RAILWAY_ENVIRONMENT') or '').strip()
+        or (os.environ.get('RAILWAY_ENVIRONMENT') or '').strip()
+        or (os.environ.get('FLASK_ENV') or '').strip()
+        or 'production'
+    )
+
+
+def _serialize_acp_page(page):
+    return {
+        'id': page.id,
+        'slug': page.slug,
+        'title': page.title,
+        'template_id': page.template_id,
+        'locale': page.locale,
+        'status': page.status,
+        'seo': _safe_json_loads(page.seo_json, {}),
+        'blocks_tree': _safe_json_loads(page.blocks_tree, {}),
+        'theme_override': _safe_json_loads(page.theme_override_json, {}),
+        'scheduled_publish_at': page.scheduled_publish_at.isoformat() if page.scheduled_publish_at else None,
+        'published_at': page.published_at.isoformat() if page.published_at else None,
+        'updated_at': page.updated_at.isoformat() if page.updated_at else None,
+    }
+
+
+def _serialize_acp_dashboard(dashboard):
+    return {
+        'id': dashboard.id,
+        'dashboard_id': dashboard.dashboard_id,
+        'title': dashboard.title,
+        'route': dashboard.route,
+        'layout_type': dashboard.layout_type,
+        'status': dashboard.status,
+        'layout_config': _safe_json_loads(dashboard.layout_config_json, {}),
+        'widgets': _safe_json_loads(dashboard.widgets_json, []),
+        'global_filters': _safe_json_loads(dashboard.global_filters_json, []),
+        'role_visibility_rules': _safe_json_loads(dashboard.role_visibility_json, {}),
+        'scheduled_publish_at': dashboard.scheduled_publish_at.isoformat() if dashboard.scheduled_publish_at else None,
+        'published_at': dashboard.published_at.isoformat() if dashboard.published_at else None,
+        'updated_at': dashboard.updated_at.isoformat() if dashboard.updated_at else None,
+    }
+
+
+def _create_acp_audit_event(domain, action, entity_type, entity_id, before_state, after_state):
+    actor_username = getattr(current_user, 'username', 'system')
+    event = AcpAuditEvent(
+        domain=domain,
+        action=action,
+        entity_type=entity_type,
+        entity_id=str(entity_id),
+        before_json=_safe_json_dumps(before_state, {}),
+        after_json=_safe_json_dumps(after_state, {}),
+        actor_user_id=getattr(current_user, 'id', None),
+        actor_username=actor_username,
+        actor_ip=get_request_ip(),
+        actor_user_agent=(request.headers.get('User-Agent') or '')[:300],
+        environment=_current_environment_name(),
+    )
+    db.session.add(event)
+
+
+def _next_page_version_number(page_id):
+    latest = db.session.query(func.max(AcpPageVersion.version_number)).filter_by(page_id=page_id).scalar()
+    return int(latest or 0) + 1
+
+
+def _next_dashboard_version_number(dashboard_document_id):
+    latest = db.session.query(func.max(AcpDashboardVersion.version_number)).filter_by(
+        dashboard_document_id=dashboard_document_id
+    ).scalar()
+    return int(latest or 0) + 1
+
+
+def _create_page_version(page, note=''):
+    snapshot = _serialize_acp_page(page)
+    version = AcpPageVersion(
+        page_id=page.id,
+        version_number=_next_page_version_number(page.id),
+        snapshot_json=_safe_json_dumps(snapshot, {}),
+        change_note=clean_text(note, 260) or None,
+        created_by_id=getattr(current_user, 'id', None),
+    )
+    db.session.add(version)
+    return version
+
+
+def _create_dashboard_version(dashboard, note=''):
+    snapshot = _serialize_acp_dashboard(dashboard)
+    version = AcpDashboardVersion(
+        dashboard_document_id=dashboard.id,
+        version_number=_next_dashboard_version_number(dashboard.id),
+        snapshot_json=_safe_json_dumps(snapshot, {}),
+        change_note=clean_text(note, 260) or None,
+        created_by_id=getattr(current_user, 'id', None),
+    )
+    db.session.add(version)
+    return version
+
+
+def _apply_acp_workflow(document, requested_status, scheduled_raw):
+    status = normalize_workflow_status(requested_status, default=WORKFLOW_DRAFT)
+    if not is_allowed_workflow_transition(current_user, status):
+        return False, 'Your role cannot set this workflow status.'
+
+    scheduled_publish_at = None
+    if (scheduled_raw or '').strip():
+        scheduled_publish_at = parse_datetime_local(scheduled_raw)
+        if not scheduled_publish_at:
+            return False, 'Invalid scheduled publish date/time. Use the date picker format.'
+        if not has_permission(current_user, 'acp:publish'):
+            return False, 'Your role cannot schedule publishing.'
+
+    now = utc_now_naive()
+    if status == WORKFLOW_PUBLISHED and scheduled_publish_at and scheduled_publish_at > now:
+        status = WORKFLOW_APPROVED
+    if status == WORKFLOW_APPROVED and scheduled_publish_at and scheduled_publish_at <= now:
+        status = WORKFLOW_PUBLISHED
+
+    if scheduled_publish_at and status not in {WORKFLOW_APPROVED, WORKFLOW_PUBLISHED}:
+        return False, 'Scheduled publishing requires Approved or Published status.'
+
+    document.status = status
+    if status == WORKFLOW_PUBLISHED:
+        document.published_at = now
+        document.scheduled_publish_at = None
+    else:
+        document.scheduled_publish_at = scheduled_publish_at
+    document.updated_at = now
+    return True, None
 
 
 def quote_ticket_filter_expression():
@@ -1924,3 +2116,489 @@ def content_edit(page, section):
         return redirect(url_for('admin.content_edit', page=page, section=section))
 
     return render_template('admin/content_edit.html', schema=schema, page=page, section=section, current_data=current_data)
+
+
+# ACP / Visual CMS + Dashboard Studio (thin-slice)
+@admin_bp.route('/acp/studio')
+@login_required
+def acp_studio():
+    page_count = AcpPageDocument.query.count()
+    dashboard_count = AcpDashboardDocument.query.count()
+    component_count = AcpComponentDefinition.query.filter_by(is_enabled=True).count()
+    widget_count = AcpWidgetDefinition.query.filter_by(is_enabled=True).count()
+    metric_count = AcpMetricDefinition.query.filter_by(is_enabled=True).count()
+    audit_count = AcpAuditEvent.query.count()
+    version_count = AcpPageVersion.query.count() + AcpDashboardVersion.query.count()
+    environments = AcpEnvironment.query.order_by(AcpEnvironment.id.asc()).all()
+    recent_audit = AcpAuditEvent.query.order_by(AcpAuditEvent.created_at.desc()).limit(12).all()
+    published_pages = AcpPageDocument.query.filter_by(status=WORKFLOW_PUBLISHED).count()
+    published_dashboards = AcpDashboardDocument.query.filter_by(status=WORKFLOW_PUBLISHED).count()
+    return render_template(
+        'admin/acp/studio.html',
+        stats={
+            'pages': page_count,
+            'dashboards': dashboard_count,
+            'components': component_count,
+            'widgets': widget_count,
+            'metrics': metric_count,
+            'audit_events': audit_count,
+            'versions': version_count,
+            'published_pages': published_pages,
+            'published_dashboards': published_dashboards,
+        },
+        environments=environments,
+        recent_audit=recent_audit,
+    )
+
+
+@admin_bp.route('/acp/pages')
+@login_required
+def acp_pages():
+    q = clean_text(request.args.get('q', ''), 120)
+    query = AcpPageDocument.query
+    if q:
+        like = f"%{escape_like(q.lower())}%"
+        query = query.filter(or_(
+            func.lower(AcpPageDocument.title).like(like),
+            func.lower(AcpPageDocument.slug).like(like),
+            func.lower(AcpPageDocument.template_id).like(like),
+        ))
+    items = query.order_by(
+        AcpPageDocument.updated_at.desc(),
+        AcpPageDocument.id.desc(),
+    ).all()
+    return render_template(
+        'admin/acp/pages.html',
+        items=items,
+        q=q,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/pages/new', methods=['GET', 'POST'])
+@login_required
+def acp_page_add():
+    if request.method == 'POST':
+        title = clean_text(request.form.get('title'), 220)
+        slug = clean_text(request.form.get('slug'), 220) or slugify(title)
+        template_id = clean_text(request.form.get('template_id'), 120) or 'default-page'
+        locale = clean_text(request.form.get('locale'), 20) or 'en-US'
+        seo_json = request.form.get('seo_json', '{}')
+        blocks_tree = request.form.get('blocks_tree', '{}')
+        theme_override_json = request.form.get('theme_override_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+
+        if not title or not slug:
+            flash('Title and slug are required.', 'danger')
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+        if AcpPageDocument.query.filter_by(slug=slug).first():
+            flash('A page with this slug already exists.', 'danger')
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        seo_payload = _safe_json_loads(seo_json, None)
+        blocks_payload = _safe_json_loads(blocks_tree, None)
+        theme_payload = _safe_json_loads(theme_override_json, None)
+        if seo_payload is None or blocks_payload is None or theme_payload is None:
+            flash('Invalid JSON payload. Fix SEO, blocks tree, or theme override JSON.', 'danger')
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        item = AcpPageDocument(
+            title=title,
+            slug=slug,
+            template_id=template_id,
+            locale=locale,
+            seo_json=_safe_json_dumps(seo_payload, {}),
+            blocks_tree=_safe_json_dumps(blocks_payload, {}),
+            theme_override_json=_safe_json_dumps(theme_payload, {}),
+            created_by_id=current_user.id,
+            updated_by_id=current_user.id,
+        )
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status'),
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        db.session.add(item)
+        db.session.flush()
+        _create_page_version(item, note=change_note or 'Initial ACP page draft')
+        _create_acp_audit_event('pages', 'create', 'acp_page_document', item.slug, {}, _serialize_acp_page(item))
+        db.session.commit()
+        flash('ACP page created.', 'success')
+        return redirect(url_for('admin.acp_page_edit', id=item.id))
+
+    return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+
+@admin_bp.route('/acp/pages/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def acp_page_edit(id):
+    item = AcpPageDocument.query.get_or_404(id)
+    if request.method == 'POST':
+        before_state = _serialize_acp_page(item)
+        title = clean_text(request.form.get('title'), 220)
+        slug = clean_text(request.form.get('slug'), 220) or slugify(title)
+        template_id = clean_text(request.form.get('template_id'), 120) or 'default-page'
+        locale = clean_text(request.form.get('locale'), 20) or 'en-US'
+        seo_json = request.form.get('seo_json', '{}')
+        blocks_tree = request.form.get('blocks_tree', '{}')
+        theme_override_json = request.form.get('theme_override_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+
+        if not title or not slug:
+            flash('Title and slug are required.', 'danger')
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+        duplicate = AcpPageDocument.query.filter(AcpPageDocument.slug == slug, AcpPageDocument.id != item.id).first()
+        if duplicate:
+            flash('Another page already uses this slug.', 'danger')
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        seo_payload = _safe_json_loads(seo_json, None)
+        blocks_payload = _safe_json_loads(blocks_tree, None)
+        theme_payload = _safe_json_loads(theme_override_json, None)
+        if seo_payload is None or blocks_payload is None or theme_payload is None:
+            flash('Invalid JSON payload. Fix SEO, blocks tree, or theme override JSON.', 'danger')
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        item.title = title
+        item.slug = slug
+        item.template_id = template_id
+        item.locale = locale
+        item.seo_json = _safe_json_dumps(seo_payload, {})
+        item.blocks_tree = _safe_json_dumps(blocks_payload, {})
+        item.theme_override_json = _safe_json_dumps(theme_payload, {})
+        item.updated_by_id = current_user.id
+
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status') or item.status,
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        _create_page_version(item, note=change_note or 'Content updated')
+        _create_acp_audit_event('pages', 'update', 'acp_page_document', item.slug, before_state, _serialize_acp_page(item))
+        db.session.commit()
+        flash('ACP page updated.', 'success')
+        return redirect(url_for('admin.acp_page_edit', id=item.id))
+
+    versions = AcpPageVersion.query.filter_by(page_id=item.id).order_by(AcpPageVersion.version_number.desc()).limit(12).all()
+    return render_template(
+        'admin/acp/page_form.html',
+        item=item,
+        versions=versions,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/pages/<int:id>/snapshot', methods=['POST'])
+@login_required
+def acp_page_snapshot(id):
+    item = AcpPageDocument.query.get_or_404(id)
+    note = clean_text(request.form.get('change_note'), 260) or 'Manual snapshot'
+    _create_page_version(item, note=note)
+    _create_acp_audit_event('pages', 'snapshot', 'acp_page_document', item.slug, _serialize_acp_page(item), _serialize_acp_page(item))
+    db.session.commit()
+    flash('Page snapshot created.', 'success')
+    return redirect(url_for('admin.acp_page_edit', id=item.id))
+
+
+@admin_bp.route('/acp/pages/<int:id>/publish', methods=['POST'])
+@login_required
+def acp_page_publish(id):
+    item = AcpPageDocument.query.get_or_404(id)
+    before_state = _serialize_acp_page(item)
+    requested_status = request.form.get('workflow_status') or WORKFLOW_PUBLISHED
+    ok, workflow_error = _apply_acp_workflow(item, requested_status, request.form.get('scheduled_publish_at'))
+    if not ok:
+        flash(workflow_error, 'danger')
+        return redirect(url_for('admin.acp_page_edit', id=item.id))
+    _create_page_version(item, note=clean_text(request.form.get('change_note'), 260) or 'Publishing update')
+    _create_acp_audit_event('pages', 'publish', 'acp_page_document', item.slug, before_state, _serialize_acp_page(item))
+    db.session.commit()
+    flash('Page workflow status updated.', 'success')
+    return redirect(url_for('admin.acp_page_edit', id=item.id))
+
+
+@admin_bp.route('/acp/dashboards')
+@login_required
+def acp_dashboards():
+    q = clean_text(request.args.get('q', ''), 120)
+    query = AcpDashboardDocument.query
+    if q:
+        like = f"%{escape_like(q.lower())}%"
+        query = query.filter(or_(
+            func.lower(AcpDashboardDocument.title).like(like),
+            func.lower(AcpDashboardDocument.dashboard_id).like(like),
+            func.lower(AcpDashboardDocument.route).like(like),
+        ))
+    items = query.order_by(AcpDashboardDocument.updated_at.desc(), AcpDashboardDocument.id.desc()).all()
+    return render_template(
+        'admin/acp/dashboards.html',
+        items=items,
+        q=q,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/dashboards/new', methods=['GET', 'POST'])
+@login_required
+def acp_dashboard_add():
+    if request.method == 'POST':
+        title = clean_text(request.form.get('title'), 220)
+        dashboard_id = clean_text(request.form.get('dashboard_id'), 120) or slugify(title)
+        route = clean_text(request.form.get('route'), 220)
+        if route and not route.startswith('/'):
+            route = f'/{route}'
+        layout_type = clean_text(request.form.get('layout_type'), 24) or 'grid'
+        layout_config_json = request.form.get('layout_config_json', '{}')
+        widgets_json = request.form.get('widgets_json', '[]')
+        global_filters_json = request.form.get('global_filters_json', '[]')
+        role_visibility_json = request.form.get('role_visibility_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+
+        if not title or not dashboard_id or not route:
+            flash('Title, dashboard ID, and route are required.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+        if AcpDashboardDocument.query.filter_by(dashboard_id=dashboard_id).first():
+            flash('A dashboard with this ID already exists.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+        if AcpDashboardDocument.query.filter_by(route=route).first():
+            flash('A dashboard with this route already exists.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        layout_payload = _safe_json_loads(layout_config_json, None)
+        widgets_payload = _safe_json_loads(widgets_json, None)
+        filters_payload = _safe_json_loads(global_filters_json, None)
+        visibility_payload = _safe_json_loads(role_visibility_json, None)
+        if layout_payload is None or widgets_payload is None or filters_payload is None or visibility_payload is None:
+            flash('Invalid JSON payload in dashboard configuration.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        item = AcpDashboardDocument(
+            title=title,
+            dashboard_id=dashboard_id,
+            route=route,
+            layout_type=layout_type,
+            layout_config_json=_safe_json_dumps(layout_payload, {}),
+            widgets_json=_safe_json_dumps(widgets_payload, []),
+            global_filters_json=_safe_json_dumps(filters_payload, []),
+            role_visibility_json=_safe_json_dumps(visibility_payload, {}),
+            created_by_id=current_user.id,
+            updated_by_id=current_user.id,
+        )
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status'),
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+        db.session.add(item)
+        db.session.flush()
+        _create_dashboard_version(item, note=change_note or 'Initial dashboard draft')
+        _create_acp_audit_event('dashboards', 'create', 'acp_dashboard_document', item.dashboard_id, {}, _serialize_acp_dashboard(item))
+        db.session.commit()
+        flash('ACP dashboard created.', 'success')
+        return redirect(url_for('admin.acp_dashboard_edit', id=item.id))
+
+    return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+
+
+@admin_bp.route('/acp/dashboards/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def acp_dashboard_edit(id):
+    item = AcpDashboardDocument.query.get_or_404(id)
+    if request.method == 'POST':
+        before_state = _serialize_acp_dashboard(item)
+        title = clean_text(request.form.get('title'), 220)
+        dashboard_id = clean_text(request.form.get('dashboard_id'), 120) or slugify(title)
+        route = clean_text(request.form.get('route'), 220)
+        if route and not route.startswith('/'):
+            route = f'/{route}'
+        layout_type = clean_text(request.form.get('layout_type'), 24) or 'grid'
+        layout_config_json = request.form.get('layout_config_json', '{}')
+        widgets_json = request.form.get('widgets_json', '[]')
+        global_filters_json = request.form.get('global_filters_json', '[]')
+        role_visibility_json = request.form.get('role_visibility_json', '{}')
+        change_note = clean_text(request.form.get('change_note'), 260)
+
+        if not title or not dashboard_id or not route:
+            flash('Title, dashboard ID, and route are required.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+        duplicate_dashboard = AcpDashboardDocument.query.filter(
+            AcpDashboardDocument.dashboard_id == dashboard_id,
+            AcpDashboardDocument.id != item.id,
+        ).first()
+        if duplicate_dashboard:
+            flash('Another dashboard already uses this dashboard ID.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+        duplicate_route = AcpDashboardDocument.query.filter(
+            AcpDashboardDocument.route == route,
+            AcpDashboardDocument.id != item.id,
+        ).first()
+        if duplicate_route:
+            flash('Another dashboard already uses this route.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        layout_payload = _safe_json_loads(layout_config_json, None)
+        widgets_payload = _safe_json_loads(widgets_json, None)
+        filters_payload = _safe_json_loads(global_filters_json, None)
+        visibility_payload = _safe_json_loads(role_visibility_json, None)
+        if layout_payload is None or widgets_payload is None or filters_payload is None or visibility_payload is None:
+            flash('Invalid JSON payload in dashboard configuration.', 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        item.title = title
+        item.dashboard_id = dashboard_id
+        item.route = route
+        item.layout_type = layout_type
+        item.layout_config_json = _safe_json_dumps(layout_payload, {})
+        item.widgets_json = _safe_json_dumps(widgets_payload, [])
+        item.global_filters_json = _safe_json_dumps(filters_payload, [])
+        item.role_visibility_json = _safe_json_dumps(visibility_payload, {})
+        item.updated_by_id = current_user.id
+        ok, workflow_error = _apply_acp_workflow(
+            item,
+            request.form.get('workflow_status') or item.status,
+            request.form.get('scheduled_publish_at'),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+
+        _create_dashboard_version(item, note=change_note or 'Dashboard updated')
+        _create_acp_audit_event('dashboards', 'update', 'acp_dashboard_document', item.dashboard_id, before_state, _serialize_acp_dashboard(item))
+        db.session.commit()
+        flash('ACP dashboard updated.', 'success')
+        return redirect(url_for('admin.acp_dashboard_edit', id=item.id))
+
+    versions = AcpDashboardVersion.query.filter_by(
+        dashboard_document_id=item.id
+    ).order_by(AcpDashboardVersion.version_number.desc()).limit(12).all()
+    return render_template(
+        'admin/acp/dashboard_form.html',
+        item=item,
+        versions=versions,
+        workflow_options=get_workflow_status_options(current_user),
+    )
+
+
+@admin_bp.route('/acp/dashboards/<int:id>/snapshot', methods=['POST'])
+@login_required
+def acp_dashboard_snapshot(id):
+    item = AcpDashboardDocument.query.get_or_404(id)
+    note = clean_text(request.form.get('change_note'), 260) or 'Manual snapshot'
+    _create_dashboard_version(item, note=note)
+    _create_acp_audit_event('dashboards', 'snapshot', 'acp_dashboard_document', item.dashboard_id, _serialize_acp_dashboard(item), _serialize_acp_dashboard(item))
+    db.session.commit()
+    flash('Dashboard snapshot created.', 'success')
+    return redirect(url_for('admin.acp_dashboard_edit', id=item.id))
+
+
+@admin_bp.route('/acp/dashboards/<int:id>/publish', methods=['POST'])
+@login_required
+def acp_dashboard_publish(id):
+    item = AcpDashboardDocument.query.get_or_404(id)
+    before_state = _serialize_acp_dashboard(item)
+    requested_status = request.form.get('workflow_status') or WORKFLOW_PUBLISHED
+    ok, workflow_error = _apply_acp_workflow(item, requested_status, request.form.get('scheduled_publish_at'))
+    if not ok:
+        flash(workflow_error, 'danger')
+        return redirect(url_for('admin.acp_dashboard_edit', id=item.id))
+    _create_dashboard_version(item, note=clean_text(request.form.get('change_note'), 260) or 'Publishing update')
+    _create_acp_audit_event('dashboards', 'publish', 'acp_dashboard_document', item.dashboard_id, before_state, _serialize_acp_dashboard(item))
+    db.session.commit()
+    flash('Dashboard workflow status updated.', 'success')
+    return redirect(url_for('admin.acp_dashboard_edit', id=item.id))
+
+
+@admin_bp.route('/acp/registry')
+@login_required
+def acp_registry():
+    components = AcpComponentDefinition.query.order_by(AcpComponentDefinition.category.asc(), AcpComponentDefinition.key.asc()).all()
+    widgets = AcpWidgetDefinition.query.order_by(AcpWidgetDefinition.category.asc(), AcpWidgetDefinition.key.asc()).all()
+    return render_template('admin/acp/registry.html', components=components, widgets=widgets)
+
+
+@admin_bp.route('/acp/metrics')
+@login_required
+def acp_metrics():
+    metrics = AcpMetricDefinition.query.order_by(AcpMetricDefinition.key.asc()).all()
+    return render_template('admin/acp/metrics.html', metrics=metrics)
+
+
+@admin_bp.route('/acp/audit')
+@login_required
+def acp_audit():
+    domain = clean_text(request.args.get('domain', ''), 50)
+    action = clean_text(request.args.get('action', ''), 50)
+    environment = clean_text(request.args.get('environment', ''), 40)
+    query = AcpAuditEvent.query
+    if domain:
+        query = query.filter(AcpAuditEvent.domain == domain)
+    if action:
+        query = query.filter(AcpAuditEvent.action == action)
+    if environment:
+        query = query.filter(AcpAuditEvent.environment == environment)
+    items = query.order_by(AcpAuditEvent.created_at.desc()).limit(200).all()
+    return render_template('admin/acp/audit.html', items=items, domain=domain, action=action, environment=environment)
+
+
+@admin_bp.route('/acp/promote', methods=['POST'])
+@login_required
+def acp_promote():
+    resource_type = clean_text(request.form.get('resource_type'), 40)
+    resource_id = parse_positive_int(request.form.get('resource_id'))
+    target_environment = clean_text(request.form.get('target_environment'), 40)
+    source_environment = clean_text(request.form.get('source_environment'), 40) or _current_environment_name()
+    version_number = parse_positive_int(request.form.get('version_number')) or 1
+    notes = clean_text(request.form.get('notes'), 300)
+
+    if resource_type not in {'page', 'dashboard'} or not resource_id or not target_environment:
+        flash('Promotion payload is incomplete.', 'danger')
+        return redirect(url_for('admin.acp_studio'))
+
+    event = AcpPromotionEvent(
+        source_environment=source_environment,
+        target_environment=target_environment,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        version_number=version_number,
+        status='completed',
+        notes=notes or None,
+        promoted_by_id=current_user.id,
+    )
+    db.session.add(event)
+    _create_acp_audit_event(
+        'environments',
+        'promote',
+        f'acp_{resource_type}_document',
+        resource_id,
+        {'source_environment': source_environment},
+        {'target_environment': target_environment, 'version_number': version_number},
+    )
+    db.session.commit()
+    flash('Environment promotion event recorded.', 'success')
+    return redirect(url_for('admin.acp_studio'))
+
+
+@admin_bp.route('/acp/api/pages/<slug>')
+@login_required
+def acp_admin_page_api(slug):
+    item = AcpPageDocument.query.filter_by(slug=slug).first_or_404()
+    return jsonify(_serialize_acp_page(item))
+
+
+@admin_bp.route('/acp/api/dashboards/<dashboard_id>')
+@login_required
+def acp_admin_dashboard_api(dashboard_id):
+    item = AcpDashboardDocument.query.filter_by(dashboard_id=dashboard_id).first_or_404()
+    return jsonify(_serialize_acp_dashboard(item))

@@ -18,10 +18,13 @@ try:
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        AcpPageDocument,
+        AcpDashboardDocument,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
         WORKFLOW_DRAFT,
         ROLE_EDITOR,
+        ROLE_SUPPORT,
         db,
     )
     from app.utils import utc_now_naive
@@ -39,10 +42,13 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        AcpPageDocument,
+        AcpDashboardDocument,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
         WORKFLOW_DRAFT,
         ROLE_EDITOR,
+        ROLE_SUPPORT,
         db,
     )
     from utils import utc_now_naive
@@ -152,6 +158,103 @@ def test_admin_dashboard_control_center_search_renders(client):
     html = response.get_data(as_text=True)
     assert "Unified Control Center" in html
     assert "Unified Search Results" in html
+
+
+def test_acp_studio_pages_and_dashboards_render_for_admin(client):
+    admin_login(client)
+    studio = client.get("/admin/acp/studio")
+    assert studio.status_code == 200
+    studio_html = studio.get_data(as_text=True)
+    assert "Application Control Platform" in studio_html
+
+    pages = client.get("/admin/acp/pages")
+    assert pages.status_code == 200
+    assert "Page Documents" in pages.get_data(as_text=True)
+
+    dashboards = client.get("/admin/acp/dashboards")
+    assert dashboards.status_code == 200
+    assert "Dashboard Documents" in dashboards.get_data(as_text=True)
+
+
+def test_acp_delivery_api_returns_only_published_documents(client, app):
+    published_slug = f"published-page-{uuid.uuid4().hex[:8]}"
+    draft_slug = f"draft-page-{uuid.uuid4().hex[:8]}"
+    published_dashboard_id = f"ops-{uuid.uuid4().hex[:8]}"
+    draft_dashboard_id = f"draft-{uuid.uuid4().hex[:8]}"
+
+    with app.app_context():
+        db.session.add(AcpPageDocument(
+            slug=published_slug,
+            title="Published Test Page",
+            template_id="landing-v1",
+            locale="en-US",
+            status=WORKFLOW_PUBLISHED,
+            seo_json='{\"title\":\"Published\"}',
+            blocks_tree='{\"type\":\"Container\"}',
+            theme_override_json='{}',
+            published_at=utc_now_naive(),
+        ))
+        db.session.add(AcpPageDocument(
+            slug=draft_slug,
+            title="Draft Test Page",
+            template_id="landing-v1",
+            locale="en-US",
+            status=WORKFLOW_DRAFT,
+            seo_json='{\"title\":\"Draft\"}',
+            blocks_tree='{\"type\":\"Container\"}',
+            theme_override_json='{}',
+        ))
+        db.session.add(AcpDashboardDocument(
+            dashboard_id=published_dashboard_id,
+            title="Published Dashboard",
+            route=f"/dashboard/{published_dashboard_id}",
+            layout_type="grid",
+            status=WORKFLOW_PUBLISHED,
+            layout_config_json='{\"columns\":12}',
+            widgets_json='[]',
+            global_filters_json='[]',
+            role_visibility_json='{}',
+            published_at=utc_now_naive(),
+        ))
+        db.session.add(AcpDashboardDocument(
+            dashboard_id=draft_dashboard_id,
+            title="Draft Dashboard",
+            route=f"/dashboard/{draft_dashboard_id}",
+            layout_type="grid",
+            status=WORKFLOW_DRAFT,
+            layout_config_json='{\"columns\":12}',
+            widgets_json='[]',
+            global_filters_json='[]',
+            role_visibility_json='{}',
+        ))
+        db.session.commit()
+
+    published_page_resp = client.get(f"/api/delivery/pages/{published_slug}")
+    assert published_page_resp.status_code == 200
+    assert published_page_resp.get_json()["slug"] == published_slug
+
+    draft_page_resp = client.get(f"/api/delivery/pages/{draft_slug}")
+    assert draft_page_resp.status_code == 404
+
+    published_dash_resp = client.get(f"/api/delivery/dashboards/{published_dashboard_id}")
+    assert published_dash_resp.status_code == 200
+    assert published_dash_resp.get_json()["dashboard_id"] == published_dashboard_id
+
+    draft_dash_resp = client.get(f"/api/delivery/dashboards/{draft_dashboard_id}")
+    assert draft_dash_resp.status_code == 404
+
+
+def test_support_role_cannot_access_acp_page_builder(client, app):
+    with app.app_context():
+        user = User(username="support_user", email="support@example.com", role=ROLE_SUPPORT)
+        user.set_password("Support123!")
+        db.session.add(user)
+        db.session.commit()
+
+    admin_login_as(client, "support_user", "Support123!")
+    response = client.get("/admin/acp/pages", follow_redirects=False)
+    assert response.status_code in (302, 303)
+    assert response.headers["Location"].endswith("/admin/")
 
 
 def test_hsts_header_on_https_requests(client):

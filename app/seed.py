@@ -16,6 +16,15 @@ try:
         SiteSetting,
         Industry,
         ContentBlock,
+        AcpPageDocument,
+        AcpPageVersion,
+        AcpDashboardDocument,
+        AcpDashboardVersion,
+        AcpComponentDefinition,
+        AcpWidgetDefinition,
+        AcpMetricDefinition,
+        AcpEnvironment,
+        AcpAuditEvent,
         ROLE_ADMIN,
         ROLE_OWNER,
         WORKFLOW_DRAFT,
@@ -34,6 +43,15 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SiteSetting,
         Industry,
         ContentBlock,
+        AcpPageDocument,
+        AcpPageVersion,
+        AcpDashboardDocument,
+        AcpDashboardVersion,
+        AcpComponentDefinition,
+        AcpWidgetDefinition,
+        AcpMetricDefinition,
+        AcpEnvironment,
+        AcpAuditEvent,
         ROLE_ADMIN,
         ROLE_OWNER,
         WORKFLOW_DRAFT,
@@ -240,6 +258,361 @@ def backfill_phase2_defaults():
         db.session.rollback()
 
 
+def seed_acp_defaults(owner_user=None):
+    owner_id = getattr(owner_user, 'id', None)
+
+    environment_specs = [
+        ('dev', 'Development', False, False),
+        ('stage', 'Staging', False, True),
+        ('production', 'Production', True, True),
+    ]
+    for key, label, is_default, is_protected in environment_specs:
+        env = AcpEnvironment.query.filter_by(key=key).first()
+        if env:
+            continue
+        db.session.add(
+            AcpEnvironment(
+                key=key,
+                label=label,
+                is_default=is_default,
+                is_protected=is_protected,
+            )
+        )
+
+    component_specs = [
+        {
+            'key': 'layout.container',
+            'name': 'Container',
+            'category': 'layout',
+            'prop_schema': {
+                'type': 'object',
+                'properties': {
+                    'maxWidth': {'type': 'string'},
+                    'paddingY': {'type': 'string'},
+                    'background': {'type': 'string'},
+                },
+            },
+            'default_props': {'maxWidth': '1200px', 'paddingY': '32px'},
+            'allowed_children': ['marketing.hero', 'content.richText', 'content.serviceCards'],
+            'restrictions': {'maxInstancesPerPage': 8},
+        },
+        {
+            'key': 'marketing.hero',
+            'name': 'Hero',
+            'category': 'marketing',
+            'prop_schema': {
+                'type': 'object',
+                'properties': {
+                    'title': {'type': 'string'},
+                    'subtitle': {'type': 'string'},
+                    'primaryCtaLabel': {'type': 'string'},
+                    'primaryCtaHref': {'type': 'string'},
+                },
+                'required': ['title'],
+            },
+            'default_props': {
+                'title': 'Fast • Prompt Response • Reliable • Results-Driven',
+                'subtitle': 'Thin-slice ACP hero controlled by schema-driven props.',
+                'primaryCtaLabel': 'Request Consultation',
+                'primaryCtaHref': '/contact',
+            },
+            'allowed_children': [],
+            'restrictions': {'maxInstancesPerPage': 1},
+        },
+        {
+            'key': 'content.serviceCards',
+            'name': 'Service Cards Grid',
+            'category': 'content',
+            'prop_schema': {
+                'type': 'object',
+                'properties': {
+                    'title': {'type': 'string'},
+                    'items': {'type': 'array'},
+                },
+            },
+            'default_props': {
+                'title': 'Core Services',
+                'items': [
+                    {'title': 'Managed IT', 'icon': 'fa-solid fa-server'},
+                    {'title': 'Technical Repair', 'icon': 'fa-solid fa-laptop-medical'},
+                    {'title': 'Cybersecurity', 'icon': 'fa-solid fa-shield-halved'},
+                ],
+            },
+            'allowed_children': [],
+            'restrictions': {'maxInstancesPerPage': 2},
+        },
+    ]
+    for spec in component_specs:
+        existing = AcpComponentDefinition.query.filter_by(key=spec['key']).first()
+        if existing:
+            continue
+        db.session.add(
+            AcpComponentDefinition(
+                key=spec['key'],
+                name=spec['name'],
+                category=spec['category'],
+                prop_schema_json=json.dumps(spec['prop_schema'], ensure_ascii=False),
+                default_props_json=json.dumps(spec['default_props'], ensure_ascii=False),
+                allowed_children_json=json.dumps(spec['allowed_children'], ensure_ascii=False),
+                restrictions_json=json.dumps(spec['restrictions'], ensure_ascii=False),
+                is_enabled=True,
+            )
+        )
+
+    widget_specs = [
+        {
+            'key': 'kpi-card',
+            'name': 'KPI Card',
+            'category': 'kpi',
+            'config_schema': {'type': 'object', 'properties': {'title': {'type': 'string'}, 'metric': {'type': 'string'}}},
+            'data_contract': {'value': 'number', 'delta': 'number'},
+            'allowed_filters': ['dateRange', 'priority'],
+            'permissions_required': ['dashboard:view'],
+        },
+        {
+            'key': 'line-chart',
+            'name': 'Line Chart',
+            'category': 'chart',
+            'config_schema': {'type': 'object', 'properties': {'title': {'type': 'string'}, 'metric': {'type': 'string'}}},
+            'data_contract': {'points': 'array<{x:string,y:number}>'},
+            'allowed_filters': ['dateRange'],
+            'permissions_required': ['dashboard:view'],
+        },
+        {
+            'key': 'table',
+            'name': 'Table',
+            'category': 'table',
+            'config_schema': {'type': 'object', 'properties': {'title': {'type': 'string'}, 'metric': {'type': 'string'}}},
+            'data_contract': {'columns': 'array', 'rows': 'array'},
+            'allowed_filters': ['dateRange', 'priority', 'status'],
+            'permissions_required': ['dashboard:view'],
+        },
+    ]
+    for spec in widget_specs:
+        existing = AcpWidgetDefinition.query.filter_by(key=spec['key']).first()
+        if existing:
+            continue
+        db.session.add(
+            AcpWidgetDefinition(
+                key=spec['key'],
+                name=spec['name'],
+                category=spec['category'],
+                config_schema_json=json.dumps(spec['config_schema'], ensure_ascii=False),
+                data_contract_json=json.dumps(spec['data_contract'], ensure_ascii=False),
+                allowed_filters_json=json.dumps(spec['allowed_filters'], ensure_ascii=False),
+                permissions_required_json=json.dumps(spec['permissions_required'], ensure_ascii=False),
+                is_enabled=True,
+            )
+        )
+
+    metric_key = 'support_open_tickets'
+    metric = AcpMetricDefinition.query.filter_by(key=metric_key).first()
+    if not metric:
+        db.session.add(
+            AcpMetricDefinition(
+                key=metric_key,
+                name='Open Support Tickets',
+                description='Count of support tickets in open, in_progress, or waiting_customer states.',
+                dataset_key='support_tickets',
+                query_template=(
+                    "SELECT COUNT(*) AS value FROM support_ticket "
+                    "WHERE status IN ('open','in_progress','waiting_customer')"
+                ),
+                formula='count(open_tickets)',
+                dimensions_json=json.dumps(['status', 'priority'], ensure_ascii=False),
+                allowed_roles_json=json.dumps(
+                    ['owner', 'admin', 'publisher', 'reviewer', 'editor', 'support'],
+                    ensure_ascii=False,
+                ),
+                default_aggregation='count',
+                is_enabled=True,
+            )
+        )
+
+    seed_page_slug = 'acp-thin-slice-home'
+    page = AcpPageDocument.query.filter_by(slug=seed_page_slug).first()
+    if not page:
+        page = AcpPageDocument(
+            slug=seed_page_slug,
+            title='ACP Thin Slice Home',
+            template_id='landing-v1',
+            locale='en-US',
+            status=WORKFLOW_PUBLISHED,
+            seo_json=json.dumps(
+                {
+                    'title': 'ACP Thin Slice Home',
+                    'description': 'Schema-driven landing page document for ACP thin-slice rollout.',
+                    'keywords': ['visual cms', 'page builder', 'guardrails'],
+                },
+                ensure_ascii=False,
+            ),
+            blocks_tree=json.dumps(
+                {
+                    'type': 'layout.container',
+                    'props': {'maxWidth': '1200px', 'paddingY': '48px'},
+                    'children': [
+                        {
+                            'type': 'marketing.hero',
+                            'props': {
+                                'title': 'Fast • Prompt Response • Reliable • Results-Driven',
+                                'subtitle': 'Visual CMS thin slice deployed in your existing app.',
+                                'primaryCtaLabel': 'Talk to Us',
+                                'primaryCtaHref': '/contact',
+                            },
+                        },
+                        {
+                            'type': 'content.serviceCards',
+                            'props': {
+                                'title': 'Thin-Slice Services',
+                                'items': [
+                                    {'title': 'Managed IT', 'icon': 'fa-solid fa-server'},
+                                    {'title': 'Technical Repair', 'icon': 'fa-solid fa-laptop-medical'},
+                                    {'title': 'Cybersecurity', 'icon': 'fa-solid fa-shield-halved'},
+                                ],
+                            },
+                        },
+                    ],
+                },
+                ensure_ascii=False,
+            ),
+            theme_override_json=json.dumps(
+                {'accentColor': '#36a4ff', 'surfaceGlow': '#1f4db3', 'radius': '14px'},
+                ensure_ascii=False,
+            ),
+            published_at=utc_now_naive(),
+            created_by_id=owner_id,
+            updated_by_id=owner_id,
+        )
+        db.session.add(page)
+        db.session.flush()
+
+    existing_page_version = AcpPageVersion.query.filter_by(page_id=page.id).first()
+    if not existing_page_version:
+        page_snapshot = {
+            'id': page.id,
+            'slug': page.slug,
+            'title': page.title,
+            'template_id': page.template_id,
+            'locale': page.locale,
+            'status': page.status,
+            'seo': json.loads(page.seo_json),
+            'blocks_tree': json.loads(page.blocks_tree),
+            'theme_override': json.loads(page.theme_override_json),
+        }
+        db.session.add(
+            AcpPageVersion(
+                page_id=page.id,
+                version_number=1,
+                snapshot_json=json.dumps(page_snapshot, ensure_ascii=False),
+                change_note='Seeded thin-slice ACP page',
+                created_by_id=owner_id,
+            )
+        )
+
+    seed_dashboard_id = 'operations-overview'
+    dashboard = AcpDashboardDocument.query.filter_by(dashboard_id=seed_dashboard_id).first()
+    if not dashboard:
+        dashboard = AcpDashboardDocument(
+            dashboard_id=seed_dashboard_id,
+            title='Operations Overview',
+            route='/dashboard/operations',
+            layout_type='grid',
+            status=WORKFLOW_PUBLISHED,
+            layout_config_json=json.dumps({'columns': 12, 'rowHeight': 72, 'gap': 12}, ensure_ascii=False),
+            widgets_json=json.dumps(
+                [
+                    {
+                        'id': 'open-tickets',
+                        'type': 'kpi-card',
+                        'metric': 'support_open_tickets',
+                        'title': 'Open Tickets',
+                        'position': {'x': 0, 'y': 0, 'w': 3, 'h': 2},
+                    },
+                    {
+                        'id': 'ticket-trend',
+                        'type': 'line-chart',
+                        'metric': 'support_open_tickets',
+                        'title': 'Ticket Trend',
+                        'position': {'x': 3, 'y': 0, 'w': 6, 'h': 3},
+                    },
+                    {
+                        'id': 'ticket-table',
+                        'type': 'table',
+                        'metric': 'support_open_tickets',
+                        'title': 'Ticket Queue',
+                        'position': {'x': 0, 'y': 3, 'w': 9, 'h': 4},
+                    },
+                ],
+                ensure_ascii=False,
+            ),
+            global_filters_json=json.dumps(
+                [{'id': 'dateRange', 'type': 'date_range'}, {'id': 'priority', 'type': 'enum'}],
+                ensure_ascii=False,
+            ),
+            role_visibility_json=json.dumps(
+                {
+                    'owner': {'showAll': True},
+                    'admin': {'showAll': True},
+                    'support': {'hiddenWidgets': []},
+                },
+                ensure_ascii=False,
+            ),
+            published_at=utc_now_naive(),
+            created_by_id=owner_id,
+            updated_by_id=owner_id,
+        )
+        db.session.add(dashboard)
+        db.session.flush()
+
+    existing_dashboard_version = AcpDashboardVersion.query.filter_by(dashboard_document_id=dashboard.id).first()
+    if not existing_dashboard_version:
+        dashboard_snapshot = {
+            'id': dashboard.id,
+            'dashboard_id': dashboard.dashboard_id,
+            'title': dashboard.title,
+            'route': dashboard.route,
+            'layout_type': dashboard.layout_type,
+            'status': dashboard.status,
+            'layout_config': json.loads(dashboard.layout_config_json),
+            'widgets': json.loads(dashboard.widgets_json),
+            'global_filters': json.loads(dashboard.global_filters_json),
+            'role_visibility_rules': json.loads(dashboard.role_visibility_json),
+        }
+        db.session.add(
+            AcpDashboardVersion(
+                dashboard_document_id=dashboard.id,
+                version_number=1,
+                snapshot_json=json.dumps(dashboard_snapshot, ensure_ascii=False),
+                change_note='Seeded thin-slice ACP dashboard',
+                created_by_id=owner_id,
+            )
+        )
+
+    if not AcpAuditEvent.query.filter_by(domain='system', action='seed').first():
+        db.session.add(
+            AcpAuditEvent(
+                domain='system',
+                action='seed',
+                entity_type='acp_bootstrap',
+                entity_id='thin-slice-v1',
+                before_json=json.dumps({}, ensure_ascii=False),
+                after_json=json.dumps(
+                    {
+                        'components': 3,
+                        'widgets': 3,
+                        'metrics': 1,
+                        'page': seed_page_slug,
+                        'dashboard': seed_dashboard_id,
+                    },
+                    ensure_ascii=False,
+                ),
+                actor_user_id=owner_id,
+                actor_username=(owner_user.username if owner_user else 'seed'),
+                environment='production',
+            )
+        )
+
+
 def seed_database():
     ensure_phase2_schema()
     backfill_phase2_defaults()
@@ -255,7 +628,13 @@ def seed_database():
         except Exception:
             db.session.rollback()
 
-    if User.query.first():
+    existing_user = User.query.order_by(User.id.asc()).first()
+    if existing_user:
+        try:
+            seed_acp_defaults(existing_user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         return
 
     # Admin user
@@ -662,4 +1041,6 @@ def seed_database():
             content=json.dumps(data, ensure_ascii=False),
         ))
 
+    db.session.flush()
+    seed_acp_defaults(admin)
     db.session.commit()

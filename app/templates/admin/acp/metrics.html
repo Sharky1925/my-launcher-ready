@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Metrics Layer{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>Metrics Catalog</strong>
+    <a href="{{ url_for('admin.acp_studio') }}" class="btn btn-sm btn-outline-secondary">Back to ACP Studio</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Metric Key</th>
+            <th>Name</th>
+            <th>Dataset</th>
+            <th>Aggregation</th>
+            <th>Roles</th>
+            <th>Enabled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in metrics %}
+          <tr>
+            <td><code>{{ item.key }}</code></td>
+            <td>
+              <strong>{{ item.name }}</strong>
+              <div class="small text-muted">{{ item.description or 'No description' }}</div>
+            </td>
+            <td><code>{{ item.dataset_key }}</code></td>
+            <td>{{ item.default_aggregation }}</td>
+            <td><code>{{ item.allowed_roles_json }}</code></td>
+            <td>{% if item.is_enabled %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-muted">No metrics defined.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

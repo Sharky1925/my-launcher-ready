@@ -480,6 +480,24 @@
       {% if current_user.has_permission('dashboard:view') %}
       <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}"><i class="fa-solid fa-gauge"></i>Dashboard</a>
       {% endif %}
+      {% if current_user.has_permission('acp:studio:view') %}
+      <a class="nav-link {% if request.endpoint == 'admin.acp_studio' %}active{% endif %}" href="{{ url_for('admin.acp_studio') }}"><i class="fa-solid fa-screwdriver-wrench"></i>ACP Studio</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:pages:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.acp_pages', 'admin.acp_page_add', 'admin.acp_page_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_pages') }}"><i class="fa-solid fa-layer-group"></i>Visual Pages</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:dashboards:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}"><i class="fa-solid fa-chart-line"></i>Dashboard Studio</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:registry:manage') %}
+      <a class="nav-link {% if request.endpoint == 'admin.acp_registry' %}active{% endif %}" href="{{ url_for('admin.acp_registry') }}"><i class="fa-solid fa-puzzle-piece"></i>Registry</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:metrics:manage') %}
+      <a class="nav-link {% if request.endpoint == 'admin.acp_metrics' %}active{% endif %}" href="{{ url_for('admin.acp_metrics') }}"><i class="fa-solid fa-database"></i>Metrics</a>
+      {% endif %}
+      {% if current_user.has_permission('acp:audit:view') %}
+      <a class="nav-link {% if request.endpoint == 'admin.acp_audit' %}active{% endif %}" href="{{ url_for('admin.acp_audit') }}"><i class="fa-solid fa-clock-rotate-left"></i>ACP Audit</a>
+      {% endif %}
       {% if current_user.has_permission('content:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.services', 'admin.service_add', 'admin.service_edit'] %}active{% endif %}" href="{{ url_for('admin.services') }}"><i class="fa-solid fa-gear"></i>Services</a>
       <a class="nav-link {% if request.endpoint in ['admin.team', 'admin.team_add', 'admin.team_edit'] %}active{% endif %}" href="{{ url_for('admin.team') }}"><i class="fa-solid fa-users"></i>Team</a>
@@ -522,6 +540,24 @@
         <ul class="navbar-nav pt-2">
           {% if current_user.has_permission('dashboard:view') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:studio:view') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_studio' %}active{% endif %}" href="{{ url_for('admin.acp_studio') }}">ACP Studio</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:pages:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_pages', 'admin.acp_page_add', 'admin.acp_page_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_pages') }}">Visual Pages</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:dashboards:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}">Dashboard Studio</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:registry:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_registry' %}active{% endif %}" href="{{ url_for('admin.acp_registry') }}">Registry</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:metrics:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_metrics' %}active{% endif %}" href="{{ url_for('admin.acp_metrics') }}">Metrics</a></li>
+          {% endif %}
+          {% if current_user.has_permission('acp:audit:view') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_audit' %}active{% endif %}" href="{{ url_for('admin.acp_audit') }}">ACP Audit</a></li>
           {% endif %}
           {% if current_user.has_permission('content:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.services', 'admin.service_add', 'admin.service_edit'] %}active{% endif %}" href="{{ url_for('admin.services') }}">Services</a></li>

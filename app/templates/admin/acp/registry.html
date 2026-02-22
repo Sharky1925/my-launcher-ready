@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Registry{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Component Registry</strong>
+        <span class="badge bg-primary">{{ components|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Enabled</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in components %}
+              <tr>
+                <td><code>{{ item.key }}</code></td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{% if item.is_enabled %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+              </tr>
+              <tr>
+                <td colspan="4" class="small text-muted">Schema: <code>{{ item.prop_schema_json[:180] }}{% if item.prop_schema_json|length > 180 %}...{% endif %}</code></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-muted">No component definitions available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Widget Registry</strong>
+        <span class="badge bg-primary">{{ widgets|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Enabled</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in widgets %}
+              <tr>
+                <td><code>{{ item.key }}</code></td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{% if item.is_enabled %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+              </tr>
+              <tr>
+                <td colspan="4" class="small text-muted">Schema: <code>{{ item.config_schema_json[:180] }}{% if item.config_schema_json|length > 180 %}...{% endif %}</code></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-muted">No widget definitions available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

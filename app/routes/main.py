@@ -5,7 +5,7 @@ import re
 import secrets
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
@@ -22,6 +22,8 @@ try:
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        AcpPageDocument,
+        AcpDashboardDocument,
         WORKFLOW_PUBLISHED,
     )
     from ..notifications import send_contact_notification, send_ticket_notification
@@ -41,6 +43,8 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        AcpPageDocument,
+        AcpDashboardDocument,
         WORKFLOW_PUBLISHED,
     )
     from notifications import send_contact_notification, send_ticket_notification
@@ -134,6 +138,20 @@ CONTACT_FORM_SCOPE = 'contact_form'
 QUOTE_FORM_SCOPE = 'quote_form'
 PERSONAL_QUOTE_FORM_SCOPE = 'personal_quote_form'
 AUTH_DUMMY_HASH = generate_password_hash('RightOnRepair::dummy-auth-check')
+
+
+def _safe_json_loads(raw_value, fallback):
+    if raw_value is None:
+        return fallback
+    if isinstance(raw_value, (dict, list)):
+        return raw_value
+    value = str(raw_value).strip()
+    if not value:
+        return fallback
+    try:
+        return json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return fallback
 
 
 SERVICE_PROFILES = {
@@ -2247,4 +2265,56 @@ def robots_txt():
     ])
     response = current_app.response_class(body, mimetype='text/plain')
     response.headers['Cache-Control'] = 'public, max-age=3600'
+    return response
+
+
+@main_bp.route('/api/delivery/pages/<slug>')
+def acp_delivery_page(slug):
+    item = AcpPageDocument.query.filter_by(slug=slug, status=WORKFLOW_PUBLISHED).first()
+    if not item:
+        abort(404)
+
+    payload = {
+        'id': item.id,
+        'slug': item.slug,
+        'title': item.title,
+        'template_id': item.template_id,
+        'locale': item.locale,
+        'status': item.status,
+        'seo': _safe_json_loads(item.seo_json, {}),
+        'blocks_tree': _safe_json_loads(item.blocks_tree, {}),
+        'theme_override': _safe_json_loads(item.theme_override_json, {}),
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+    response = jsonify(payload)
+    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
+    return response
+
+
+@main_bp.route('/api/delivery/dashboards/<dashboard_id>')
+def acp_delivery_dashboard(dashboard_id):
+    item = AcpDashboardDocument.query.filter_by(
+        dashboard_id=dashboard_id,
+        status=WORKFLOW_PUBLISHED,
+    ).first()
+    if not item:
+        abort(404)
+
+    payload = {
+        'id': item.id,
+        'dashboard_id': item.dashboard_id,
+        'title': item.title,
+        'route': item.route,
+        'layout_type': item.layout_type,
+        'status': item.status,
+        'layout_config': _safe_json_loads(item.layout_config_json, {}),
+        'widgets': _safe_json_loads(item.widgets_json, []),
+        'global_filters': _safe_json_loads(item.global_filters_json, []),
+        'role_visibility_rules': _safe_json_loads(item.role_visibility_json, {}),
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+    response = jsonify(payload)
+    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
     return response
