@@ -1027,19 +1027,44 @@ def get_service_profile(service):
         for tool in tools if isinstance(tool, dict)
     ]
 
-    deliverables = profile.get('deliverables', [
-        {'label': 'Stability', 'value': 'Improved service reliability', 'icon': 'fa-solid fa-circle-check'},
-        {'label': 'Visibility', 'value': 'Clear reporting and status tracking', 'icon': 'fa-solid fa-chart-column'},
-        {'label': 'Support', 'value': 'Responsive escalation workflow', 'icon': 'fa-solid fa-headset'},
-    ])
-    deliverables = [
-        {
+    if service.service_type == 'professional':
+        default_deliverables = [
+            {'label': 'Coverage', 'value': 'Strategic IT delivery aligned to business goals', 'icon': 'fa-solid fa-layer-group'},
+            {'label': 'Security', 'value': 'Risk-aware controls and compliance-focused execution', 'icon': 'fa-solid fa-shield-halved'},
+            {'label': 'Performance', 'value': 'Reliable systems with measurable optimization gains', 'icon': 'fa-solid fa-gauge-high'},
+            {'label': 'Support', 'value': 'Clear communication and accountable escalation paths', 'icon': 'fa-solid fa-headset'},
+        ]
+    else:
+        default_deliverables = [
+            {'label': 'Diagnostics', 'value': 'Root-cause analysis before any repair action', 'icon': 'fa-solid fa-stethoscope'},
+            {'label': 'Turnaround', 'value': 'Fast service windows with transparent lead-time updates', 'icon': 'fa-solid fa-stopwatch'},
+            {'label': 'Parts Quality', 'value': 'Verified components and precision repair workmanship', 'icon': 'fa-solid fa-microchip'},
+            {'label': 'Validation', 'value': 'Post-repair stress and functional quality checks', 'icon': 'fa-solid fa-circle-check'},
+        ]
+
+    deliverables = profile.get('deliverables', default_deliverables)
+    normalized_deliverables = []
+    for item in deliverables:
+        if not isinstance(item, dict):
+            continue
+        normalized_deliverables.append({
             'label': str(item.get('label', 'Outcome')).strip() or 'Outcome',
             'value': str(item.get('value', 'Business impact delivered')).strip() or 'Business impact delivered',
             'icon': normalize_icon_class(item.get('icon', ''), 'fa-solid fa-bullseye')
-        }
-        for item in deliverables if isinstance(item, dict)
-    ]
+        })
+        if len(normalized_deliverables) >= 4:
+            break
+
+    if len(normalized_deliverables) < 4:
+        for fallback in default_deliverables:
+            normalized_deliverables.append({
+                'label': str(fallback.get('label', 'Outcome')).strip() or 'Outcome',
+                'value': str(fallback.get('value', 'Business impact delivered')).strip() or 'Business impact delivered',
+                'icon': normalize_icon_class(fallback.get('icon', ''), 'fa-solid fa-bullseye')
+            })
+            if len(normalized_deliverables) >= 4:
+                break
+    deliverables = normalized_deliverables[:4]
 
     faqs = profile.get('faqs', [
         {'q': f'What is included in {service.title.lower()}?', 'a': 'We scope your goals, implement practical solutions, and provide follow-up support.'},
@@ -1288,9 +1313,10 @@ def get_service_profile(service):
     if not normalized_technologies:
         normalized_technologies = [tool.get('name', '') for tool in tools[:6] if tool.get('name')]
 
-    default_supported_brands = []
     if service.service_type == 'repair':
         default_supported_brands = ['Apple', 'Samsung', 'Dell', 'HP', 'Lenovo', 'Microsoft']
+    else:
+        default_supported_brands = ['Microsoft', 'Google', 'Amazon Web Services', 'Cisco', 'Dell', 'VMware']
     supported_brands = profile.get('supported_brands', default_supported_brands)
     normalized_supported_brands = []
     seen_brands = set()

@@ -2266,29 +2266,81 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   color: #8fcbff;
   font-size: .78rem;
 }
+.service-hero-row {
+  --bs-gutter-y: clamp(1rem, 2vw, 1.9rem);
+}
 .service-hero-side-col {
   display: flex;
-}
-.service-hero-side-stack {
-  width: 100%;
-  display: grid;
-  align-content: start;
-  gap: 12px;
+  align-items: flex-start;
 }
 .service-hero-metric-grid {
   --bs-gutter-x: 12px;
   --bs-gutter-y: 12px;
   margin: 0;
+  width: 100%;
 }
-.service-hero-metric-grid .metric-card {
-  height: 100%;
-  padding: 18px 14px;
+.service-hero-metric-grid > [class*="col-"] {
+  display: flex;
 }
-.service-hero-metric-grid .mc-value {
-  font-size: clamp(1.15rem, 2vw, 1.45rem);
+.service-hero-metric-grid .service-hero-metric-card {
+  width: 100%;
+  min-height: 168px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid rgba(130, 168, 241, 0.3);
+  background: linear-gradient(148deg, rgba(15, 29, 50, 0.9), rgba(18, 38, 66, 0.78));
+  box-shadow: 0 14px 26px rgba(10, 26, 56, 0.22);
 }
-.service-hero-side-card {
+.service-hero-metric-grid .service-hero-metric-card .mc-icon {
+  margin: 0 0 10px;
+}
+.service-hero-metric-grid .service-hero-metric-card .mc-label {
+  margin: 0 0 8px;
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #9ec5ff;
+}
+.service-hero-metric-grid .service-hero-metric-card .mc-value {
+  margin: 0;
+  font-size: .88rem;
+  line-height: 1.55;
+  color: #e4efff;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.service-hero-metric-grid .col-6:nth-child(1) .service-hero-metric-card {
+  border-color: rgba(105, 166, 255, 0.45);
+}
+.service-hero-metric-grid .col-6:nth-child(2) .service-hero-metric-card {
+  border-color: rgba(161, 121, 255, 0.44);
+}
+.service-hero-metric-grid .col-6:nth-child(3) .service-hero-metric-card {
+  border-color: rgba(69, 204, 167, 0.44);
+}
+.service-hero-metric-grid .col-6:nth-child(4) .service-hero-metric-card {
+  border-color: rgba(255, 177, 98, 0.44);
+}
+.service-hero-support-row {
+  margin-top: clamp(12px, 2vw, 24px);
+}
+.service-hero-support-card {
   padding: 18px;
+  border-color: rgba(132, 170, 245, 0.32);
+  background: rgba(14, 25, 41, 0.9);
+}
+.service-hero-support-card .service-panel-head {
+  margin-bottom: 12px;
+}
+.service-hero-support-card .service-panel-head h2 {
+  font-size: 1rem;
+}
+.service-hero-support-card .service-panel-head p {
+  font-size: .78rem;
 }
 .service-tool-cloud--compact {
   gap: 8px;
@@ -4517,7 +4569,7 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
-.service-detail-clean .service-hero-side-card {
+.service-detail-clean .service-hero-support-card {
   padding: 16px;
 }
 .service-detail-clean .service-tool-cloud--compact .service-tool-pill,
@@ -4638,14 +4690,18 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .service-hero-side-col {
     display: block;
   }
-  .service-hero-side-stack {
-    gap: 10px;
-  }
   .service-hero-metric-grid {
     --bs-gutter-x: 10px;
     --bs-gutter-y: 10px;
   }
-  .service-hero-side-card {
+  .service-hero-metric-grid .service-hero-metric-card {
+    min-height: 152px;
+    padding: 16px 14px;
+  }
+  .service-hero-support-row {
+    margin-top: 10px;
+  }
+  .service-hero-support-card {
     padding: 16px;
   }
   .service-anchor-nav {

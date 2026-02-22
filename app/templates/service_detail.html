@@ -207,7 +207,7 @@
         <li class="breadcrumb-item active">{{ service.title }}</li>
       </ol>
     </nav>
-    <div class="row g-5 page-layout-grid {% if service.service_type == 'repair' %}align-items-start service-repair-hero-row{% else %}align-items-center{% endif %}">
+    <div class="row g-5 page-layout-grid align-items-start service-hero-row {% if service.service_type == 'repair' %}service-repair-hero-row{% endif %}">
       <div class="col-lg-7 reveal-left">
         <div class="ind-hero-icon"><i class="{{ service.icon_class }}"></i></div>
         {% if profile.get('positioning_badge') %}
@@ -228,50 +228,54 @@
         {% endif %}
       </div>
       <div class="col-lg-5 reveal-right service-hero-side-col">
-        <div class="service-hero-side-stack">
-          {% if deliverables %}
-          {% set mc_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
-          <div class="row g-3 service-hero-metric-grid">
-            {% for outcome in deliverables %}
-            <div class="col-6">
-              <div class="metric-card">
-                <div class="mc-icon {{ mc_colors[(loop.index0) % 6] }}"><i class="{{ outcome.icon }}"></i></div>
-                <div class="mc-value">{{ outcome.value }}</div>
-                <div class="mc-label">{{ outcome.label }}</div>
-              </div>
-            </div>
-            {% endfor %}
+        {% set mc_colors = ['blue', 'purple', 'green', 'amber'] %}
+        <div class="row g-3 service-hero-metric-grid">
+          {% for outcome in deliverables[:4] %}
+          <div class="col-6">
+            <article class="metric-card service-hero-metric-card">
+              <div class="mc-icon {{ mc_colors[(loop.index0) % 4] }}"><i class="{{ outcome.icon }}"></i></div>
+              <div class="mc-label">{{ outcome.label }}</div>
+              <div class="mc-value">{{ outcome.value }}</div>
+            </article>
           </div>
-          {% endif %}
-          {% if hero_tools %}
-          <aside class="service-visual-panel service-hero-side-card service-hero-tools-card">
-            <div class="service-panel-head">
-              <h2><i class="fa-solid fa-layer-group"></i> Tools &amp; Technologies</h2>
-              <p>Core platforms used to deliver {{ service.title | lower }} outcomes.</p>
-            </div>
-            <div class="service-tool-cloud service-tool-cloud--compact">
-              {% for technology in hero_tools[:8] %}
-              <span class="service-tool-pill"><i class="fa-solid fa-microchip"></i>{{ technology }}</span>
-              {% endfor %}
-            </div>
-          </aside>
-          {% endif %}
-          {% if hero_brands %}
-          <aside class="service-visual-panel service-hero-side-card service-hero-brands-card">
-            <div class="service-panel-head">
-              <h2><i class="fa-solid fa-certificate"></i> Supported Brands</h2>
-              <p>Validated service coverage for major hardware and platform vendors.</p>
-            </div>
-            <div class="brand-pill-grid brand-pill-grid--compact">
-              {% for brand in hero_brands[:10] %}
-              <span class="brand-pill">{{ brand }}</span>
-              {% endfor %}
-            </div>
-          </aside>
-          {% endif %}
+          {% endfor %}
         </div>
       </div>
     </div>
+    {% if hero_tools or hero_brands %}
+    <div class="row g-4 service-hero-support-row reveal">
+      {% if hero_tools %}
+      <div class="{% if hero_brands %}col-lg-6{% else %}col-12{% endif %}">
+        <aside class="service-visual-panel service-hero-support-card service-hero-tools-card h-100">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-layer-group"></i> Tools &amp; Technologies</h2>
+            <p>Core platforms used to deliver {{ service.title | lower }} outcomes.</p>
+          </div>
+          <div class="service-tool-cloud service-tool-cloud--compact">
+            {% for technology in hero_tools[:10] %}
+            <span class="service-tool-pill"><i class="fa-solid fa-microchip"></i>{{ technology }}</span>
+            {% endfor %}
+          </div>
+        </aside>
+      </div>
+      {% endif %}
+      {% if hero_brands %}
+      <div class="{% if hero_tools %}col-lg-6{% else %}col-12{% endif %}">
+        <aside class="service-visual-panel service-hero-support-card service-hero-brands-card h-100">
+          <div class="service-panel-head">
+            <h2><i class="fa-solid fa-certificate"></i> Supported Brands</h2>
+            <p>Validated service coverage for major hardware and platform vendors.</p>
+          </div>
+          <div class="brand-pill-grid brand-pill-grid--compact">
+            {% for brand in hero_brands[:10] %}
+            <span class="brand-pill">{{ brand }}</span>
+            {% endfor %}
+          </div>
+        </aside>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
     <div class="service-snapshot-grid reveal mt-4">
       <article class="service-snapshot-card">
         <div class="snap-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
