@@ -4335,6 +4335,179 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 @keyframes servicePop { 0% { opacity: 0; transform: translateY(10px) scale(0.98); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 
 /* ============================================================
+   PLAIN ELEGANT PAGE OVERRIDES (Services + Industries)
+   ============================================================ */
+.services-page-clean .glow-line,
+.industries-page-clean .glow-line,
+.service-detail-clean .glow-line,
+.industry-detail-clean .glow-line {
+  display: none;
+}
+
+.services-page-clean .section,
+.industries-page-clean .section,
+.service-detail-clean .section,
+.industry-detail-clean .section {
+  padding-top: 68px;
+  padding-bottom: 68px;
+}
+
+.services-page-clean .section--alt,
+.industries-page-clean .section--alt,
+.service-detail-clean .section--alt,
+.industry-detail-clean .section--alt {
+  background: transparent;
+}
+
+.services-page-clean .services-layout-panel,
+.industries-page-clean .industries-layout-panel {
+  border-radius: 14px;
+  background: rgba(14, 24, 39, 0.9);
+  border: 1px solid rgba(132, 166, 219, 0.26);
+  box-shadow: none;
+}
+
+.services-page-clean .services-layout-stat,
+.industries-page-clean .industries-layout-stat {
+  border-radius: 12px;
+  background: rgba(13, 22, 36, 0.88);
+  border: 1px solid rgba(132, 166, 219, 0.24);
+}
+
+.services-page-clean .services-layout-link,
+.industries-page-clean .industries-layout-link {
+  border-radius: 10px;
+  background: rgba(13, 22, 36, 0.9);
+  border: 1px solid rgba(132, 166, 219, 0.24);
+  box-shadow: none;
+}
+.services-page-clean .services-layout-link:hover,
+.industries-page-clean .industries-layout-link:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(176, 209, 255, 0.46);
+}
+.services-page-clean .services-layout-link--cta,
+.industries-page-clean .industries-layout-link--cta {
+  background: rgba(27, 63, 122, 0.6);
+  border-color: rgba(138, 184, 252, 0.46);
+}
+
+.services-page-clean .service-card--services-page,
+.industries-page-clean .industry-card--industries-page,
+.industry-detail-clean .service-card,
+.industry-detail-clean .challenge-card,
+.industry-detail-clean .feature-item,
+.service-detail-clean .challenge-card,
+.service-detail-clean .issue-map-card,
+.service-detail-clean .lead-time-card,
+.service-detail-clean .feature-item,
+.service-detail-clean .service-visual-panel,
+.service-detail-clean .service-snapshot-card,
+.service-detail-clean .service-faq-item,
+.service-detail-clean .brand-service-card {
+  background: rgba(14, 24, 39, 0.9);
+  border-color: rgba(132, 166, 219, 0.26);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.services-page-clean .service-card--services-page::before,
+.services-page-clean .service-card--services-page::after,
+.industries-page-clean .industry-card--industries-page::before,
+.service-detail-clean .service-visual-panel::after,
+.service-detail-clean .service-snapshot-card::before,
+.service-detail-clean .lead-time-card::after {
+  display: none;
+}
+
+.services-page-clean .service-card--services-page:hover,
+.industries-page-clean .industry-card--industries-page:hover,
+.industry-detail-clean .service-card:hover,
+.industry-detail-clean .challenge-card:hover,
+.industry-detail-clean .feature-item:hover,
+.service-detail-clean .challenge-card:hover,
+.service-detail-clean .issue-map-card:hover,
+.service-detail-clean .lead-time-card:hover,
+.service-detail-clean .feature-item:hover,
+.service-detail-clean .service-visual-panel:hover,
+.service-detail-clean .service-snapshot-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(176, 209, 255, 0.48);
+}
+
+.services-page-clean .service-card--services-page .icon-wrap,
+.industries-page-clean .industry-card--industries-page .ind-icon,
+.industry-detail-clean .challenge-card .ch-icon,
+.industry-detail-clean .feature-item .fi-icon,
+.service-detail-clean .challenge-card .ch-icon,
+.service-detail-clean .issue-map-card .issue-icon,
+.service-detail-clean .lead-time-icon,
+.service-detail-clean .service-snapshot-card .snap-icon,
+.service-detail-clean .feature-item .fi-icon,
+.service-detail-clean .metric-card .mc-icon {
+  animation: none;
+  box-shadow: none;
+}
+
+.service-detail-clean .page-header {
+  padding-bottom: 56px;
+}
+.service-detail-clean .service-anchor-wrap {
+  padding-top: 6px;
+  padding-bottom: 10px;
+}
+.service-detail-clean .service-anchor-nav {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.service-detail-clean .service-anchor-nav a {
+  border-radius: 999px;
+  background: rgba(13, 22, 36, 0.9);
+  border: 1px solid rgba(132, 166, 219, 0.26);
+  box-shadow: none;
+  white-space: nowrap;
+}
+.service-detail-clean .service-anchor-nav a:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(176, 209, 255, 0.48);
+}
+.service-detail-clean .section-heading {
+  margin-bottom: 30px;
+}
+.service-detail-clean .service-snapshot-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.service-detail-clean .service-hero-side-card {
+  padding: 16px;
+}
+.service-detail-clean .service-tool-cloud--compact .service-tool-pill,
+.service-detail-clean .brand-pill-grid--compact .brand-pill {
+  animation: none;
+  box-shadow: none;
+}
+.service-detail-clean #service-tools,
+.service-detail-clean #service-brands {
+  display: none;
+}
+
+.industry-detail-clean .page-header {
+  padding-bottom: 56px;
+}
+.industry-detail-clean .section-heading {
+  margin-bottom: 28px;
+}
+.industry-detail-clean .metric-card {
+  box-shadow: none;
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 991px) {
@@ -4469,6 +4642,16 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .industries-layout-actions {
     grid-template-columns: 1fr;
   }
+  .service-detail-clean .service-snapshot-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .service-detail-clean .section,
+  .industry-detail-clean .section,
+  .services-page-clean .section,
+  .industries-page-clean .section {
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
   .issue-map-grid {
     grid-template-columns: 1fr;
   }
@@ -4588,6 +4771,20 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     min-height: 42px;
     padding: 9px 11px;
     font-size: .82rem;
+  }
+  .service-detail-clean .service-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+  .service-detail-clean .section,
+  .industry-detail-clean .section,
+  .services-page-clean .section,
+  .industries-page-clean .section {
+    padding-top: 44px;
+    padding-bottom: 44px;
+  }
+  .service-detail-clean .service-anchor-nav a {
+    font-size: .72rem;
+    padding: 7px 10px;
   }
   .industry-card--industries-page {
     min-height: 0;
