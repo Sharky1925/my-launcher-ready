@@ -1881,15 +1881,33 @@ main .container {
   padding-top: clamp(50px, 6vw, 64px);
 }
 .page-header.page-header--repair-tight {
-  padding-top: clamp(8px, 1.6vw, 16px);
+  padding-top: clamp(2px, 0.8vw, 8px);
   padding-bottom: clamp(20px, 3.2vw, 34px);
 }
 .page-header.page-header--repair-tight .breadcrumb {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 .page-header.page-header--repair-tight .container::before,
 .page-header.page-header--repair-tight .container::after {
   display: none;
+}
+.page-header.page-header--repair-tight .container {
+  gap: 4px;
+}
+.page-header.page-header--repair-tight .service-repair-hero-row {
+  --bs-gutter-y: clamp(0.9rem, 1.8vw, 1.5rem);
+}
+.page-header.page-header--repair-tight .service-repair-hero-row > [class*="col-"] {
+  align-self: flex-start;
+}
+.page-header.page-header--repair-tight .service-hero-side-col {
+  align-items: flex-start;
+}
+.page-header.page-header--repair-tight .ind-hero-icon {
+  margin-bottom: 14px;
+}
+.page-header.page-header--repair-tight .service-kicker-badge {
+  margin-bottom: 12px;
 }
 .page-header::before {
   content: ''; position: absolute; inset: 0;
@@ -4545,8 +4563,11 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     padding-bottom: 22px;
   }
   .page-header.page-header--repair-tight {
-    padding-top: 8px;
+    padding-top: 4px;
     padding-bottom: 18px;
+  }
+  .page-header.page-header--repair-tight .container {
+    gap: 2px;
   }
   .hero { min-height: auto; padding: 120px 0 60px; }
   .hero h1 { font-size: 2rem; }
@@ -4762,7 +4783,7 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     padding-bottom: 14px;
   }
   .page-header.page-header--repair-tight {
-    padding-top: 6px;
+    padding-top: 2px;
     padding-bottom: 12px;
   }
   .section-header h2, .section-heading h2 { font-size: 1.4rem; }
