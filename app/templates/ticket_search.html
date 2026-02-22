@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Ticket Status Lookup | {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}Track ticket status by ticket number from any page on the Right On Repair website.{% endblock %}
+
+{% block content %}
+<section class="page-header page-header--compact">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Ticket Search</li>
+      </ol>
+    </nav>
+    <h1>Track Your Ticket</h1>
+    <p>Enter your ticket number to see the latest status and stage.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="service-visual-panel mb-4">
+      <form method="GET" action="{{ url_for('main.ticket_search') }}" class="row g-2 align-items-end">
+        <div class="col-lg-9">
+          <label for="ticketSearchInput" class="form-label">Ticket Number</label>
+          <input
+            id="ticketSearchInput"
+            name="ticket_number"
+            type="search"
+            class="form-control"
+            value="{{ ticket_number_input }}"
+            placeholder="Example: RS-260222-ABC123"
+            maxlength="40"
+            required
+          >
+        </div>
+        <div class="col-lg-3">
+          <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-magnifying-glass me-2"></i>Search Ticket</button>
+        </div>
+      </form>
+    </div>
+
+    {% if normalized_ticket_number %}
+      {% if ticket %}
+      {% set stage_badge = 'bg-warning text-dark' if ticket_stage == 'pending' else ('bg-success' if ticket_stage == 'done' else 'bg-secondary') %}
+      <div class="service-visual-panel">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h3 class="mb-1">Ticket Found</h3>
+            <p class="text-muted mb-0">Latest sync from the support system.</p>
+          </div>
+          <code>{{ ticket.ticket_number }}</code>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="service-visual-card h-100">
+              <p class="small text-uppercase text-muted mb-1">Stage</p>
+              <span class="badge {{ stage_badge }}">{{ ticket_stage_labels.get(ticket_stage, ticket_stage|title) }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="service-visual-card h-100">
+              <p class="small text-uppercase text-muted mb-1">Status</p>
+              <p class="mb-0 fw-semibold">{{ ticket_status_labels.get(ticket.status, ticket.status.replace('_', ' ')|title) }}</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="service-visual-card h-100">
+              <p class="small text-uppercase text-muted mb-1">Priority</p>
+              <p class="mb-0 fw-semibold">{{ ticket.priority|title }}</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="service-visual-card h-100">
+              <p class="small text-uppercase text-muted mb-1">Subject</p>
+              <p class="mb-0">{{ ticket.subject }}</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="service-visual-card h-100">
+              <p class="small text-uppercase text-muted mb-1">Created</p>
+              <p class="mb-0">{{ ticket.created_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="service-visual-card h-100">
+              <p class="small text-uppercase text-muted mb-1">Last Updated</p>
+              <p class="mb-0">{{ ticket.updated_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+            </div>
+          </div>
+        </div>
+        <p class="text-muted small mb-0 mt-3">Need full ticket details or to add updates? Use the <a href="{{ url_for('main.remote_support') }}">Remote Support Portal</a>.</p>
+      </div>
+      {% else %}
+      <div class="alert alert-warning">
+        No ticket found for <code>{{ normalized_ticket_number }}</code>. Please verify the number and try again.
+      </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

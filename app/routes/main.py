@@ -30,6 +30,7 @@ try:
         SUPPORT_TICKET_STAGE_LABELS,
         SUPPORT_TICKET_EVENT_CREATED,
         support_ticket_stage_for_status,
+        normalize_ticket_number,
         create_support_ticket_event,
     )
     from ..notifications import send_contact_notification, send_ticket_notification
@@ -57,6 +58,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SUPPORT_TICKET_STAGE_LABELS,
         SUPPORT_TICKET_EVENT_CREATED,
         support_ticket_stage_for_status,
+        normalize_ticket_number,
         create_support_ticket_event,
     )
     from notifications import send_contact_notification, send_ticket_notification
@@ -1818,6 +1820,28 @@ def remote_support_logout():
     session.pop('support_client_id', None)
     flash('You have been signed out.', 'success')
     return redirect(url_for('main.remote_support'))
+
+
+@main_bp.route('/ticket-status')
+@main_bp.route('/ticket-search')
+def ticket_search():
+    ticket_number_input = clean_text(request.args.get('ticket_number', ''), 40)
+    normalized_ticket_number = normalize_ticket_number(ticket_number_input)
+    ticket = None
+    ticket_stage = ''
+    if normalized_ticket_number:
+        ticket = SupportTicket.query.filter_by(ticket_number=normalized_ticket_number).first()
+        if ticket:
+            ticket_stage = support_ticket_stage_for_status(ticket.status)
+    return render_template(
+        'ticket_search.html',
+        ticket_number_input=ticket_number_input,
+        normalized_ticket_number=normalized_ticket_number,
+        ticket=ticket,
+        ticket_stage=ticket_stage,
+        ticket_status_labels=SUPPORT_TICKET_STATUS_LABELS,
+        ticket_stage_labels=SUPPORT_TICKET_STAGE_LABELS,
+    )
 
 
 @main_bp.route('/remote-support/tickets', methods=['POST'])

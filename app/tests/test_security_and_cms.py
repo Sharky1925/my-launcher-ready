@@ -809,6 +809,95 @@ def test_admin_support_ticket_type_filtering(client, app):
     assert quote_number not in support_html
 
 
+def test_admin_support_ticket_search_by_ticket_number(client, app):
+    with app.app_context():
+        service = Service.query.first()
+        assert service is not None
+
+        target_client = SupportClient(
+            full_name="Lookup Target",
+            email=f"lookup-target-{uuid.uuid4().hex[:8]}@example.com",
+            company="Lookup Corp",
+            phone="+1 (555) 777-1111",
+        )
+        target_client.set_password("lookup-target-secret")
+        other_client = SupportClient(
+            full_name="Lookup Other",
+            email=f"lookup-other-{uuid.uuid4().hex[:8]}@example.com",
+            company="Lookup Corp",
+            phone="+1 (555) 777-2222",
+        )
+        other_client.set_password("lookup-other-secret")
+        db.session.add_all([target_client, other_client])
+        db.session.commit()
+
+        target_ticket = SupportTicket(
+            ticket_number=f"RS-L-{uuid.uuid4().hex[:10].upper()}",
+            client_id=target_client.id,
+            subject="Need exact ticket search",
+            service_slug=service.slug,
+            priority="normal",
+            status="open",
+            details="Target ticket row for search tests.",
+        )
+        other_ticket = SupportTicket(
+            ticket_number=f"RS-L-{uuid.uuid4().hex[:10].upper()}",
+            client_id=other_client.id,
+            subject="Different ticket",
+            service_slug=service.slug,
+            priority="normal",
+            status="open",
+            details="Other ticket row for search tests.",
+        )
+        db.session.add_all([target_ticket, other_ticket])
+        db.session.commit()
+        target_number = target_ticket.ticket_number
+        other_number = other_ticket.ticket_number
+
+    admin_login(client)
+    response = client.get("/admin/support-tickets", query_string={"q": target_number.lower()})
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert target_number in html
+    assert other_number not in html
+
+
+def test_admin_dashboard_ticket_lookup_returns_target_ticket(client, app):
+    with app.app_context():
+        service = Service.query.first()
+        assert service is not None
+        lookup_client = SupportClient(
+            full_name="Dashboard Lookup",
+            email=f"dashboard-lookup-{uuid.uuid4().hex[:8]}@example.com",
+            company="Dashboard Lookup Co",
+            phone="+1 (555) 888-3333",
+        )
+        lookup_client.set_password("dashboard-lookup-secret")
+        db.session.add(lookup_client)
+        db.session.commit()
+
+        ticket = SupportTicket(
+            ticket_number=f"RS-D-{uuid.uuid4().hex[:10].upper()}",
+            client_id=lookup_client.id,
+            subject="Dashboard finder ticket",
+            service_slug=service.slug,
+            priority="normal",
+            status="in_progress",
+            details="Dashboard lookup result coverage.",
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        ticket_number = ticket.ticket_number
+
+    admin_login(client)
+    response = client.get("/admin/", query_string={"ticket_number": ticket_number.lower()})
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Ticket Lookup" in html
+    assert ticket_number in html
+    assert "Dashboard finder ticket" in html
+
+
 def test_admin_ticket_review_actions_sync_pending_done_closed(client, app):
     with app.app_context():
         service = Service.query.first()
@@ -962,6 +1051,46 @@ def test_admin_ticket_view_post_records_admin_update_timeline_event(client, app)
         assert events[0].status_from == 'open'
         assert events[0].status_to == 'waiting_customer'
         assert 'Review note added' in (events[0].message or '')
+
+
+def test_public_ticket_search_page_lookup(client, app):
+    with app.app_context():
+        service = Service.query.first()
+        assert service is not None
+        portal_client = SupportClient(
+            full_name="Public Lookup User",
+            email=f"public-lookup-{uuid.uuid4().hex[:8]}@example.com",
+            company="Public Lookup Co",
+            phone="+1 (555) 999-1010",
+        )
+        portal_client.set_password("PublicLookup123!")
+        db.session.add(portal_client)
+        db.session.commit()
+
+        ticket = SupportTicket(
+            ticket_number=f"RS-P-{uuid.uuid4().hex[:10].upper()}",
+            client_id=portal_client.id,
+            subject="Public search ticket",
+            service_slug=service.slug,
+            priority="high",
+            status="waiting_customer",
+            details="Public ticket search route coverage.",
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        ticket_number = ticket.ticket_number
+
+    search_page = client.get("/ticket-search", query_string={"ticket_number": ticket_number.lower()})
+    assert search_page.status_code == 200
+    html = search_page.get_data(as_text=True)
+    assert "Ticket Found" in html
+    assert ticket_number in html
+    assert "Waiting on Client" in html
+
+    index_page = client.get("/")
+    index_html = index_page.get_data(as_text=True)
+    assert 'action="/ticket-search"' in index_html or 'action="/ticket-status"' in index_html
+    assert "Track Ticket #" in index_html
 
 
 def test_remote_support_uses_stage_labels_for_ticket_sync(client, app):

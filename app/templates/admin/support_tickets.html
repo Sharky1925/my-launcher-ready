@@ -4,17 +4,35 @@
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
   <div class="d-flex flex-wrap gap-2">
     <div class="btn-group btn-group-sm" role="group" aria-label="Filter by review stage">
-      <a href="{{ url_for('admin.support_tickets', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if not stage_filter and not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Stages</a>
-      <a href="{{ url_for('admin.support_tickets', stage='pending', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if stage_filter == 'pending' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Pending</a>
-      <a href="{{ url_for('admin.support_tickets', stage='done', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if stage_filter == 'done' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Done</a>
-      <a href="{{ url_for('admin.support_tickets', stage='closed', type=type_filter if type_filter != 'all' else None) }}" class="btn {% if stage_filter == 'closed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Closed</a>
+      <a href="{{ url_for('admin.support_tickets', type=type_filter if type_filter != 'all' else None, q=search_query or None) }}" class="btn {% if not stage_filter and not status_filter %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Stages</a>
+      <a href="{{ url_for('admin.support_tickets', stage='pending', type=type_filter if type_filter != 'all' else None, q=search_query or None) }}" class="btn {% if stage_filter == 'pending' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Pending</a>
+      <a href="{{ url_for('admin.support_tickets', stage='done', type=type_filter if type_filter != 'all' else None, q=search_query or None) }}" class="btn {% if stage_filter == 'done' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Done</a>
+      <a href="{{ url_for('admin.support_tickets', stage='closed', type=type_filter if type_filter != 'all' else None, q=search_query or None) }}" class="btn {% if stage_filter == 'closed' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Closed</a>
     </div>
     <div class="btn-group btn-group-sm" role="group" aria-label="Filter by ticket type">
-      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None) }}" class="btn {% if type_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Types</a>
-      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, type='support') }}" class="btn {% if type_filter == 'support' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Support</a>
-      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, type='quote') }}" class="btn {% if type_filter == 'quote' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Quote Requests</a>
+      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, q=search_query or None) }}" class="btn {% if type_filter == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Types</a>
+      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, type='support', q=search_query or None) }}" class="btn {% if type_filter == 'support' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Support</a>
+      <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, type='quote', q=search_query or None) }}" class="btn {% if type_filter == 'quote' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Quote Requests</a>
     </div>
   </div>
+  <form method="GET" action="{{ url_for('admin.support_tickets') }}" class="d-flex gap-2">
+    <input type="hidden" name="stage" value="{{ stage_filter }}">
+    <input type="hidden" name="status" value="{{ status_filter }}">
+    <input type="hidden" name="type" value="{{ type_filter }}">
+    <input
+      type="search"
+      name="q"
+      value="{{ search_query }}"
+      class="form-control form-control-sm"
+      placeholder="Search ticket #, subject, client..."
+      style="min-width: 280px;"
+      aria-label="Search support tickets"
+    >
+    <button type="submit" class="btn btn-sm btn-primary">Search</button>
+    {% if search_query %}
+    <a href="{{ url_for('admin.support_tickets', stage=stage_filter or None, status=status_filter or None, type=type_filter if type_filter != 'all' else None) }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+    {% endif %}
+  </form>
 </div>
 
 <div class="card border-0 shadow-sm">

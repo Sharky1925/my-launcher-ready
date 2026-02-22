@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import json
+import re
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -173,6 +174,7 @@ SUPPORT_TICKET_STAGE_TO_STATUS = {
 SUPPORT_TICKET_EVENT_CREATED = 'created'
 SUPPORT_TICKET_EVENT_REVIEW_ACTION = 'review_action'
 SUPPORT_TICKET_EVENT_ADMIN_UPDATE = 'admin_update'
+SUPPORT_TICKET_NUMBER_SANITIZER_RE = re.compile(r'[^A-Z0-9-]+')
 
 
 def normalize_support_ticket_status(value, default=SUPPORT_TICKET_STATUS_OPEN):
@@ -207,6 +209,11 @@ def normalize_support_ticket_stage(value, default=SUPPORT_TICKET_STAGE_PENDING):
     if candidate in SUPPORT_TICKET_STAGE_TO_STATUS:
         return candidate
     return default
+
+
+def normalize_ticket_number(value):
+    candidate = (value or '').strip().upper()[:40]
+    return SUPPORT_TICKET_NUMBER_SANITIZER_RE.sub('', candidate)
 
 
 class User(UserMixin, db.Model):

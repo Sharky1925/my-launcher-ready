@@ -101,6 +101,19 @@
             <i class="fa-solid fa-location-dot"></i> {{ site_settings.address }}
           </div>
           {% endif %}
+          <form method="GET" action="{{ url_for('main.ticket_search') }}" class="topbar-ticket-search" role="search" aria-label="Ticket search">
+            <label class="visually-hidden" for="topbarTicketSearch">Search ticket number</label>
+            <input
+              id="topbarTicketSearch"
+              type="search"
+              name="ticket_number"
+              value="{{ request.args.get('ticket_number', '') if request.endpoint == 'main.ticket_search' else '' }}"
+              placeholder="Track Ticket #"
+              maxlength="40"
+              autocomplete="off"
+            >
+            <button type="submit" aria-label="Search ticket"><i class="fa-solid fa-magnifying-glass"></i></button>
+          </form>
           <div class="topbar-item">
             <a href="{{ url_for('main.request_quote') }}">Free Consultation <i class="fa-solid fa-arrow-right topbar-arrow-icon"></i></a>
           </div>
@@ -169,6 +182,19 @@
           <!-- Mobile-only CTA buttons -->
           <li class="nav-item d-lg-none mt-2">
             <div class="mobile-nav-ctas">
+              <form method="GET" action="{{ url_for('main.ticket_search') }}" class="ticket-track-form ticket-track-form-mobile" role="search" aria-label="Ticket search">
+                <label class="visually-hidden" for="mobileTicketSearch">Search ticket number</label>
+                <input
+                  id="mobileTicketSearch"
+                  type="search"
+                  name="ticket_number"
+                  value="{{ request.args.get('ticket_number', '') if request.endpoint == 'main.ticket_search' else '' }}"
+                  placeholder="Track Ticket #"
+                  maxlength="40"
+                  autocomplete="off"
+                >
+                <button type="submit"><i class="fa-solid fa-magnifying-glass me-1"></i>Track</button>
+              </form>
               {% if site_settings.get('phone') %}
               <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
               {% endif %}

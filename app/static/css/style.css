@@ -352,6 +352,42 @@ p { margin: 0 0 16px; }
 .topbar-item .topbar-contact-link:hover { color: var(--text); }
 .topbar-stars { color: #fbbf24; font-size: .7rem; }
 .topbar-stars span { color: var(--topbar-text); margin-left: 4px; font-weight: 600; }
+.topbar-ticket-search {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(121, 154, 224, 0.46);
+  border-radius: 999px;
+  background: rgba(8, 16, 30, 0.9);
+  overflow: hidden;
+  margin-left: 6px;
+}
+.topbar-ticket-search input {
+  width: 172px;
+  border: 0;
+  background: transparent;
+  color: #eaf2ff;
+  font-size: .72rem;
+  line-height: 1;
+  padding: 7px 10px;
+}
+.topbar-ticket-search input::placeholder {
+  color: rgba(176, 196, 223, 0.76);
+}
+.topbar-ticket-search input:focus {
+  outline: none;
+}
+.topbar-ticket-search button {
+  border: 0;
+  border-left: 1px solid rgba(121, 154, 224, 0.34);
+  background: rgba(22, 46, 96, 0.94);
+  color: #b5d3ff;
+  padding: 7px 10px;
+  line-height: 1;
+}
+.topbar-ticket-search button:hover {
+  background: rgba(36, 68, 134, 0.94);
+  color: #ffffff;
+}
 
 /* --- Navbar --- */
 .navbar-main {
@@ -718,6 +754,49 @@ p { margin: 0 0 16px; }
   flex-direction: column;
   gap: 8px;
   padding: 8px 0 4px;
+}
+.ticket-track-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.ticket-track-form input {
+  min-width: 0;
+  flex: 1 1 auto;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(122, 155, 231, 0.46);
+  background: rgba(8, 16, 29, 0.88);
+  color: #e6f0ff;
+  padding: 0 12px;
+  font-size: .82rem;
+}
+.ticket-track-form input::placeholder {
+  color: rgba(175, 195, 224, 0.78);
+}
+.ticket-track-form input:focus {
+  outline: none;
+  border-color: rgba(139, 182, 255, 0.74);
+  box-shadow: 0 0 0 3px rgba(74, 122, 215, 0.22);
+}
+.ticket-track-form button {
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(122, 155, 231, 0.48);
+  background: linear-gradient(135deg, rgba(18, 52, 118, 0.98), rgba(29, 88, 172, 0.98));
+  color: #edf5ff;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+.ticket-track-form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(13, 36, 86, 0.36);
+}
+.ticket-track-form-mobile {
+  margin-bottom: 2px;
 }
 
 /* Hamburger toggler — custom animated bars */

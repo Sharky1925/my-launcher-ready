@@ -72,6 +72,7 @@ try:
         normalize_support_ticket_status,
         normalize_support_ticket_stage,
         support_ticket_stage_for_status,
+        normalize_ticket_number,
         create_support_ticket_event,
         normalize_workflow_status,
         normalize_user_role,
@@ -138,6 +139,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         normalize_support_ticket_status,
         normalize_support_ticket_stage,
         support_ticket_stage_for_status,
+        normalize_ticket_number,
         create_support_ticket_event,
         normalize_workflow_status,
         normalize_user_role,
@@ -1209,6 +1211,12 @@ def dashboard():
     recent_posts = Post.query.order_by(Post.updated_at.desc()).limit(6).all()
     recent_security = SecurityEvent.query.order_by(SecurityEvent.created_at.desc()).limit(6).all()
 
+    ticket_lookup_query_raw = clean_text(request.args.get('ticket_number', ''), 40)
+    ticket_lookup_query = normalize_ticket_number(ticket_lookup_query_raw)
+    ticket_lookup_result = None
+    if ticket_lookup_query:
+        ticket_lookup_result = SupportTicket.query.filter_by(ticket_number=ticket_lookup_query).first()
+
     search_query = clean_text(request.args.get('q', ''), 120).lower().strip()
     search_results = {
         'services': [],
@@ -1322,6 +1330,8 @@ def dashboard():
         search_total=search_total,
         recent_contacts=recent_contacts,
         recent_tickets=recent_tickets,
+        ticket_lookup_query=ticket_lookup_query,
+        ticket_lookup_result=ticket_lookup_result,
         is_quote_ticket=is_quote_ticket,
         workflow_status_label=workflow_status_label,
         workflow_status_badge=workflow_status_badge,
@@ -2056,6 +2066,8 @@ def support_tickets():
     status_filter = normalize_support_ticket_status(status_filter_raw, default='') if status_filter_raw else ''
     stage_filter = normalize_support_ticket_stage(request.args.get('stage', ''), default='') if request.args.get('stage', '').strip() else ''
     type_filter = request.args.get('type', 'all').strip().lower()
+    search_query = clean_text(request.args.get('q', ''), 120).strip()
+    normalized_ticket_query = normalize_ticket_number(search_query)
     if type_filter not in {'all', 'support', 'quote'}:
         type_filter = 'all'
 
@@ -2078,6 +2090,18 @@ def support_tickets():
             query = query.filter(SupportTicket.status == SUPPORT_TICKET_STATUS_RESOLVED)
         elif stage_filter == SUPPORT_TICKET_STAGE_CLOSED:
             query = query.filter(SupportTicket.status == SUPPORT_TICKET_STATUS_CLOSED)
+    if search_query:
+        safe_search = escape_like(search_query.lower())
+        like_pattern = f'%{safe_search}%'
+        search_filters = [
+            func.lower(SupportTicket.subject).like(like_pattern),
+            func.lower(SupportClient.full_name).like(like_pattern),
+            func.lower(SupportClient.email).like(like_pattern),
+        ]
+        if normalized_ticket_query:
+            safe_ticket = escape_like(normalized_ticket_query)
+            search_filters.append(func.upper(SupportTicket.ticket_number).like(f'%{safe_ticket}%'))
+        query = query.filter(or_(*search_filters))
     items = query.order_by(SupportTicket.updated_at.desc(), SupportTicket.created_at.desc()).all()
     return render_template(
         'admin/support_tickets.html',
@@ -2085,6 +2109,7 @@ def support_tickets():
         status_filter=status_filter,
         stage_filter=stage_filter,
         type_filter=type_filter,
+        search_query=search_query,
         is_quote_ticket=is_quote_ticket,
     )
 

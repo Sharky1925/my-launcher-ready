@@ -418,6 +418,20 @@
             {% endif %}
           </div>
         </form>
+        <form method="GET" action="{{ url_for('admin.dashboard') }}" class="dashboard-search mt-2">
+          <div class="input-group mb-2">
+            <span class="input-group-text"><i class="fa-solid fa-ticket"></i></span>
+            <input
+              type="search"
+              name="ticket_number"
+              value="{{ ticket_lookup_query }}"
+              class="form-control"
+              placeholder="Find ticket by number (RS-...)"
+              aria-label="Search ticket by number"
+            >
+          </div>
+          <button type="submit" class="btn btn-outline-primary btn-sm w-100">Find Ticket</button>
+        </form>
       </div>
     </div>
 
@@ -467,6 +481,22 @@
     </div>
   </div>
 </div>
+
+{% if ticket_lookup_query %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="dashboard-section-title mb-2">Ticket Lookup</div>
+    {% if ticket_lookup_result %}
+    <a href="{{ url_for('admin.support_ticket_view', id=ticket_lookup_result.id) }}" class="text-decoration-none queue-item d-block">
+      <strong>{{ ticket_lookup_result.ticket_number }} · {{ ticket_lookup_result.subject }}</strong>
+      <span>{{ ticket_lookup_result.client.full_name }} · {{ support_ticket_status_label(ticket_lookup_result.status) }}</span>
+    </a>
+    {% else %}
+    <div class="text-muted small">No ticket found for <code>{{ ticket_lookup_query }}</code>.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 
 <div class="row g-4 mb-4">
   <div class="col-xxl-8">
