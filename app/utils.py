@@ -44,7 +44,10 @@ def get_request_ip():
 
 def get_page_content(page):
     """Load all ContentBlock entries for a page, return dict of section -> parsed JSON."""
-    from .models import ContentBlock
+    try:
+        from .models import ContentBlock
+    except ImportError:  # pragma: no cover - fallback when running from app/ cwd
+        from models import ContentBlock
     blocks = ContentBlock.query.filter_by(page=page).all()
     result = {}
     for block in blocks:
