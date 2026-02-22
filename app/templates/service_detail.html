@@ -11,6 +11,7 @@
 {% set faqs = profile.get('faqs', []) %}
 {% set hero_badges = profile.get('hero_badges', []) %}
 {% set service_modules = profile.get('service_modules', []) %}
+{% set issue_solution_map = profile.get('issue_solution_map', []) %}
 {% set narrative_title = profile.get('narrative_title', 'Service Scope and Delivery Standards') %}
 {% set seo_content_blocks = profile.get('seo_content_blocks', []) %}
 {% set local_cities = profile.get('service_area_cities', []) %}
@@ -194,7 +195,7 @@
 {% endblock %}
 
 {% block content %}
-<section class="page-header section-bottom-spacious">
+<section class="page-header section-bottom-spacious service-theme service-theme--{{ service.slug }}" id="service-overview">
   <div class="container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -240,13 +241,51 @@
         {% endif %}
       </div>
     </div>
+    <div class="service-snapshot-grid reveal mt-4">
+      <article class="service-snapshot-card">
+        <div class="snap-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+        <h3>Primary Search Intent</h3>
+        <p>{{ profile_keywords[0] if profile_keywords else (service.title ~ ' Orange County') }}</p>
+      </article>
+      <article class="service-snapshot-card">
+        <div class="snap-icon"><i class="fa-solid fa-cubes"></i></div>
+        <h3>Specialized Modules</h3>
+        <p>{{ service_modules | length }} service tracks aligned to {{ service.title | lower }} outcomes.</p>
+      </article>
+      <article class="service-snapshot-card">
+        <div class="snap-icon"><i class="fa-solid fa-location-dot"></i></div>
+        <h3>Local Coverage</h3>
+        <p>{{ local_cities | length }} Orange County cities with onsite and remote delivery support.</p>
+      </article>
+      <article class="service-snapshot-card">
+        <div class="snap-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+        <h3>Lead-Time Transparency</h3>
+        <p>{{ lead_time_steps[0].phase if lead_time_steps else 'Structured intake' }} with clear delivery checkpoints.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section-sm service-anchor-wrap">
+  <div class="container">
+    <nav class="service-anchor-nav reveal" aria-label="Service section navigation">
+      <a href="#service-scope"><i class="fa-solid fa-cubes"></i> Scope</a>
+      <a href="#service-positioning"><i class="fa-solid fa-file-lines"></i> Positioning</a>
+      <a href="#service-issues"><i class="fa-solid fa-triangle-exclamation"></i> Issues</a>
+      <a href="#service-workflow"><i class="fa-solid fa-diagram-project"></i> Workflow</a>
+      <a href="#service-lead-time"><i class="fa-solid fa-hourglass-half"></i> Lead Time</a>
+      <a href="#service-tools"><i class="fa-solid fa-layer-group"></i> Tools</a>
+      <a href="#service-trust"><i class="fa-solid fa-shield-halved"></i> Trust</a>
+      <a href="#service-faq"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+      <a href="#service-contact"><i class="fa-solid fa-paper-plane"></i> Contact</a>
+    </nav>
   </div>
 </section>
 
 <div class="glow-line"></div>
 
 {% if service_modules %}
-<section class="section">
+<section class="section" id="service-scope">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-cubes"></i> Service Scope</div>
@@ -271,7 +310,7 @@
 {% endif %}
 
 {% if seo_content_blocks %}
-<section class="section section--alt">
+<section class="section section--alt" id="service-positioning">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-file-lines"></i> Service Positioning</div>
@@ -292,8 +331,30 @@
 
 <div class="glow-line"></div>
 
+{% if issue_solution_map %}
+<section class="section" id="service-issues">
+  <div class="container">
+    <div class="section-heading text-center reveal">
+      <div class="section-label"><i class="fa-solid fa-triangle-exclamation"></i> What We Solve</div>
+      <h2>Common Challenges and Execution Response</h2>
+    </div>
+    <div class="issue-map-grid">
+      {% for item in issue_solution_map %}
+      <article class="issue-map-card reveal stagger-{{ loop.index }}">
+        <div class="issue-icon"><i class="{{ item.icon }}"></i></div>
+        <h3>{{ item.issue }}</h3>
+        <p>{{ item.solution }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<div class="glow-line"></div>
+
 {% if process_steps %}
-<section class="section">
+<section class="section" id="service-workflow">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-diagram-project"></i> How It Works</div>
@@ -320,7 +381,7 @@
 <div class="glow-line"></div>
 
 {% if lead_time_steps %}
-<section class="section section--alt">
+<section class="section section--alt" id="service-lead-time">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-hourglass-half"></i> Lead Time Diagram</div>
@@ -344,7 +405,7 @@
 <div class="glow-line"></div>
 
 {% if local_cities or compliance_frameworks or proof_points %}
-<section class="section section--alt">
+<section class="section section--alt" id="service-trust">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-location-dot"></i> Local Coverage &amp; Trust</div>
@@ -390,7 +451,7 @@
 <div class="glow-line"></div>
 
 {% if tool_stack %}
-<section class="section">
+<section class="section" id="service-tools">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-layer-group"></i> Tools &amp; Platforms</div>
@@ -424,7 +485,7 @@
 {% endif %}
 
 {% if supported_brands or brand_services %}
-<section class="section section--alt">
+<section class="section section--alt" id="service-brands">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-certificate"></i> Brand Coverage</div>
@@ -543,7 +604,7 @@
 {% endif %}
 
 {% if faqs %}
-<section class="section">
+<section class="section" id="service-faq">
   <div class="container">
     <div class="section-heading text-center reveal">
       <div class="section-label"><i class="fa-solid fa-circle-question"></i> FAQ</div>
@@ -561,7 +622,7 @@
 </section>
 {% endif %}
 
-<section class="section-sm section-bottom-spacious">
+<section class="section-sm section-bottom-spacious" id="service-contact">
   <div class="cta-section reveal-scale">
     <div class="cta-inner">
       <h2>Book a Free IT Assessment</h2>

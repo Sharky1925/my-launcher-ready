@@ -2331,6 +2331,204 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   line-height: 1.55;
 }
 
+.service-anchor-wrap {
+  padding-top: 12px;
+  padding-bottom: 8px;
+}
+.service-anchor-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.service-anchor-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(132, 179, 255, 0.36);
+  background: rgba(16, 29, 48, 0.72);
+  color: #d8ebff;
+  font-size: .78rem;
+  font-weight: 650;
+  letter-spacing: .03em;
+  padding: 8px 12px;
+  box-shadow: 0 10px 22px rgba(8, 24, 49, 0.22);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+.service-anchor-nav a i {
+  color: #9bd5ff;
+  font-size: .74rem;
+  transition: transform var(--transition-fast);
+}
+.service-anchor-nav a:hover {
+  transform: translateY(-2px);
+  border-color: rgba(183, 223, 255, 0.62);
+  background: linear-gradient(132deg, rgba(52, 113, 243, 0.24), rgba(47, 178, 232, 0.2));
+  box-shadow: 0 14px 28px rgba(11, 33, 68, 0.3);
+}
+.service-anchor-nav a:hover i {
+  transform: translateX(2px);
+}
+
+.service-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.service-snapshot-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(136, 181, 252, 0.36);
+  background: linear-gradient(148deg, rgba(15, 29, 51, 0.84), rgba(16, 39, 66, 0.74));
+  padding: 14px;
+  box-shadow: 0 16px 30px rgba(9, 26, 54, 0.25);
+  transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+.service-snapshot-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 12% 0%, rgba(132, 187, 255, 0.2), transparent 56%);
+  pointer-events: none;
+}
+.service-snapshot-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(185, 224, 255, 0.62);
+  box-shadow: 0 22px 40px rgba(11, 31, 62, 0.34);
+}
+.service-snapshot-card .snap-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #e4f4ff;
+  border: 1px solid rgba(164, 211, 255, 0.58);
+  background: linear-gradient(135deg, rgba(69, 130, 255, 0.62), rgba(54, 187, 255, 0.46));
+  margin-bottom: 10px;
+  animation: iconSoftFloat 6.8s ease-in-out infinite;
+}
+.service-snapshot-card h3 {
+  margin: 0 0 5px;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #dbecff;
+}
+.service-snapshot-card p {
+  margin: 0;
+  font-size: .8rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.issue-map-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.issue-map-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(136, 181, 252, 0.34);
+  background: linear-gradient(150deg, rgba(15, 29, 51, 0.84), rgba(16, 39, 66, 0.72));
+  padding: 18px;
+  min-height: 168px;
+  box-shadow: var(--shadow-soft);
+  transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+.issue-map-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(118deg, rgba(91, 151, 255, 0.1), transparent 60%);
+  pointer-events: none;
+}
+.issue-map-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(186, 223, 255, 0.58);
+  box-shadow: 0 24px 40px rgba(10, 30, 61, 0.32);
+}
+.issue-map-card .issue-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #e5f4ff;
+  border: 1px solid rgba(159, 206, 255, 0.56);
+  background: linear-gradient(135deg, rgba(68, 130, 255, 0.56), rgba(56, 188, 255, 0.42));
+  margin-bottom: 10px;
+  animation: iconSoftFloat 7s ease-in-out infinite;
+}
+.issue-map-card h3 {
+  margin: 0 0 7px;
+  font-size: .88rem;
+  font-weight: 700;
+  color: #deeeff;
+  line-height: 1.45;
+}
+.issue-map-card p {
+  margin: 0;
+  font-size: .82rem;
+  color: var(--text-muted);
+  line-height: 1.62;
+}
+
+.service-theme {
+  --service-accent-a: #4f7bff;
+  --service-accent-b: #2ecbff;
+  --service-accent-c: #a855f7;
+  --service-accent-a-rgb: 79 123 255;
+  --service-accent-b-rgb: 46 203 255;
+  --service-accent-c-rgb: 168 85 247;
+}
+.service-theme::before {
+  background:
+    radial-gradient(circle at 16% 18%, rgb(var(--service-accent-a-rgb) / 0.34), transparent 60%),
+    radial-gradient(circle at 84% 6%, rgb(var(--service-accent-b-rgb) / 0.3), transparent 56%),
+    radial-gradient(circle at 45% -8%, rgb(var(--service-accent-c-rgb) / 0.24), transparent 60%);
+}
+.service-theme .ind-hero-icon {
+  background: linear-gradient(135deg, var(--service-accent-a), var(--service-accent-b), var(--service-accent-c));
+  box-shadow: 0 16px 34px rgb(var(--service-accent-a-rgb) / 0.38);
+}
+.service-theme .service-kicker-badge {
+  border-color: rgb(var(--service-accent-b-rgb) / 0.44);
+  background: linear-gradient(132deg, rgb(var(--service-accent-a-rgb) / 0.4), rgb(var(--service-accent-b-rgb) / 0.34));
+}
+.service-theme .service-hero-badges span {
+  border-color: rgb(var(--service-accent-a-rgb) / 0.36);
+}
+.service-theme .service-hero-badges span i {
+  color: rgb(var(--service-accent-b-rgb) / 0.78);
+}
+.service-theme .gradient-text {
+  background: linear-gradient(132deg, var(--service-accent-a), var(--service-accent-b), var(--service-accent-c));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.service-theme--software-development { --service-accent-a: #3b82f6; --service-accent-b: #22d3ee; --service-accent-c: #2563eb; --service-accent-a-rgb: 59 130 246; --service-accent-b-rgb: 34 211 238; --service-accent-c-rgb: 37 99 235; }
+.service-theme--web-development { --service-accent-a: #2563eb; --service-accent-b: #06b6d4; --service-accent-c: #22c55e; --service-accent-a-rgb: 37 99 235; --service-accent-b-rgb: 6 182 212; --service-accent-c-rgb: 34 197 94; }
+.service-theme--managed-it-services { --service-accent-a: #1d4ed8; --service-accent-b: #14b8a6; --service-accent-c: #22d3ee; --service-accent-a-rgb: 29 78 216; --service-accent-b-rgb: 20 184 166; --service-accent-c-rgb: 34 211 238; }
+.service-theme--cybersecurity { --service-accent-a: #1e40af; --service-accent-b: #0ea5e9; --service-accent-c: #7c3aed; --service-accent-a-rgb: 30 64 175; --service-accent-b-rgb: 14 165 233; --service-accent-c-rgb: 124 58 237; }
+.service-theme--cloud-solutions { --service-accent-a: #0284c7; --service-accent-b: #38bdf8; --service-accent-c: #4f46e5; --service-accent-a-rgb: 2 132 199; --service-accent-b-rgb: 56 189 248; --service-accent-c-rgb: 79 70 229; }
+.service-theme--surveillance-camera-installation { --service-accent-a: #0f766e; --service-accent-b: #22d3ee; --service-accent-c: #2563eb; --service-accent-a-rgb: 15 118 110; --service-accent-b-rgb: 34 211 238; --service-accent-c-rgb: 37 99 235; }
+.service-theme--data-recovery { --service-accent-a: #0ea5e9; --service-accent-b: #14b8a6; --service-accent-c: #2563eb; --service-accent-a-rgb: 14 165 233; --service-accent-b-rgb: 20 184 166; --service-accent-c-rgb: 37 99 235; }
+.service-theme--computer-repair { --service-accent-a: #3b82f6; --service-accent-b: #06b6d4; --service-accent-c: #22c55e; --service-accent-a-rgb: 59 130 246; --service-accent-b-rgb: 6 182 212; --service-accent-c-rgb: 34 197 94; }
+.service-theme--mobile-phone-repair { --service-accent-a: #0ea5e9; --service-accent-b: #f97316; --service-accent-c: #eab308; --service-accent-a-rgb: 14 165 233; --service-accent-b-rgb: 249 115 22; --service-accent-c-rgb: 234 179 8; }
+.service-theme--game-console-repair { --service-accent-a: #7c3aed; --service-accent-b: #06b6d4; --service-accent-c: #22c55e; --service-accent-a-rgb: 124 58 237; --service-accent-b-rgb: 6 182 212; --service-accent-c-rgb: 34 197 94; }
+.service-theme--device-diagnostics { --service-accent-a: #2563eb; --service-accent-b: #14b8a6; --service-accent-c: #6366f1; --service-accent-a-rgb: 37 99 235; --service-accent-b-rgb: 20 184 166; --service-accent-c-rgb: 99 102 241; }
+.service-theme--enterprise-consultancy { --service-accent-a: #1d4ed8; --service-accent-b: #0891b2; --service-accent-c: #0f766e; --service-accent-a-rgb: 29 78 216; --service-accent-b-rgb: 8 145 178; --service-accent-c-rgb: 15 118 110; }
+
 /* ============================================================
    REMOTE SUPPORT PORTAL
    ============================================================ */
@@ -3849,6 +4047,16 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .service-hero-badges {
     grid-template-columns: 1fr;
   }
+  .service-anchor-nav {
+    justify-content: flex-start;
+    row-gap: 8px;
+  }
+  .service-snapshot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .issue-map-grid {
+    grid-template-columns: 1fr;
+  }
   .service-tool-pill {
     flex: 1 1 calc(50% - 10px);
     justify-content: center;
@@ -3927,6 +4135,45 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .service-kicker-badge {
     font-size: .62rem;
     letter-spacing: .07em;
+  }
+  .service-anchor-wrap {
+    padding-top: 8px;
+  }
+  .service-anchor-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 4px;
+    justify-content: flex-start;
+    scrollbar-width: thin;
+  }
+  .service-anchor-nav a {
+    flex: 0 0 auto;
+    font-size: .73rem;
+    padding: 7px 10px;
+  }
+  .service-snapshot-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .service-snapshot-card {
+    padding: 12px;
+  }
+  .service-snapshot-card h3 {
+    font-size: .76rem;
+  }
+  .service-snapshot-card p {
+    font-size: .78rem;
+  }
+  .issue-map-card {
+    min-height: 0;
+    padding: 14px;
+  }
+  .issue-map-card h3 {
+    font-size: .84rem;
+  }
+  .issue-map-card p {
+    font-size: .79rem;
   }
   .service-visual-panel {
     padding: 18px;

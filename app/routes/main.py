@@ -1118,6 +1118,77 @@ def get_service_profile(service):
             for step in process[:4]
         ]
 
+    issue_solution_map = profile.get('issue_solution_map', [])
+    normalized_issue_solution_map = []
+    for item in issue_solution_map:
+        if not isinstance(item, dict):
+            continue
+        issue = str(item.get('issue', '')).strip()
+        solution = str(item.get('solution', '')).strip()
+        if not issue or not solution:
+            continue
+        normalized_issue_solution_map.append({
+            'issue': issue,
+            'solution': solution,
+            'icon': normalize_icon_class(item.get('icon', ''), 'fa-solid fa-circle'),
+        })
+    if not normalized_issue_solution_map:
+        if normalized_modules:
+            for module in normalized_modules[:4]:
+                normalized_issue_solution_map.append({
+                    'issue': f"{module['title']} gaps creating inconsistent outcomes",
+                    'solution': module['detail'],
+                    'icon': module['icon'],
+                })
+        elif service.service_type == 'professional':
+            default_issue_solution_map = [
+                {
+                    'issue': f"Unclear priorities and scope around {service.title.lower()} initiatives",
+                    'solution': 'We define delivery scope, ownership, milestones, and success criteria before execution.',
+                    'icon': 'fa-solid fa-list-check',
+                },
+                {
+                    'issue': 'Reactive support cycles creating recurring operational disruption',
+                    'solution': 'We implement proactive monitoring, escalation standards, and governance checkpoints.',
+                    'icon': 'fa-solid fa-wave-square',
+                },
+                {
+                    'issue': 'Security and compliance expectations not aligned to technology operations',
+                    'solution': 'We map controls to business requirements and embed security-first delivery practices.',
+                    'icon': 'fa-solid fa-shield-halved',
+                },
+                {
+                    'issue': 'Limited visibility into outcomes, ROI, and next-step planning',
+                    'solution': 'We provide measurable reporting, optimization recommendations, and strategic roadmap updates.',
+                    'icon': 'fa-solid fa-chart-line',
+                },
+            ]
+        else:
+            default_issue_solution_map = [
+                {
+                    'issue': f"Unexpected {service.title.lower()} failures causing urgent downtime",
+                    'solution': 'We run rapid intake triage and isolate root cause before selecting the repair path.',
+                    'icon': 'fa-solid fa-stethoscope',
+                },
+                {
+                    'issue': 'Inconsistent repair quality and repeat failure after service',
+                    'solution': 'We use component-level diagnostics and standardized quality validation before handoff.',
+                    'icon': 'fa-solid fa-screwdriver-wrench',
+                },
+                {
+                    'issue': 'Data exposure risk during diagnostics, repair, or recovery handling',
+                    'solution': 'We follow data-safe procedures, access controls, and secure transfer practices.',
+                    'icon': 'fa-solid fa-user-shield',
+                },
+                {
+                    'issue': 'No reliable estimate on turnaround and business impact',
+                    'solution': 'We provide clear lead-time checkpoints and communicate status through each service phase.',
+                    'icon': 'fa-solid fa-hourglass-half',
+                },
+            ]
+        if not normalized_issue_solution_map:
+            normalized_issue_solution_map = default_issue_solution_map
+
     narrative_title = clean_text(profile.get('narrative_title', ''), 120)
     if not narrative_title:
         narrative_title = 'Service Scope and Delivery Standards'
@@ -1258,6 +1329,7 @@ def get_service_profile(service):
         'hero_badges': normalized_hero_badges,
         'modules_title': modules_title,
         'service_modules': normalized_modules,
+        'issue_solution_map': normalized_issue_solution_map,
         'narrative_title': narrative_title,
         'seo_content_blocks': normalized_content_blocks,
         'intro_kicker': profile.get('intro_kicker', 'Plan • Deliver • Improve'),
