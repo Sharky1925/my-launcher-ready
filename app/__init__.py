@@ -155,6 +155,24 @@ def create_app(config_overrides=None):
     if config_overrides:
         app.config.update(config_overrides)
 
+    asset_version = (app.config.get('ASSET_VERSION') or '').strip()
+    if not asset_version:
+        commit_sha = (
+            os.environ.get('RAILWAY_GIT_COMMIT_SHA')
+            or os.environ.get('GITHUB_SHA')
+            or os.environ.get('VERCEL_GIT_COMMIT_SHA')
+            or ''
+        ).strip()
+        if commit_sha:
+            asset_version = commit_sha[:12]
+        else:
+            css_path = os.path.join(app.static_folder or '', 'css', 'style.css')
+            try:
+                asset_version = str(int(os.path.getmtime(css_path)))
+            except OSError:
+                asset_version = 'dev'
+    app.config['ASSET_VERSION'] = asset_version
+
     if not app.config.get('SECRET_KEY'):
         import warnings
         app.config['SECRET_KEY'] = secrets.token_urlsafe(32)
@@ -212,6 +230,7 @@ def create_app(config_overrides=None):
             csrf_token=get_csrf_token,
             csrf_input=csrf_input,
             csp_nonce=get_csp_nonce(),
+            asset_v=app.config.get('ASSET_VERSION', 'dev'),
             turnstile_enabled=bool(app.config.get('TURNSTILE_SITE_KEY') and app.config.get('TURNSTILE_SECRET_KEY')),
             turnstile_site_key=(app.config.get('TURNSTILE_SITE_KEY') or ''),
         )

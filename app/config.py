@@ -73,6 +73,7 @@ class Config:
     TRUST_PROXY_HEADERS = _as_bool(os.environ.get('TRUST_PROXY_HEADERS'), False)
     PREFERRED_URL_SCHEME = os.environ.get('PREFERRED_URL_SCHEME') or ('https' if SESSION_COOKIE_SECURE else 'http')
     APP_BASE_URL = (os.environ.get('APP_BASE_URL') or '').rstrip('/')
+    ASSET_VERSION = (os.environ.get('ASSET_VERSION') or '').strip()
     _trusted_hosts = [h.strip() for h in os.environ.get('TRUSTED_HOSTS', '').split(',') if h.strip()]
     TRUSTED_HOSTS = _trusted_hosts or None
 
