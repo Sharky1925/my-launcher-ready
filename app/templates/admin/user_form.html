@@ -6,7 +6,7 @@
   <a href="{{ url_for('admin.users') }}" class="btn btn-sm btn-outline-light"><i class="fa-solid fa-arrow-left"></i> Back to Users</a>
 </div>
 
-<div class="card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);max-width:560px;">
+<div class="card admin-card-slim">
   <div class="card-body p-4">
     <h3 class="mb-4">{{ 'Edit User' if user else 'Add Admin User' }}</h3>
     <form method="POST">
@@ -29,9 +29,11 @@
 
       <div class="mb-3">
         <label class="form-label" for="password">Password</label>
-        <input type="password" class="form-control" id="password" name="password" placeholder="{{ 'Leave blank to keep current' if user else 'Min. 6 characters' }}" {% if not user %}required{% endif %} minlength="6">
+        <input type="password" class="form-control" id="password" name="password" placeholder="{{ 'Leave blank to keep current' if user else 'Min. 10 chars + complexity' }}" {% if not user %}required{% endif %} minlength="10">
         {% if user %}
         <small class="text-muted">Leave blank to keep the current password.</small>
+        {% else %}
+        <small class="text-muted">Use at least 10 characters with uppercase, lowercase, number, and symbol.</small>
         {% endif %}
       </div>
 

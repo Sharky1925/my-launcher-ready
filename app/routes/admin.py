@@ -5,7 +5,7 @@ import re
 import uuid
 import bleach
 from sqlalchemy import func, or_
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, session, abort
 from flask_login import login_user, logout_user, login_required, current_user
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.exc import IntegrityError
@@ -58,6 +58,7 @@ admin_bp = Blueprint('admin', __name__, template_folder='../templates/admin')
 ADMIN_LOGIN_LIMIT = 5
 ADMIN_LOGIN_WINDOW_SECONDS = 300
 IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'}
+ADMIN_PASSWORD_MIN_LENGTH = 10
 QUOTE_INTAKE_EMAIL = 'quote-intake@rightonrepair.local'
 QUOTE_SUBJECT_PREFIX = 'quote request:'
 QUOTE_DETAILS_PREFIX = 'quote intake submission'
@@ -98,6 +99,17 @@ def parse_positive_int(value):
     if parsed <= 0:
         return None
     return parsed
+
+
+def is_strong_password(value):
+    password = value or ''
+    return (
+        len(password) >= ADMIN_PASSWORD_MIN_LENGTH
+        and any(c.isupper() for c in password)
+        and any(c.islower() for c in password)
+        and any(c.isdigit() for c in password)
+        and any(not c.isalnum() for c in password)
+    )
 
 
 def is_valid_url(value):
@@ -187,13 +199,26 @@ def validate_uploaded_file(file):
         return False
 
     filename = secure_filename(file.filename)
-    if not filename or not allowed_file(filename):
+    if not filename or len(filename) > 180 or not allowed_file(filename):
         return False
 
     extension = filename.rsplit('.', 1)[1].lower()
     mime_type = (file.mimetype or '').split(';', 1)[0].lower()
     allowed_mimes = current_app.config.get('ALLOWED_UPLOAD_MIME_TYPES', set())
-    if mime_type not in allowed_mimes:
+    extension_allowed_mimes = {
+        'png': {'image/png'},
+        'jpg': {'image/jpeg'},
+        'jpeg': {'image/jpeg'},
+        'gif': {'image/gif'},
+        'webp': {'image/webp'},
+        'ico': {'image/x-icon', 'image/vnd.microsoft.icon'},
+        'pdf': {'application/pdf'},
+    }
+    if (
+        mime_type not in allowed_mimes
+        or extension not in extension_allowed_mimes
+        or mime_type not in extension_allowed_mimes[extension]
+    ):
         return False
 
     file.stream.seek(0)
@@ -203,14 +228,18 @@ def validate_uploaded_file(file):
         return signature == b'%PDF-'
 
     if extension in IMAGE_EXTENSIONS:
+        max_pixels = max(1, int(current_app.config.get('MAX_UPLOAD_IMAGE_PIXELS', 40_000_000)))
         try:
-            image = Image.open(file.stream)
-            image.verify()
-            file.stream.seek(0)
+            with Image.open(file.stream) as image:
+                width, height = image.size
+                if width < 1 or height < 1 or (width * height) > max_pixels:
+                    return False
+                image.verify()
             return True
-        except (UnidentifiedImageError, OSError):
-            file.stream.seek(0)
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
             return False
+        finally:
+            file.stream.seek(0)
 
     file.stream.seek(0)
     return False
@@ -219,7 +248,9 @@ def validate_uploaded_file(file):
 def save_upload(file):
     if validate_uploaded_file(file):
         filename = secure_filename(file.filename)
-        unique_name = f"{uuid.uuid4().hex[:8]}_{filename}"
+        if not filename:
+            return None
+        unique_name = f"{uuid.uuid4().hex[:16]}_{filename}"
         full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_name)
         file.save(full_path)
         file_size = os.path.getsize(full_path)
@@ -232,7 +263,10 @@ def save_upload(file):
 
 @admin_bp.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+    safe_filename = secure_filename(filename or '')
+    if not safe_filename or safe_filename != filename:
+        abort(404)
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], safe_filename)
 
 
 # Auth
@@ -861,8 +895,11 @@ def user_add():
         if not username or not email or not password:
             flash('Username, email, and password are required.', 'danger')
             return render_template('admin/user_form.html', user=None)
-        if len(password) < 6:
-            flash('Password must be at least 6 characters.', 'danger')
+        if not is_strong_password(password):
+            flash(
+                f'Password must be at least {ADMIN_PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, a digit, and a special character.',
+                'danger',
+            )
             return render_template('admin/user_form.html', user=None)
         if not is_valid_email(email):
             flash('Please provide a valid email address.', 'danger')
@@ -900,8 +937,11 @@ def user_edit(id):
                 return render_template('admin/user_form.html', user=user)
             user.email = email
         if password:
-            if len(password) < 6:
-                flash('Password must be at least 6 characters.', 'danger')
+            if not is_strong_password(password):
+                flash(
+                    f'Password must be at least {ADMIN_PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, a digit, and a special character.',
+                    'danger',
+                )
                 return render_template('admin/user_form.html', user=user)
             user.set_password(password)
         db.session.commit()
@@ -990,7 +1030,7 @@ def security_events():
     page = parse_int(request.args.get('page', 1), default=1, min_value=1, max_value=100000)
 
     valid_event_types = {'all', 'turnstile_failed', 'rate_limited'}
-    valid_scopes = {'all', 'contact_form', 'quote_form'}
+    valid_scopes = {'all', 'contact_form', 'quote_form', 'personal_quote_form'}
 
     if event_type_filter not in valid_event_types:
         event_type_filter = 'all'

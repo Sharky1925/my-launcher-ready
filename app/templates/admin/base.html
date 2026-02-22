@@ -414,6 +414,38 @@
     .ticket-details-text {
       white-space: pre-line;
     }
+    .logout-inline-form {
+      display: contents;
+    }
+    .logout-nav-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+    }
+    .logout-inline-block-form {
+      display: inline;
+    }
+    .admin-card-slim {
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border) !important;
+      border-radius: var(--radius-md) !important;
+    }
+    .form-control-mono-sm {
+      font-size: .82rem;
+    }
+    .list-group-item-ghost {
+      background: transparent;
+      border-color: var(--border);
+    }
+    .admin-text-85 {
+      font-size: .85rem;
+    }
 
     @media (max-width: 991px) {
       .admin-sidebar {
@@ -462,7 +494,7 @@
       <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}"><i class="fa-solid fa-sliders"></i>Settings</a>
       <div class="sidebar-sep"></div>
       <a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i>View Site</a>
-      <form method="POST" action="{{ url_for('admin.logout') }}" style="display:contents">{{ csrf_input() }}<button type="submit" class="nav-link" style="border:none;background:none;cursor:pointer;width:100%;text-align:left;"><i class="fa-solid fa-right-from-bracket"></i>Logout</button></form>
+      <form method="POST" action="{{ url_for('admin.logout') }}" class="logout-inline-form">{{ csrf_input() }}<button type="submit" class="nav-link logout-nav-btn"><i class="fa-solid fa-right-from-bracket"></i>Logout</button></form>
     </nav>
   </aside>
 
@@ -489,7 +521,7 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_add', 'admin.user_edit'] %}active{% endif %}" href="{{ url_for('admin.users') }}">Admin Users</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Settings</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener">View Site</a></li>
-          <li class="nav-item"><form method="POST" action="{{ url_for('admin.logout') }}" style="display:contents">{{ csrf_input() }}<button type="submit" class="nav-link" style="border:none;background:none;cursor:pointer;width:100%;text-align:left;">Logout</button></form></li>
+          <li class="nav-item"><form method="POST" action="{{ url_for('admin.logout') }}" class="logout-inline-form">{{ csrf_input() }}<button type="submit" class="nav-link logout-nav-btn">Logout</button></form></li>
         </ul>
       </div>
     </div>
@@ -501,7 +533,7 @@
       <div class="top-actions">
         <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square me-1"></i>View Site</a>
         <span class="user-pill">{{ current_user.username }}</span>
-        <form method="POST" action="{{ url_for('admin.logout') }}" style="display:inline">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button></form>
+        <form method="POST" action="{{ url_for('admin.logout') }}" class="logout-inline-block-form">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button></form>
       </div>
     </div>
 

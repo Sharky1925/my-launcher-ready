@@ -179,8 +179,6 @@ def create_app(config_overrides=None):
     def enforce_csrf():
         if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
             return
-        if request.endpoint in ('admin.login', 'admin.logout'):
-            return
         expected = session.get('_csrf_token')
         provided = request.form.get('_csrf_token') or request.headers.get('X-CSRF-Token')
         if not expected or not provided or not secrets.compare_digest(expected, provided):
@@ -224,9 +222,14 @@ def create_app(config_overrides=None):
         response.headers.setdefault('X-Frame-Options', 'DENY')
         response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
         response.headers.setdefault('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+        response.headers.setdefault('Cross-Origin-Resource-Policy', 'same-origin')
+        response.headers.setdefault('X-Permitted-Cross-Domain-Policies', 'none')
+        response.headers.setdefault('Origin-Agent-Cluster', '?1')
         response.headers.setdefault('Cross-Origin-Opener-Policy', 'same-origin')
         if request.is_secure:
             response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+        if request.path.startswith('/admin') or request.path.startswith('/remote-support'):
+            response.headers.setdefault('X-Robots-Tag', 'noindex, nofollow, noarchive')
 
         # Frontend performance: cache static and uploaded assets aggressively.
         if request.path.startswith('/static/') and response.status_code in (200, 304):
@@ -252,6 +255,9 @@ def create_app(config_overrides=None):
                 "connect-src 'self' https://cdn.tiny.cloud https://challenges.cloudflare.com",
                 "frame-src 'self' https://challenges.cloudflare.com",
             ]
+            if request.is_secure:
+                csp_parts.append('upgrade-insecure-requests')
+                csp_parts.append('block-all-mixed-content')
             csp_parts.insert(2, "frame-ancestors 'none'")
             response.headers['Content-Security-Policy'] = "; ".join(csp_parts)
         return response

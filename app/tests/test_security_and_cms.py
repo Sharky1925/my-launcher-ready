@@ -104,6 +104,9 @@ def test_public_pages_and_security_headers(client):
     assert "style-src 'self' 'unsafe-inline'" not in csp
     assert response.headers.get("X-Frame-Options") == "DENY"
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("Cross-Origin-Resource-Policy") == "same-origin"
+    assert response.headers.get("X-Permitted-Cross-Domain-Policies") == "none"
+    assert response.headers.get("Origin-Agent-Cluster") == "?1"
     html = response.get_data(as_text=True)
     assert 'href="#main-content"' in html
     assert 'id="main-content"' in html
@@ -115,9 +118,11 @@ def test_public_pages_and_security_headers(client):
     for path in ["/about", "/services", "/blog", "/industries", "/remote-support", "/contact", "/request-quote"]:
         page = client.get(path)
         assert page.status_code == 200
+    assert client.get("/remote-support").headers.get("X-Robots-Tag") == "noindex, nofollow, noarchive"
 
     admin_login_page = client.get("/admin/login")
     assert admin_login_page.status_code == 200
+    assert admin_login_page.headers.get("X-Robots-Tag") == "noindex, nofollow, noarchive"
     admin_login_html = admin_login_page.get_data(as_text=True)
     assert '<style nonce="' in admin_login_html
     assert "style=" not in admin_login_html
@@ -165,6 +170,25 @@ def test_contact_post_requires_csrf(client):
         follow_redirects=False,
     )
     assert response.status_code in (302, 400)
+
+
+def test_admin_login_post_requires_csrf(client):
+    response = client.post(
+        "/admin/login",
+        data={"username": "admin", "password": "admin123"},
+        follow_redirects=False,
+    )
+    assert response.status_code in (302, 400)
+    blocked_dashboard = client.get("/admin/", follow_redirects=False)
+    assert blocked_dashboard.status_code in (302, 303)
+
+
+def test_admin_logout_post_requires_csrf(client):
+    admin_login(client)
+    response = client.post("/admin/logout", data={}, follow_redirects=False)
+    assert response.status_code in (302, 400)
+    still_logged_in = client.get("/admin/", follow_redirects=False)
+    assert still_logged_in.status_code == 200
 
 
 def test_contact_post_with_csrf_succeeds(client, app):

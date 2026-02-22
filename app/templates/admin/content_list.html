@@ -6,12 +6,12 @@
   {% for page, sections in pages.items() %}
   <div class="col-md-6 col-lg-4">
     <div class="card border-0 shadow-sm h-100">
-      <div class="card-header"><h6 class="mb-0" style="text-transform:capitalize">{{ page }}</h6></div>
+      <div class="card-header"><h6 class="mb-0 text-capitalize">{{ page }}</h6></div>
       <div class="card-body p-0">
-        <ul class="list-group list-group-flush" style="background:transparent">
+        <ul class="list-group list-group-flush bg-transparent">
           {% for s in sections %}
-          <li class="list-group-item d-flex justify-content-between align-items-center" style="background:transparent;border-color:var(--border)">
-            <span style="font-size:.85rem">{{ s.label }}</span>
+          <li class="list-group-item d-flex justify-content-between align-items-center list-group-item-ghost">
+            <span class="admin-text-85">{{ s.label }}</span>
             <a href="{{ url_for('admin.content_edit', page=page, section=s.section) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
           </li>
           {% endfor %}

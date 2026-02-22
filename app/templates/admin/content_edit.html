@@ -17,7 +17,7 @@
           <textarea name="{{ field.key }}" class="form-control" rows="6">{% if current_data.get(field.key) is iterable and current_data.get(field.key) is not string %}{{ current_data.get(field.key, []) | join('\n') }}{% else %}{{ current_data.get(field.key, '') }}{% endif %}</textarea>
           <small class="text-muted">One item per line.</small>
           {% elif field.type == 'json' %}
-          <textarea name="{{ field.key }}" class="form-control font-monospace" rows="8" style="font-size:.82rem">{{ current_data.get(field.key, []) | tojson(indent=2) }}</textarea>
+          <textarea name="{{ field.key }}" class="form-control font-monospace form-control-mono-sm" rows="8">{{ current_data.get(field.key, []) | tojson(indent=2) }}</textarea>
           {% if field.get('help') %}<small class="text-muted">{{ field.help }}</small>{% endif %}
           {% endif %}
         </div>

@@ -50,6 +50,7 @@ class Config:
         '/tmp/uploads' if _is_vercel_runtime() else os.path.join(basedir, 'uploads')
     )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
+    MAX_UPLOAD_IMAGE_PIXELS = _as_int(os.environ.get('MAX_UPLOAD_IMAGE_PIXELS'), 40_000_000)
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf', 'ico'}
     ALLOWED_UPLOAD_MIME_TYPES = {
         'image/png',

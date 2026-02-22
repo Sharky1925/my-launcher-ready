@@ -1542,6 +1542,10 @@ main .container {
   background: var(--gradient-vibrant); opacity: 0.7;
 }
 .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-strong); }
+.stat-card--centered {
+  max-width: 540px;
+  margin: 0 auto;
+}
 .stat-card h4 { margin: 0 0 6px; font-size: 1rem; }
 .stat-value {
   display: block; font-size: 1.6rem; font-weight: 700;
