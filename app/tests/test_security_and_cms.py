@@ -5,6 +5,7 @@ from datetime import timedelta
 import pytest
 
 try:
+    from app.seed import backfill_phase2_defaults
     from app.routes import admin as admin_routes
     from app.routes import main as main_routes
     from app import create_app
@@ -20,6 +21,7 @@ try:
         SecurityEvent,
         AcpPageDocument,
         AcpDashboardDocument,
+        Industry,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
         WORKFLOW_DRAFT,
@@ -29,6 +31,7 @@ try:
     )
     from app.utils import utc_now_naive
 except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd test runs
+    from seed import backfill_phase2_defaults
     import routes.admin as admin_routes
     import routes.main as main_routes
     from __init__ import create_app
@@ -44,6 +47,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         SecurityEvent,
         AcpPageDocument,
         AcpDashboardDocument,
+        Industry,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
         WORKFLOW_DRAFT,
@@ -284,6 +288,46 @@ def test_acp_delivery_api_returns_only_published_documents(client, app):
 
     draft_dash_resp = client.get(f"/api/delivery/dashboards/{draft_dashboard_id}")
     assert draft_dash_resp.status_code == 404
+
+
+def test_backfill_repairs_legacy_draft_only_service_and_industry_states(app):
+    with app.app_context():
+        Service.query.delete()
+        Industry.query.delete()
+        db.session.commit()
+
+        service = Service(
+            title="Legacy Service",
+            slug=f"legacy-service-{uuid.uuid4().hex[:6]}",
+            description="Legacy row before workflow columns existed.",
+            service_type="professional",
+            workflow_status=WORKFLOW_DRAFT,
+            reviewed_at=None,
+            approved_at=None,
+            published_at=None,
+        )
+        industry = Industry(
+            title="Legacy Industry",
+            slug=f"legacy-industry-{uuid.uuid4().hex[:6]}",
+            description="Legacy industry row before workflow columns existed.",
+            workflow_status=WORKFLOW_DRAFT,
+            reviewed_at=None,
+            approved_at=None,
+            published_at=None,
+        )
+        db.session.add(service)
+        db.session.add(industry)
+        db.session.commit()
+
+        backfill_phase2_defaults()
+        db.session.expire_all()
+
+        refreshed_service = Service.query.get(service.id)
+        refreshed_industry = Industry.query.get(industry.id)
+        assert refreshed_service.workflow_status == WORKFLOW_PUBLISHED
+        assert refreshed_industry.workflow_status == WORKFLOW_PUBLISHED
+        assert refreshed_service.published_at is not None
+        assert refreshed_industry.published_at is not None
 
 
 def test_support_role_cannot_access_acp_page_builder(client, app):

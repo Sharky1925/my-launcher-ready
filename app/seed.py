@@ -219,6 +219,43 @@ def backfill_phase2_defaults():
             columns = _get_table_columns(table_name)
             if 'workflow_status' not in columns:
                 continue
+
+            total_count = db.session.execute(text(f"SELECT COUNT(*) FROM {table_id}")).scalar() or 0
+            if total_count:
+                draft_count = db.session.execute(
+                    text(f"SELECT COUNT(*) FROM {table_id} WHERE workflow_status = :draft"),
+                    {'draft': WORKFLOW_DRAFT},
+                ).scalar() or 0
+                published_count = db.session.execute(
+                    text(f"SELECT COUNT(*) FROM {table_id} WHERE workflow_status = :published"),
+                    {'published': WORKFLOW_PUBLISHED},
+                ).scalar() or 0
+
+                no_history_conditions = ["workflow_status = :draft"]
+                if 'reviewed_at' in columns:
+                    no_history_conditions.append("reviewed_at IS NULL")
+                if 'approved_at' in columns:
+                    no_history_conditions.append("approved_at IS NULL")
+                if 'published_at' in columns:
+                    no_history_conditions.append("published_at IS NULL")
+                no_history_where = " AND ".join(no_history_conditions)
+                no_history_draft_count = db.session.execute(
+                    text(f"SELECT COUNT(*) FROM {table_id} WHERE {no_history_where}"),
+                    {'draft': WORKFLOW_DRAFT},
+                ).scalar() or 0
+
+                # Repair legacy migration state:
+                # If every row is draft with zero workflow history, rows were likely created before
+                # workflow columns existed and inherited the new default value ('draft').
+                if draft_count == total_count and published_count == 0 and no_history_draft_count == total_count:
+                    db.session.execute(
+                        text(
+                            f"UPDATE {table_id} SET workflow_status = :published "
+                            "WHERE workflow_status = :draft"
+                        ),
+                        {'published': WORKFLOW_PUBLISHED, 'draft': WORKFLOW_DRAFT},
+                    )
+
             db.session.execute(
                 text(
                     f"UPDATE {table_id} SET workflow_status = :published "
