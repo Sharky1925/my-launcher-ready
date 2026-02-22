@@ -45,6 +45,7 @@
             <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else '—' }}</td>
             <td class="text-end">
               <a href="{{ url_for('admin.acp_dashboard_edit', id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+              <a href="{{ url_for('admin.acp_dashboard_preview', id=item.id, role=current_user.role_key) }}" class="btn btn-sm btn-outline-secondary">Role Preview</a>
               <a href="{{ url_for('main.acp_delivery_dashboard', dashboard_id=item.dashboard_id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">Delivery API</a>
             </td>
           </tr>

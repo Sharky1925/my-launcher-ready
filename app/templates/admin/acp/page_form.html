@@ -1,12 +1,108 @@
 {% extends "admin/base.html" %}
 {% block page_title %}{% if item %}Edit Visual Page{% else %}New Visual Page{% endif %}{% endblock %}
 
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+  .acp-builder-grid {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 14px;
+  }
+  .acp-builder-side,
+  .acp-builder-main {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(6, 12, 22, 0.62);
+    padding: 12px;
+  }
+  .acp-canvas {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .acp-canvas-item {
+    border: 1px solid rgba(116, 160, 255, 0.3);
+    border-radius: 10px;
+    background: rgba(10, 18, 30, 0.85);
+    padding: 10px;
+    cursor: pointer;
+  }
+  .acp-canvas-item.active {
+    border-color: rgba(116, 160, 255, 0.8);
+    box-shadow: inset 0 0 0 1px rgba(116, 160, 255, 0.4);
+  }
+  .acp-canvas-item[draggable="true"] {
+    user-select: none;
+  }
+  .acp-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .acp-item-type {
+    font-size: .72rem;
+    color: #c8daf0;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+  .acp-item-label {
+    color: var(--text-muted);
+    font-size: .8rem;
+  }
+  .acp-item-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .acp-item-actions button {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(79, 123, 255, 0.13);
+    color: var(--text);
+    padding: 2px 8px;
+    font-size: .72rem;
+  }
+  .acp-item-actions button:hover {
+    background: rgba(79, 123, 255, 0.24);
+  }
+  .acp-prop-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .acp-empty {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--text-muted);
+    font-size: .82rem;
+    text-align: center;
+  }
+  .acp-json-pane {
+    margin-top: 12px;
+  }
+  @media (max-width: 991px) {
+    .acp-builder-grid {
+      grid-template-columns: 1fr;
+    }
+    .acp-prop-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 {% set item = item if item else None %}
 <div class="card mb-3">
   <div class="card-header"><strong>{% if item %}Edit{% else %}Create{% endif %} Page Document</strong></div>
   <div class="card-body">
-    <form method="POST" class="row g-3">
+    <form method="POST" class="row g-3" id="acpPageForm">
       {{ csrf_input() }}
       <div class="col-md-6">
         <label class="form-label">Title</label>
@@ -42,10 +138,36 @@
         <label class="form-label">SEO JSON</label>
         <textarea class="form-control form-control-mono-sm" name="seo_json" rows="5">{{ item.seo_json if item else '{\n  "title": "",\n  "description": "",\n  "keywords": []\n}' }}</textarea>
       </div>
+
       <div class="col-12">
-        <label class="form-label">Blocks Tree JSON</label>
-        <textarea class="form-control form-control-mono-sm" name="blocks_tree" rows="10">{{ item.blocks_tree if item else '{\n  "type": "Container",\n  "props": {\n    "maxWidth": "1200px"\n  },\n  "children": [\n    {\n      "type": "Hero",\n      "props": {\n        "title": "Thin Slice ACP Page",\n        "subtitle": "Visual CMS with guardrails"\n      }\n    }\n  ]\n}' }}</textarea>
+        <label class="form-label">Visual Block Builder (Drag and Drop)</label>
+        <div class="acp-builder-grid">
+          <div class="acp-builder-side">
+            <label class="form-label">Registered Components</label>
+            <select class="form-select mb-2" id="acpComponentPicker">
+              {% for comp in component_registry or [] %}
+              <option value="{{ comp.key }}">{{ comp.name }} ({{ comp.key }})</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-outline-primary mb-3" type="button" id="acpAddBlockBtn"><i class="fa-solid fa-plus me-1"></i>Add Block</button>
+            <div class="small text-muted mb-2">Drag cards to reorder. Click a block to edit schema-driven props.</div>
+            <ul class="acp-canvas" id="acpBlockCanvas"></ul>
+          </div>
+          <div class="acp-builder-main">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong>Selected Block Properties</strong>
+              <span class="small text-muted" id="acpSelectedBlockType">None selected</span>
+            </div>
+            <div id="acpBlockEditor" class="acp-empty">Select a block to edit its properties.</div>
+          </div>
+        </div>
+
+        <div class="acp-json-pane">
+          <label class="form-label">Blocks Tree JSON</label>
+          <textarea class="form-control form-control-mono-sm" id="acpBlocksTreeField" name="blocks_tree" rows="10">{{ item.blocks_tree if item else '{\n  "type": "layout.container",\n  "props": {\n    "maxWidth": "1200px"\n  },\n  "children": [\n    {\n      "type": "marketing.hero",\n      "props": {\n        "title": "Thin Slice ACP Page",\n        "subtitle": "Visual CMS with guardrails"\n      }\n    }\n  ]\n}' }}</textarea>
+        </div>
       </div>
+
       <div class="col-12">
         <label class="form-label">Theme Override JSON</label>
         <textarea class="form-control form-control-mono-sm" name="theme_override_json" rows="4">{{ item.theme_override_json if item else '{\n  "accentColor": "#36a4ff",\n  "radius": "14px"\n}' }}</textarea>
@@ -127,4 +249,306 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+(function () {
+  const registry = {{ (component_registry or []) | tojson }};
+  const registryMap = {};
+  registry.forEach((item) => { registryMap[item.key] = item; });
+
+  const blocksField = document.getElementById('acpBlocksTreeField');
+  const canvas = document.getElementById('acpBlockCanvas');
+  const editor = document.getElementById('acpBlockEditor');
+  const picker = document.getElementById('acpComponentPicker');
+  const addBtn = document.getElementById('acpAddBlockBtn');
+  const selectedType = document.getElementById('acpSelectedBlockType');
+
+  if (!blocksField || !canvas || !editor || !picker || !addBtn || !selectedType) {
+    return;
+  }
+
+  let state = {
+    tree: { type: 'layout.container', props: {}, children: [] },
+    selectedIndex: -1,
+    dragIndex: null,
+  };
+
+  function tryParseJSON(value, fallback) {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function normalizeTree(rawTree) {
+    const tree = (rawTree && typeof rawTree === 'object' && !Array.isArray(rawTree)) ? rawTree : {};
+    const children = Array.isArray(tree.children) ? tree.children : [];
+    return {
+      type: typeof tree.type === 'string' && tree.type ? tree.type : 'layout.container',
+      props: tree.props && typeof tree.props === 'object' && !Array.isArray(tree.props) ? tree.props : {},
+      children: children.filter((child) => child && typeof child === 'object' && !Array.isArray(child)).map((child) => ({
+        type: typeof child.type === 'string' && child.type ? child.type : 'content.richText',
+        props: child.props && typeof child.props === 'object' && !Array.isArray(child.props) ? child.props : {},
+      })),
+    };
+  }
+
+  function syncTreeField() {
+    blocksField.value = JSON.stringify(state.tree, null, 2);
+  }
+
+  function blockLabel(block) {
+    const props = block && block.props ? block.props : {};
+    return props.title || props.heading || props.label || props.subtitle || 'Untitled block';
+  }
+
+  function moveBlock(from, to) {
+    if (from < 0 || to < 0 || from >= state.tree.children.length || to >= state.tree.children.length) {
+      return;
+    }
+    const next = state.tree.children.slice();
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    state.tree.children = next;
+    state.selectedIndex = to;
+    renderCanvas();
+    renderEditor();
+    syncTreeField();
+  }
+
+  function removeBlock(index) {
+    if (index < 0 || index >= state.tree.children.length) {
+      return;
+    }
+    state.tree.children.splice(index, 1);
+    if (state.selectedIndex >= state.tree.children.length) {
+      state.selectedIndex = state.tree.children.length - 1;
+    }
+    renderCanvas();
+    renderEditor();
+    syncTreeField();
+  }
+
+  function renderCanvas() {
+    canvas.innerHTML = '';
+    const blocks = state.tree.children;
+    if (!blocks.length) {
+      const empty = document.createElement('li');
+      empty.className = 'acp-empty';
+      empty.textContent = 'No blocks yet. Add from registry to start building.';
+      canvas.appendChild(empty);
+      return;
+    }
+
+    blocks.forEach((block, index) => {
+      const item = document.createElement('li');
+      item.className = 'acp-canvas-item' + (index === state.selectedIndex ? ' active' : '');
+      item.draggable = true;
+
+      item.addEventListener('dragstart', () => {
+        state.dragIndex = index;
+      });
+      item.addEventListener('dragover', (event) => {
+        event.preventDefault();
+      });
+      item.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const from = state.dragIndex;
+        const to = index;
+        state.dragIndex = null;
+        if (from === null || from === to) {
+          return;
+        }
+        moveBlock(from, to);
+      });
+
+      const top = document.createElement('div');
+      top.className = 'acp-item-top';
+
+      const type = document.createElement('div');
+      type.className = 'acp-item-type';
+      type.textContent = block.type;
+      top.appendChild(type);
+
+      const actions = document.createElement('div');
+      actions.className = 'acp-item-actions';
+
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.textContent = 'Up';
+      up.addEventListener('click', (event) => {
+        event.stopPropagation();
+        moveBlock(index, Math.max(0, index - 1));
+      });
+      actions.appendChild(up);
+
+      const down = document.createElement('button');
+      down.type = 'button';
+      down.textContent = 'Down';
+      down.addEventListener('click', (event) => {
+        event.stopPropagation();
+        moveBlock(index, Math.min(state.tree.children.length - 1, index + 1));
+      });
+      actions.appendChild(down);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = 'Delete';
+      del.addEventListener('click', (event) => {
+        event.stopPropagation();
+        removeBlock(index);
+      });
+      actions.appendChild(del);
+
+      top.appendChild(actions);
+      item.appendChild(top);
+
+      const label = document.createElement('div');
+      label.className = 'acp-item-label';
+      label.textContent = blockLabel(block);
+      item.appendChild(label);
+
+      item.addEventListener('click', () => {
+        state.selectedIndex = index;
+        renderCanvas();
+        renderEditor();
+      });
+
+      canvas.appendChild(item);
+    });
+  }
+
+  function createPropInput(wrapper, key, value, typeHint, onValue) {
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.textContent = key;
+    wrapper.appendChild(label);
+
+    if (typeHint === 'boolean') {
+      const select = document.createElement('select');
+      select.className = 'form-select';
+      select.innerHTML = '<option value="true">true</option><option value="false">false</option>';
+      select.value = value ? 'true' : 'false';
+      select.addEventListener('change', () => onValue(select.value === 'true'));
+      wrapper.appendChild(select);
+      return;
+    }
+
+    if (typeHint === 'number' || typeof value === 'number') {
+      const input = document.createElement('input');
+      input.className = 'form-control';
+      input.type = 'number';
+      input.value = Number(value || 0);
+      input.addEventListener('input', () => onValue(Number(input.value || 0)));
+      wrapper.appendChild(input);
+      return;
+    }
+
+    if (typeHint === 'array' || typeHint === 'object' || Array.isArray(value) || (value && typeof value === 'object')) {
+      const text = document.createElement('textarea');
+      text.className = 'form-control form-control-mono-sm';
+      text.rows = 3;
+      text.value = JSON.stringify(value || (typeHint === 'array' ? [] : {}), null, 2);
+      text.addEventListener('input', () => {
+        onValue(tryParseJSON(text.value, value));
+      });
+      wrapper.appendChild(text);
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.className = 'form-control';
+    input.type = 'text';
+    input.value = value == null ? '' : String(value);
+    input.addEventListener('input', () => onValue(input.value));
+    wrapper.appendChild(input);
+  }
+
+  function renderEditor() {
+    const index = state.selectedIndex;
+    const blocks = state.tree.children;
+    if (index < 0 || index >= blocks.length) {
+      selectedType.textContent = 'None selected';
+      editor.className = 'acp-empty';
+      editor.textContent = 'Select a block to edit its properties.';
+      return;
+    }
+
+    const block = blocks[index];
+    const registryItem = registryMap[block.type] || {};
+    const schema = registryItem.prop_schema || {};
+    const schemaProps = schema.properties && typeof schema.properties === 'object' ? schema.properties : {};
+
+    selectedType.textContent = block.type;
+    editor.className = '';
+    editor.innerHTML = '';
+
+    const grid = document.createElement('div');
+    grid.className = 'acp-prop-grid';
+
+    const keysFromSchema = Object.keys(schemaProps);
+    const keysFromData = Object.keys(block.props || {});
+    const mergedKeys = Array.from(new Set(keysFromSchema.concat(keysFromData)));
+
+    if (!mergedKeys.length) {
+      editor.className = 'acp-empty';
+      editor.textContent = 'This block has no editable properties in schema.';
+      return;
+    }
+
+    mergedKeys.forEach((key) => {
+      const col = document.createElement('div');
+      const schemaProp = schemaProps[key] || {};
+      const hint = schemaProp.type || null;
+      const value = block.props ? block.props[key] : '';
+      createPropInput(col, key, value, hint, (nextValue) => {
+        if (!block.props || typeof block.props !== 'object') {
+          block.props = {};
+        }
+        block.props[key] = nextValue;
+        syncTreeField();
+        renderCanvas();
+      });
+      grid.appendChild(col);
+    });
+
+    editor.appendChild(grid);
+  }
+
+  function addBlock() {
+    const componentType = picker.value;
+    if (!componentType) {
+      return;
+    }
+    const registryItem = registryMap[componentType] || {};
+    const defaultProps = registryItem.default_props && typeof registryItem.default_props === 'object'
+      ? JSON.parse(JSON.stringify(registryItem.default_props))
+      : {};
+    state.tree.children.push({ type: componentType, props: defaultProps });
+    state.selectedIndex = state.tree.children.length - 1;
+    renderCanvas();
+    renderEditor();
+    syncTreeField();
+  }
+
+  addBtn.addEventListener('click', addBlock);
+
+  const parsed = tryParseJSON(blocksField.value, {});
+  state.tree = normalizeTree(parsed);
+  if (!state.tree.children.length && picker.value) {
+    addBlock();
+  } else {
+    syncTreeField();
+    renderCanvas();
+    if (state.tree.children.length) {
+      state.selectedIndex = 0;
+      renderCanvas();
+      renderEditor();
+    }
+  }
+})();
+</script>
 {% endblock %}

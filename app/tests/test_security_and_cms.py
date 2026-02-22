@@ -176,6 +176,48 @@ def test_acp_studio_pages_and_dashboards_render_for_admin(client):
     assert "Dashboard Documents" in dashboards.get_data(as_text=True)
 
 
+def test_acp_page_form_includes_visual_block_builder(client, app):
+    admin_login(client)
+    with app.app_context():
+        page = AcpPageDocument.query.order_by(AcpPageDocument.id.asc()).first()
+        assert page is not None
+        page_id = page.id
+
+    response = client.get(f"/admin/acp/pages/{page_id}/edit")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Visual Block Builder (Drag and Drop)" in html
+    assert "Registered Components" in html
+
+
+def test_acp_dashboard_preview_applies_role_visibility(client, app):
+    with app.app_context():
+        dashboard = AcpDashboardDocument(
+            dashboard_id=f"preview-{uuid.uuid4().hex[:8]}",
+            title="Preview Visibility Test",
+            route=f"/dashboard/preview-{uuid.uuid4().hex[:8]}",
+            layout_type="grid",
+            status=WORKFLOW_DRAFT,
+            layout_config_json='{\"columns\":12}',
+            widgets_json=(
+                '[{\"id\":\"open-widget\",\"type\":\"kpi-card\",\"title\":\"Open Widget\",\"metric\":\"support_open_tickets\"},'
+                '{\"id\":\"hidden-widget\",\"type\":\"kpi-card\",\"title\":\"Top Secret KPI\",\"metric\":\"secret_metric\"}]'
+            ),
+            global_filters_json='[]',
+            role_visibility_json='{\"support\":{\"hiddenWidgets\":[\"hidden-widget\"]}}',
+        )
+        db.session.add(dashboard)
+        db.session.commit()
+        dashboard_row_id = dashboard.id
+
+    admin_login(client)
+    response = client.get(f"/admin/acp/dashboards/{dashboard_row_id}/preview?role=support")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Open Widget" in html
+    assert "Top Secret KPI" not in html
+
+
 def test_acp_delivery_api_returns_only_published_documents(client, app):
     published_slug = f"published-page-{uuid.uuid4().hex[:8]}"
     draft_slug = f"draft-page-{uuid.uuid4().hex[:8]}"

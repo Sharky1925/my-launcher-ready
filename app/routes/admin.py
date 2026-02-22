@@ -175,6 +175,7 @@ ADMIN_PERMISSION_MAP = {
     'admin.acp_dashboards': 'acp:dashboards:manage',
     'admin.acp_dashboard_add': 'acp:dashboards:manage',
     'admin.acp_dashboard_edit': 'acp:dashboards:manage',
+    'admin.acp_dashboard_preview': 'acp:studio:view',
     'admin.acp_dashboard_snapshot': 'acp:dashboards:manage',
     'admin.acp_dashboard_publish': 'acp:publish',
     'admin.acp_registry': 'acp:registry:manage',
@@ -503,6 +504,125 @@ def _create_dashboard_version(dashboard, note=''):
     )
     db.session.add(version)
     return version
+
+
+def _build_component_registry_payload(enabled_only=True):
+    query = AcpComponentDefinition.query
+    if enabled_only:
+        query = query.filter_by(is_enabled=True)
+    items = query.order_by(AcpComponentDefinition.category.asc(), AcpComponentDefinition.key.asc()).all()
+    payload = []
+    for item in items:
+        payload.append(
+            {
+                'key': item.key,
+                'name': item.name,
+                'category': item.category,
+                'prop_schema': _safe_json_loads(item.prop_schema_json, {}) or {},
+                'default_props': _safe_json_loads(item.default_props_json, {}) or {},
+                'allowed_children': _safe_json_loads(item.allowed_children_json, []) or [],
+                'restrictions': _safe_json_loads(item.restrictions_json, {}) or {},
+            }
+        )
+    return payload
+
+
+def _build_widget_registry_payload(enabled_only=True):
+    query = AcpWidgetDefinition.query
+    if enabled_only:
+        query = query.filter_by(is_enabled=True)
+    items = query.order_by(AcpWidgetDefinition.category.asc(), AcpWidgetDefinition.key.asc()).all()
+    payload = []
+    for item in items:
+        payload.append(
+            {
+                'key': item.key,
+                'name': item.name,
+                'category': item.category,
+                'config_schema': _safe_json_loads(item.config_schema_json, {}) or {},
+                'data_contract': _safe_json_loads(item.data_contract_json, {}) or {},
+                'allowed_filters': _safe_json_loads(item.allowed_filters_json, []) or [],
+                'permissions_required': _safe_json_loads(item.permissions_required_json, []) or [],
+            }
+        )
+    return payload
+
+
+def _normalize_component_type(component_type):
+    raw = clean_text(component_type, 120)
+    alias_map = {
+        'Container': 'layout.container',
+        'Hero': 'marketing.hero',
+        'ServiceCards': 'content.serviceCards',
+    }
+    return alias_map.get(raw, raw)
+
+
+def _normalize_blocks_tree_payload(blocks_payload):
+    root = blocks_payload if isinstance(blocks_payload, dict) else {}
+    root_type = _normalize_component_type(root.get('type') or 'layout.container') or 'layout.container'
+    root_props = root.get('props') if isinstance(root.get('props'), dict) else {}
+    root_children = root.get('children') if isinstance(root.get('children'), list) else []
+    normalized_children = []
+    for child in root_children:
+        if not isinstance(child, dict):
+            continue
+        child_type = _normalize_component_type(child.get('type') or '')
+        if not child_type:
+            continue
+        child_props = child.get('props') if isinstance(child.get('props'), dict) else {}
+        normalized_children.append(
+            {
+                'type': child_type,
+                'props': child_props,
+            }
+        )
+    return {
+        'type': root_type,
+        'props': root_props,
+        'children': normalized_children,
+    }
+
+
+def _validate_blocks_tree_against_registry(blocks_payload):
+    normalized = _normalize_blocks_tree_payload(blocks_payload)
+    registry_keys = {item['key'] for item in _build_component_registry_payload(enabled_only=True)}
+    if registry_keys:
+        if normalized['type'] not in registry_keys:
+            return False, normalized, f'Root block type "{normalized["type"]}" is not registered.'
+        for child in normalized.get('children', []):
+            if child.get('type') not in registry_keys:
+                return False, normalized, f'Child block type "{child.get("type")}" is not registered.'
+    return True, normalized, None
+
+
+def _filter_widgets_for_role(widgets, role_rules, role_key):
+    role_rule = role_rules.get(role_key) if isinstance(role_rules, dict) else {}
+    role_rule = role_rule if isinstance(role_rule, dict) else {}
+    hidden_widgets = role_rule.get('hiddenWidgets')
+    hidden = {str(v) for v in hidden_widgets} if isinstance(hidden_widgets, list) else set()
+    allowed_widgets = role_rule.get('allowedWidgets')
+    allowed = {str(v) for v in allowed_widgets} if isinstance(allowed_widgets, list) else set()
+    show_all = bool(role_rule.get('showAll'))
+
+    visible_widgets = []
+    for widget in widgets if isinstance(widgets, list) else []:
+        if not isinstance(widget, dict):
+            continue
+        widget_id = str(widget.get('id') or '')
+        widget_type = str(widget.get('type') or '')
+        if hidden and (widget_id in hidden or widget_type in hidden):
+            continue
+        widget_roles = widget.get('visibilityRoles')
+        if isinstance(widget_roles, list) and widget_roles:
+            normalized_roles = {str(role) for role in widget_roles}
+            if role_key not in normalized_roles:
+                continue
+        if not show_all and allowed:
+            if widget_id not in allowed and widget_type not in allowed:
+                continue
+        visible_widgets.append(widget)
+    return visible_widgets, role_rule
 
 
 def _apply_acp_workflow(document, requested_status, scheduled_raw):
@@ -2178,6 +2298,7 @@ def acp_pages():
 @admin_bp.route('/acp/pages/new', methods=['GET', 'POST'])
 @login_required
 def acp_page_add():
+    component_registry = _build_component_registry_payload(enabled_only=True)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 220)
         slug = clean_text(request.form.get('slug'), 220) or slugify(title)
@@ -2190,17 +2311,21 @@ def acp_page_add():
 
         if not title or not slug:
             flash('Title and slug are required.', 'danger')
-            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
         if AcpPageDocument.query.filter_by(slug=slug).first():
             flash('A page with this slug already exists.', 'danger')
-            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
 
         seo_payload = _safe_json_loads(seo_json, None)
         blocks_payload = _safe_json_loads(blocks_tree, None)
         theme_payload = _safe_json_loads(theme_override_json, None)
         if seo_payload is None or blocks_payload is None or theme_payload is None:
             flash('Invalid JSON payload. Fix SEO, blocks tree, or theme override JSON.', 'danger')
-            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
+        blocks_ok, normalized_blocks, blocks_error = _validate_blocks_tree_against_registry(blocks_payload)
+        if not blocks_ok:
+            flash(blocks_error, 'danger')
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
 
         item = AcpPageDocument(
             title=title,
@@ -2208,7 +2333,7 @@ def acp_page_add():
             template_id=template_id,
             locale=locale,
             seo_json=_safe_json_dumps(seo_payload, {}),
-            blocks_tree=_safe_json_dumps(blocks_payload, {}),
+            blocks_tree=_safe_json_dumps(normalized_blocks, {}),
             theme_override_json=_safe_json_dumps(theme_payload, {}),
             created_by_id=current_user.id,
             updated_by_id=current_user.id,
@@ -2220,7 +2345,7 @@ def acp_page_add():
         )
         if not ok:
             flash(workflow_error, 'danger')
-            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
 
         db.session.add(item)
         db.session.flush()
@@ -2230,13 +2355,19 @@ def acp_page_add():
         flash('ACP page created.', 'success')
         return redirect(url_for('admin.acp_page_edit', id=item.id))
 
-    return render_template('admin/acp/page_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+    return render_template(
+        'admin/acp/page_form.html',
+        item=None,
+        workflow_options=get_workflow_status_options(current_user),
+        component_registry=component_registry,
+    )
 
 
 @admin_bp.route('/acp/pages/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_page_edit(id):
     item = AcpPageDocument.query.get_or_404(id)
+    component_registry = _build_component_registry_payload(enabled_only=True)
     if request.method == 'POST':
         before_state = _serialize_acp_page(item)
         title = clean_text(request.form.get('title'), 220)
@@ -2250,25 +2381,29 @@ def acp_page_edit(id):
 
         if not title or not slug:
             flash('Title and slug are required.', 'danger')
-            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
         duplicate = AcpPageDocument.query.filter(AcpPageDocument.slug == slug, AcpPageDocument.id != item.id).first()
         if duplicate:
             flash('Another page already uses this slug.', 'danger')
-            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
 
         seo_payload = _safe_json_loads(seo_json, None)
         blocks_payload = _safe_json_loads(blocks_tree, None)
         theme_payload = _safe_json_loads(theme_override_json, None)
         if seo_payload is None or blocks_payload is None or theme_payload is None:
             flash('Invalid JSON payload. Fix SEO, blocks tree, or theme override JSON.', 'danger')
-            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
+        blocks_ok, normalized_blocks, blocks_error = _validate_blocks_tree_against_registry(blocks_payload)
+        if not blocks_ok:
+            flash(blocks_error, 'danger')
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
 
         item.title = title
         item.slug = slug
         item.template_id = template_id
         item.locale = locale
         item.seo_json = _safe_json_dumps(seo_payload, {})
-        item.blocks_tree = _safe_json_dumps(blocks_payload, {})
+        item.blocks_tree = _safe_json_dumps(normalized_blocks, {})
         item.theme_override_json = _safe_json_dumps(theme_payload, {})
         item.updated_by_id = current_user.id
 
@@ -2279,7 +2414,7 @@ def acp_page_edit(id):
         )
         if not ok:
             flash(workflow_error, 'danger')
-            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/page_form.html', item=item, workflow_options=get_workflow_status_options(current_user), component_registry=component_registry)
 
         _create_page_version(item, note=change_note or 'Content updated')
         _create_acp_audit_event('pages', 'update', 'acp_page_document', item.slug, before_state, _serialize_acp_page(item))
@@ -2293,6 +2428,7 @@ def acp_page_edit(id):
         item=item,
         versions=versions,
         workflow_options=get_workflow_status_options(current_user),
+        component_registry=component_registry,
     )
 
 
@@ -2349,6 +2485,7 @@ def acp_dashboards():
 @admin_bp.route('/acp/dashboards/new', methods=['GET', 'POST'])
 @login_required
 def acp_dashboard_add():
+    widget_registry = _build_widget_registry_payload(enabled_only=True)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 220)
         dashboard_id = clean_text(request.form.get('dashboard_id'), 120) or slugify(title)
@@ -2364,13 +2501,13 @@ def acp_dashboard_add():
 
         if not title or not dashboard_id or not route:
             flash('Title, dashboard ID, and route are required.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
         if AcpDashboardDocument.query.filter_by(dashboard_id=dashboard_id).first():
             flash('A dashboard with this ID already exists.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
         if AcpDashboardDocument.query.filter_by(route=route).first():
             flash('A dashboard with this route already exists.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
 
         layout_payload = _safe_json_loads(layout_config_json, None)
         widgets_payload = _safe_json_loads(widgets_json, None)
@@ -2378,7 +2515,7 @@ def acp_dashboard_add():
         visibility_payload = _safe_json_loads(role_visibility_json, None)
         if layout_payload is None or widgets_payload is None or filters_payload is None or visibility_payload is None:
             flash('Invalid JSON payload in dashboard configuration.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
 
         item = AcpDashboardDocument(
             title=title,
@@ -2399,7 +2536,7 @@ def acp_dashboard_add():
         )
         if not ok:
             flash(workflow_error, 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
 
         db.session.add(item)
         db.session.flush()
@@ -2409,13 +2546,20 @@ def acp_dashboard_add():
         flash('ACP dashboard created.', 'success')
         return redirect(url_for('admin.acp_dashboard_edit', id=item.id))
 
-    return render_template('admin/acp/dashboard_form.html', item=None, workflow_options=get_workflow_status_options(current_user))
+    return render_template(
+        'admin/acp/dashboard_form.html',
+        item=None,
+        workflow_options=get_workflow_status_options(current_user),
+        widget_registry=widget_registry,
+        role_options=USER_ROLE_CHOICES,
+    )
 
 
 @admin_bp.route('/acp/dashboards/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_dashboard_edit(id):
     item = AcpDashboardDocument.query.get_or_404(id)
+    widget_registry = _build_widget_registry_payload(enabled_only=True)
     if request.method == 'POST':
         before_state = _serialize_acp_dashboard(item)
         title = clean_text(request.form.get('title'), 220)
@@ -2432,21 +2576,21 @@ def acp_dashboard_edit(id):
 
         if not title or not dashboard_id or not route:
             flash('Title, dashboard ID, and route are required.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
         duplicate_dashboard = AcpDashboardDocument.query.filter(
             AcpDashboardDocument.dashboard_id == dashboard_id,
             AcpDashboardDocument.id != item.id,
         ).first()
         if duplicate_dashboard:
             flash('Another dashboard already uses this dashboard ID.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
         duplicate_route = AcpDashboardDocument.query.filter(
             AcpDashboardDocument.route == route,
             AcpDashboardDocument.id != item.id,
         ).first()
         if duplicate_route:
             flash('Another dashboard already uses this route.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
 
         layout_payload = _safe_json_loads(layout_config_json, None)
         widgets_payload = _safe_json_loads(widgets_json, None)
@@ -2454,7 +2598,7 @@ def acp_dashboard_edit(id):
         visibility_payload = _safe_json_loads(role_visibility_json, None)
         if layout_payload is None or widgets_payload is None or filters_payload is None or visibility_payload is None:
             flash('Invalid JSON payload in dashboard configuration.', 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
 
         item.title = title
         item.dashboard_id = dashboard_id
@@ -2472,7 +2616,7 @@ def acp_dashboard_edit(id):
         )
         if not ok:
             flash(workflow_error, 'danger')
-            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user))
+            return render_template('admin/acp/dashboard_form.html', item=item, workflow_options=get_workflow_status_options(current_user), widget_registry=widget_registry, role_options=USER_ROLE_CHOICES)
 
         _create_dashboard_version(item, note=change_note or 'Dashboard updated')
         _create_acp_audit_event('dashboards', 'update', 'acp_dashboard_document', item.dashboard_id, before_state, _serialize_acp_dashboard(item))
@@ -2488,6 +2632,35 @@ def acp_dashboard_edit(id):
         item=item,
         versions=versions,
         workflow_options=get_workflow_status_options(current_user),
+        widget_registry=widget_registry,
+        role_options=USER_ROLE_CHOICES,
+    )
+
+
+@admin_bp.route('/acp/dashboards/<int:id>/preview')
+@login_required
+def acp_dashboard_preview(id):
+    item = AcpDashboardDocument.query.get_or_404(id)
+    requested_role = normalize_user_role(
+        request.args.get('role', getattr(current_user, 'role_key', ROLE_EDITOR)),
+        default=getattr(current_user, 'role_key', ROLE_EDITOR),
+    )
+    dashboard_payload = _serialize_acp_dashboard(item)
+    widgets = dashboard_payload.get('widgets', [])
+    role_rules = dashboard_payload.get('role_visibility_rules', {})
+    visible_widgets, applied_rule = _filter_widgets_for_role(widgets, role_rules, requested_role)
+    hidden_count = max(0, len(widgets) - len(visible_widgets))
+    return render_template(
+        'admin/acp/dashboard_preview.html',
+        item=item,
+        role=requested_role,
+        role_options=USER_ROLE_CHOICES,
+        visible_widgets=visible_widgets,
+        hidden_count=hidden_count,
+        role_rule=applied_rule,
+        layout_config=dashboard_payload.get('layout_config', {}),
+        global_filters=dashboard_payload.get('global_filters', []),
+        role_rules=role_rules,
     )
 
 

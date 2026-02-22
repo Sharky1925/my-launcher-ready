@@ -1,12 +1,112 @@
 {% extends "admin/base.html" %}
 {% block page_title %}{% if item %}Edit Dashboard{% else %}New Dashboard{% endif %}{% endblock %}
 
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+  .acp-widget-grid {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 14px;
+  }
+  .acp-widget-side,
+  .acp-widget-main {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(6, 12, 22, 0.62);
+    padding: 12px;
+  }
+  .acp-widget-canvas {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .acp-widget-item {
+    border: 1px solid rgba(116, 160, 255, 0.3);
+    border-radius: 10px;
+    background: rgba(10, 18, 30, 0.85);
+    padding: 10px;
+    cursor: pointer;
+  }
+  .acp-widget-item.active {
+    border-color: rgba(116, 160, 255, 0.8);
+    box-shadow: inset 0 0 0 1px rgba(116, 160, 255, 0.4);
+  }
+  .acp-widget-item[draggable="true"] {
+    user-select: none;
+  }
+  .acp-widget-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .acp-widget-type {
+    font-size: .72rem;
+    color: #c8daf0;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+  .acp-widget-label {
+    color: var(--text-muted);
+    font-size: .8rem;
+  }
+  .acp-widget-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .acp-widget-actions button {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(79, 123, 255, 0.13);
+    color: var(--text);
+    padding: 2px 8px;
+    font-size: .72rem;
+  }
+  .acp-widget-actions button:hover {
+    background: rgba(79, 123, 255, 0.24);
+  }
+  .acp-widget-prop-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .acp-role-preview-frame {
+    width: 100%;
+    min-height: 420px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(4, 9, 16, 0.8);
+  }
+  .acp-empty {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--text-muted);
+    font-size: .82rem;
+    text-align: center;
+  }
+  @media (max-width: 991px) {
+    .acp-widget-grid {
+      grid-template-columns: 1fr;
+    }
+    .acp-widget-prop-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 {% set item = item if item else None %}
 <div class="card mb-3">
   <div class="card-header"><strong>{% if item %}Edit{% else %}Create{% endif %} Dashboard Document</strong></div>
   <div class="card-body">
-    <form method="POST" class="row g-3">
+    <form method="POST" class="row g-3" id="acpDashboardForm">
       {{ csrf_input() }}
       <div class="col-md-5">
         <label class="form-label">Title</label>
@@ -44,12 +144,38 @@
 
       <div class="col-12">
         <label class="form-label">Layout Config JSON</label>
-        <textarea class="form-control form-control-mono-sm" name="layout_config_json" rows="6">{{ item.layout_config_json if item else '{\n  "columns": 12,\n  "rowHeight": 72,\n  "gap": 12\n}' }}</textarea>
+        <textarea class="form-control form-control-mono-sm" name="layout_config_json" rows="5">{{ item.layout_config_json if item else '{\n  "columns": 12,\n  "rowHeight": 72,\n  "gap": 12\n}' }}</textarea>
       </div>
+
       <div class="col-12">
-        <label class="form-label">Widgets JSON</label>
-        <textarea class="form-control form-control-mono-sm" name="widgets_json" rows="9">{{ item.widgets_json if item else '[\n  {\n    "type": "kpi-card",\n    "metric": "support_open_tickets",\n    "title": "Open Tickets",\n    "position": {"x": 0, "y": 0, "w": 3, "h": 2}\n  },\n  {\n    "type": "line-chart",\n    "metric": "tickets_7d",\n    "title": "7-Day Ticket Trend",\n    "position": {"x": 3, "y": 0, "w": 6, "h": 3}\n  },\n  {\n    "type": "table",\n    "metric": "latest_support_tickets",\n    "title": "Latest Tickets",\n    "position": {"x": 0, "y": 3, "w": 9, "h": 4}\n  }\n]' }}</textarea>
+        <label class="form-label">Widget Builder (Drag and Drop)</label>
+        <div class="acp-widget-grid">
+          <div class="acp-widget-side">
+            <label class="form-label">Widget Registry</label>
+            <select class="form-select mb-2" id="acpWidgetPicker">
+              {% for widget in widget_registry or [] %}
+              <option value="{{ widget.key }}">{{ widget.name }} ({{ widget.key }})</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-outline-primary mb-3" type="button" id="acpAddWidgetBtn"><i class="fa-solid fa-plus me-1"></i>Add Widget</button>
+            <div class="small text-muted mb-2">Drag cards to reorder. Select a widget to edit config schema fields.</div>
+            <ul class="acp-widget-canvas" id="acpWidgetCanvas"></ul>
+          </div>
+          <div class="acp-widget-main">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong>Selected Widget Config</strong>
+              <span class="small text-muted" id="acpSelectedWidgetType">None selected</span>
+            </div>
+            <div id="acpWidgetEditor" class="acp-empty">Select a widget to edit configuration.</div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label">Widgets JSON</label>
+          <textarea class="form-control form-control-mono-sm" name="widgets_json" id="acpWidgetsField" rows="9">{{ item.widgets_json if item else '[\n  {\n    "id": "open-tickets",\n    "type": "kpi-card",\n    "metric": "support_open_tickets",\n    "title": "Open Tickets",\n    "position": {"x": 0, "y": 0, "w": 3, "h": 2}\n  },\n  {\n    "id": "ticket-trend",\n    "type": "line-chart",\n    "metric": "support_open_tickets",\n    "title": "Ticket Trend",\n    "position": {"x": 3, "y": 0, "w": 6, "h": 3}\n  },\n  {\n    "id": "ticket-table",\n    "type": "table",\n    "metric": "support_open_tickets",\n    "title": "Ticket Queue",\n    "position": {"x": 0, "y": 3, "w": 9, "h": 4}\n  }\n]' }}</textarea>
+        </div>
       </div>
+
       <div class="col-md-6">
         <label class="form-label">Global Filters JSON</label>
         <textarea class="form-control form-control-mono-sm" name="global_filters_json" rows="5">{{ item.global_filters_json if item else '[{"id": "dateRange", "type": "date_range"}, {"id": "priority", "type": "enum"}]' }}</textarea>
@@ -74,6 +200,28 @@
 </div>
 
 {% if item %}
+<div class="card mb-3">
+  <div class="card-header"><strong>Role-Based Preview</strong></div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <label class="form-label mb-0">Preview as role</label>
+      <select id="acpPreviewRoleSelect" class="form-select" style="max-width: 220px;">
+        {% for role in role_options %}
+        <option value="{{ role }}" {% if role == current_user.role_key %}selected{% endif %}>{{ role_labels.get(role, role|title) }}</option>
+        {% endfor %}
+      </select>
+      <a id="acpPreviewOpenBtn" class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.acp_dashboard_preview', id=item.id, role=current_user.role_key) }}" target="_blank" rel="noopener">Open Full Preview</a>
+    </div>
+    <iframe
+      id="acpPreviewFrame"
+      class="acp-role-preview-frame"
+      src="{{ url_for('admin.acp_dashboard_preview', id=item.id, role=current_user.role_key) }}"
+      loading="lazy"
+      title="Role preview frame"
+    ></iframe>
+  </div>
+</div>
+
 <div class="row g-3">
   <div class="col-lg-4">
     <div class="card">
@@ -135,4 +283,349 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+(function () {
+  const widgetRegistry = {{ (widget_registry or []) | tojson }};
+  const widgetMap = {};
+  widgetRegistry.forEach((item) => { widgetMap[item.key] = item; });
+
+  const widgetsField = document.getElementById('acpWidgetsField');
+  const canvas = document.getElementById('acpWidgetCanvas');
+  const editor = document.getElementById('acpWidgetEditor');
+  const picker = document.getElementById('acpWidgetPicker');
+  const addBtn = document.getElementById('acpAddWidgetBtn');
+  const selectedType = document.getElementById('acpSelectedWidgetType');
+
+  if (!widgetsField || !canvas || !editor || !picker || !addBtn || !selectedType) {
+    return;
+  }
+
+  let state = {
+    widgets: [],
+    selectedIndex: -1,
+    dragIndex: null,
+  };
+
+  function tryParseJSON(value, fallback) {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return fallback;
+    }
+  }
+
+  function normalizeWidgets(rawWidgets) {
+    if (!Array.isArray(rawWidgets)) {
+      return [];
+    }
+    return rawWidgets.filter((widget) => widget && typeof widget === 'object' && !Array.isArray(widget)).map((widget, index) => ({
+      id: widget.id || ('widget-' + (index + 1)),
+      type: widget.type || 'kpi-card',
+      metric: widget.metric || '',
+      title: widget.title || '',
+      position: widget.position && typeof widget.position === 'object' && !Array.isArray(widget.position)
+        ? widget.position
+        : { x: 0, y: index * 2, w: 3, h: 2 },
+      ...widget,
+    }));
+  }
+
+  function syncWidgetsField() {
+    widgetsField.value = JSON.stringify(state.widgets, null, 2);
+  }
+
+  function widgetLabel(widget) {
+    return widget.title || widget.metric || widget.id || 'Untitled widget';
+  }
+
+  function moveWidget(from, to) {
+    if (from < 0 || to < 0 || from >= state.widgets.length || to >= state.widgets.length) {
+      return;
+    }
+    const next = state.widgets.slice();
+    const moved = next.splice(from, 1)[0];
+    next.splice(to, 0, moved);
+    state.widgets = next;
+    state.selectedIndex = to;
+    renderCanvas();
+    renderEditor();
+    syncWidgetsField();
+  }
+
+  function removeWidget(index) {
+    if (index < 0 || index >= state.widgets.length) {
+      return;
+    }
+    state.widgets.splice(index, 1);
+    if (state.selectedIndex >= state.widgets.length) {
+      state.selectedIndex = state.widgets.length - 1;
+    }
+    renderCanvas();
+    renderEditor();
+    syncWidgetsField();
+  }
+
+  function renderCanvas() {
+    canvas.innerHTML = '';
+    if (!state.widgets.length) {
+      const empty = document.createElement('li');
+      empty.className = 'acp-empty';
+      empty.textContent = 'No widgets yet. Add widgets from registry.';
+      canvas.appendChild(empty);
+      return;
+    }
+
+    state.widgets.forEach((widget, index) => {
+      const item = document.createElement('li');
+      item.className = 'acp-widget-item' + (state.selectedIndex === index ? ' active' : '');
+      item.draggable = true;
+
+      item.addEventListener('dragstart', () => {
+        state.dragIndex = index;
+      });
+      item.addEventListener('dragover', (event) => {
+        event.preventDefault();
+      });
+      item.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const from = state.dragIndex;
+        const to = index;
+        state.dragIndex = null;
+        if (from === null || from === to) {
+          return;
+        }
+        moveWidget(from, to);
+      });
+
+      const top = document.createElement('div');
+      top.className = 'acp-widget-top';
+
+      const type = document.createElement('div');
+      type.className = 'acp-widget-type';
+      type.textContent = widget.type;
+      top.appendChild(type);
+
+      const actions = document.createElement('div');
+      actions.className = 'acp-widget-actions';
+
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.textContent = 'Up';
+      up.addEventListener('click', (event) => {
+        event.stopPropagation();
+        moveWidget(index, Math.max(0, index - 1));
+      });
+      actions.appendChild(up);
+
+      const down = document.createElement('button');
+      down.type = 'button';
+      down.textContent = 'Down';
+      down.addEventListener('click', (event) => {
+        event.stopPropagation();
+        moveWidget(index, Math.min(state.widgets.length - 1, index + 1));
+      });
+      actions.appendChild(down);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = 'Delete';
+      del.addEventListener('click', (event) => {
+        event.stopPropagation();
+        removeWidget(index);
+      });
+      actions.appendChild(del);
+
+      top.appendChild(actions);
+      item.appendChild(top);
+
+      const label = document.createElement('div');
+      label.className = 'acp-widget-label';
+      label.textContent = widgetLabel(widget);
+      item.appendChild(label);
+
+      item.addEventListener('click', () => {
+        state.selectedIndex = index;
+        renderCanvas();
+        renderEditor();
+      });
+
+      canvas.appendChild(item);
+    });
+  }
+
+  function createInput(wrapper, labelText, value, typeHint, onValue) {
+    const label = document.createElement('label');
+    label.className = 'form-label';
+    label.textContent = labelText;
+    wrapper.appendChild(label);
+
+    if (typeHint === 'boolean') {
+      const select = document.createElement('select');
+      select.className = 'form-select';
+      select.innerHTML = '<option value="true">true</option><option value="false">false</option>';
+      select.value = value ? 'true' : 'false';
+      select.addEventListener('change', () => onValue(select.value === 'true'));
+      wrapper.appendChild(select);
+      return;
+    }
+
+    if (typeHint === 'number' || typeof value === 'number') {
+      const input = document.createElement('input');
+      input.className = 'form-control';
+      input.type = 'number';
+      input.value = Number(value || 0);
+      input.addEventListener('input', () => onValue(Number(input.value || 0)));
+      wrapper.appendChild(input);
+      return;
+    }
+
+    if (typeHint === 'array' || typeHint === 'object' || Array.isArray(value) || (value && typeof value === 'object')) {
+      const text = document.createElement('textarea');
+      text.className = 'form-control form-control-mono-sm';
+      text.rows = 3;
+      text.value = JSON.stringify(value || (typeHint === 'array' ? [] : {}), null, 2);
+      text.addEventListener('input', () => {
+        onValue(tryParseJSON(text.value, value));
+      });
+      wrapper.appendChild(text);
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.className = 'form-control';
+    input.type = 'text';
+    input.value = value == null ? '' : String(value);
+    input.addEventListener('input', () => onValue(input.value));
+    wrapper.appendChild(input);
+  }
+
+  function renderEditor() {
+    const index = state.selectedIndex;
+    if (index < 0 || index >= state.widgets.length) {
+      selectedType.textContent = 'None selected';
+      editor.className = 'acp-empty';
+      editor.textContent = 'Select a widget to edit configuration.';
+      return;
+    }
+
+    const widget = state.widgets[index];
+    const registryItem = widgetMap[widget.type] || {};
+    const schema = registryItem.config_schema || {};
+    const schemaProps = schema.properties && typeof schema.properties === 'object' ? schema.properties : {};
+
+    selectedType.textContent = widget.type;
+    editor.className = '';
+    editor.innerHTML = '';
+
+    const grid = document.createElement('div');
+    grid.className = 'acp-widget-prop-grid';
+
+    const baseKeys = ['id', 'title', 'metric'];
+    const schemaKeys = Object.keys(schemaProps);
+    const widgetKeys = Object.keys(widget || {}).filter((key) => !['position', 'type'].includes(key));
+    const mergedKeys = Array.from(new Set(baseKeys.concat(schemaKeys, widgetKeys)));
+
+    mergedKeys.forEach((key) => {
+      const col = document.createElement('div');
+      const schemaProp = schemaProps[key] || {};
+      createInput(col, key, widget[key], schemaProp.type || null, (nextValue) => {
+        widget[key] = nextValue;
+        syncWidgetsField();
+        renderCanvas();
+      });
+      grid.appendChild(col);
+    });
+
+    const position = widget.position && typeof widget.position === 'object' ? widget.position : { x: 0, y: 0, w: 3, h: 2 };
+    widget.position = position;
+    ['x', 'y', 'w', 'h'].forEach((axis) => {
+      const col = document.createElement('div');
+      createInput(col, 'position.' + axis, Number(position[axis] || 0), 'number', (nextValue) => {
+        widget.position[axis] = Number(nextValue || 0);
+        syncWidgetsField();
+      });
+      grid.appendChild(col);
+    });
+
+    editor.appendChild(grid);
+  }
+
+  function addWidget() {
+    const widgetType = picker.value;
+    if (!widgetType) {
+      return;
+    }
+    const registryItem = widgetMap[widgetType] || {};
+    const defaults = {
+      id: widgetType + '-' + (state.widgets.length + 1),
+      type: widgetType,
+      title: registryItem.name || widgetType,
+      metric: '',
+      position: { x: 0, y: state.widgets.length * 2, w: 3, h: 2 },
+    };
+
+    const schema = registryItem.config_schema || {};
+    const schemaProps = schema.properties && typeof schema.properties === 'object' ? schema.properties : {};
+    Object.keys(schemaProps).forEach((key) => {
+      if (defaults[key] !== undefined) {
+        return;
+      }
+      const type = schemaProps[key].type;
+      if (type === 'number') {
+        defaults[key] = 0;
+      } else if (type === 'boolean') {
+        defaults[key] = false;
+      } else if (type === 'array') {
+        defaults[key] = [];
+      } else if (type === 'object') {
+        defaults[key] = {};
+      } else {
+        defaults[key] = '';
+      }
+    });
+
+    state.widgets.push(defaults);
+    state.selectedIndex = state.widgets.length - 1;
+    renderCanvas();
+    renderEditor();
+    syncWidgetsField();
+  }
+
+  addBtn.addEventListener('click', addWidget);
+
+  state.widgets = normalizeWidgets(tryParseJSON(widgetsField.value, []));
+  if (!state.widgets.length && picker.value) {
+    addWidget();
+  } else {
+    syncWidgetsField();
+    renderCanvas();
+    if (state.widgets.length) {
+      state.selectedIndex = 0;
+      renderCanvas();
+      renderEditor();
+    }
+  }
+})();
+
+(function () {
+  const roleSelect = document.getElementById('acpPreviewRoleSelect');
+  const previewFrame = document.getElementById('acpPreviewFrame');
+  const openBtn = document.getElementById('acpPreviewOpenBtn');
+
+  if (!roleSelect || !previewFrame || !openBtn) {
+    return;
+  }
+
+  const baseUrl = openBtn.getAttribute('href').split('?')[0];
+  roleSelect.addEventListener('change', () => {
+    const role = encodeURIComponent(roleSelect.value);
+    const target = baseUrl + '?role=' + role;
+    previewFrame.src = target;
+    openBtn.href = target;
+  });
+})();
+</script>
 {% endblock %}
