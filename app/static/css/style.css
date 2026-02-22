@@ -47,6 +47,12 @@
   --gradient-vibrant-alt: linear-gradient(135deg, #14b8a6 0%, #3b82f6 52%, #a855f7 100%);
   --gradient-hero: linear-gradient(180deg, rgba(8, 12, 20, 0) 0%, rgba(10, 16, 27, 0.9) 100%);
   --bg-gradient: linear-gradient(180deg, #05080f 0%, #0a1320 48%, #0d1827 100%);
+  --landing-accent-a: #4f7bff;
+  --landing-accent-b: #2ecbff;
+  --landing-accent-c: #9ac4ff;
+  --landing-accent-a-rgb: 79 123 255;
+  --landing-accent-b-rgb: 46 203 255;
+  --landing-accent-c-rgb: 154 196 255;
 
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -2054,7 +2060,7 @@ main .container {
    PAGE HEADER
    ============================================================ */
 .page-header {
-  background: var(--bg); padding: 86px 0 64px;
+  background: var(--bg-gradient); padding: 86px 0 64px;
   position: relative; overflow: hidden;
 }
 .page-header.section-bottom-spacious {
@@ -2099,7 +2105,7 @@ main .container {
   content: ''; position: absolute; inset: 0;
   background: radial-gradient(circle at 18% 22%, rgba(59,130,246,0.2), transparent 62%),
     radial-gradient(circle at 82% 8%, rgba(96,165,250,0.15), transparent 58%),
-    radial-gradient(circle at 46% -10%, rgba(168, 85, 247, 0.16), transparent 60%);
+    radial-gradient(circle at 46% -10%, rgba(79, 123, 255, 0.16), transparent 60%);
   animation: gradientFlow 30s ease-in-out infinite;
   pointer-events: none;
 }
@@ -2133,7 +2139,7 @@ main .container {
   left: -26px;
   bottom: -44px;
   border-radius: 50%;
-  background: radial-gradient(circle at 45% 45%, rgba(255, 95, 167, 0.2), rgba(255, 95, 167, 0));
+  background: radial-gradient(circle at 45% 45%, rgba(46, 203, 255, 0.2), rgba(46, 203, 255, 0));
   animation: orbDriftAlt 24s ease-in-out infinite;
   pointer-events: none;
 }
@@ -3066,18 +3072,18 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 }
 
 .service-theme {
-  --service-accent-a: #4f7bff;
-  --service-accent-b: #2ecbff;
-  --service-accent-c: #a855f7;
-  --service-accent-a-rgb: 79 123 255;
-  --service-accent-b-rgb: 46 203 255;
-  --service-accent-c-rgb: 168 85 247;
+  --service-accent-a: var(--landing-accent-a);
+  --service-accent-b: var(--landing-accent-b);
+  --service-accent-c: var(--landing-accent-c);
+  --service-accent-a-rgb: var(--landing-accent-a-rgb);
+  --service-accent-b-rgb: var(--landing-accent-b-rgb);
+  --service-accent-c-rgb: var(--landing-accent-c-rgb);
 }
 .service-theme::before {
   background:
-    radial-gradient(circle at 16% 18%, rgb(var(--service-accent-a-rgb) / 0.34), transparent 60%),
-    radial-gradient(circle at 84% 6%, rgb(var(--service-accent-b-rgb) / 0.3), transparent 56%),
-    radial-gradient(circle at 45% -8%, rgb(var(--service-accent-c-rgb) / 0.24), transparent 60%);
+    radial-gradient(circle at 18% 22%, rgba(59,130,246,0.2), transparent 62%),
+    radial-gradient(circle at 82% 8%, rgba(96,165,250,0.15), transparent 58%),
+    radial-gradient(circle at 46% -10%, rgba(79, 123, 255, 0.16), transparent 60%);
 }
 .service-theme .ind-hero-icon {
   background: linear-gradient(135deg, var(--service-accent-a), var(--service-accent-b), var(--service-accent-c));
@@ -3112,14 +3118,23 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 .service-theme--game-console-repair { --service-accent-a: #7c3aed; --service-accent-b: #06b6d4; --service-accent-c: #22c55e; --service-accent-a-rgb: 124 58 237; --service-accent-b-rgb: 6 182 212; --service-accent-c-rgb: 34 197 94; }
 .service-theme--device-diagnostics { --service-accent-a: #2563eb; --service-accent-b: #14b8a6; --service-accent-c: #6366f1; --service-accent-a-rgb: 37 99 235; --service-accent-b-rgb: 20 184 166; --service-accent-c-rgb: 99 102 241; }
 .service-theme--enterprise-consultancy { --service-accent-a: #1d4ed8; --service-accent-b: #0891b2; --service-accent-c: #0f766e; --service-accent-a-rgb: 29 78 216; --service-accent-b-rgb: 8 145 178; --service-accent-c-rgb: 15 118 110; }
+.service-theme[class*="service-theme--"] {
+  --service-accent-a: var(--landing-accent-a);
+  --service-accent-b: var(--landing-accent-b);
+  --service-accent-c: var(--landing-accent-c);
+  --service-accent-a-rgb: var(--landing-accent-a-rgb);
+  --service-accent-b-rgb: var(--landing-accent-b-rgb);
+  --service-accent-c-rgb: var(--landing-accent-c-rgb);
+}
 
 /* ============================================================
    REMOTE SUPPORT PORTAL
    ============================================================ */
 .remote-page-header::before {
   background:
-    radial-gradient(circle at 14% 18%, rgba(55, 122, 255, 0.26), transparent 58%),
-    radial-gradient(circle at 86% 0%, rgba(38, 200, 217, 0.17), transparent 54%);
+    radial-gradient(circle at 18% 22%, rgba(59,130,246,0.2), transparent 62%),
+    radial-gradient(circle at 82% 8%, rgba(96,165,250,0.15), transparent 58%),
+    radial-gradient(circle at 46% -10%, rgba(79, 123, 255, 0.16), transparent 60%);
 }
 .remote-support-section {
   overflow: visible;
@@ -4626,7 +4641,27 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 .industries-page-clean .section--alt,
 .service-detail-clean .section--alt,
 .industry-detail-clean .section--alt {
-  background: transparent;
+  background: linear-gradient(140deg, rgba(79, 123, 255, 0.08), rgba(6, 12, 22, 0.12));
+  position: relative;
+  overflow: hidden;
+}
+.services-page-clean .section--alt::before,
+.industries-page-clean .section--alt::before,
+.service-detail-clean .section--alt::before,
+.industry-detail-clean .section--alt::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(79, 123, 255, 0.14), rgba(8, 16, 32, 0.04));
+  opacity: 0.6;
+  pointer-events: none;
+}
+.services-page-clean .section--alt > .container,
+.industries-page-clean .section--alt > .container,
+.service-detail-clean .section--alt > .container,
+.industry-detail-clean .section--alt > .container {
+  position: relative;
+  z-index: 1;
 }
 
 .services-page-clean .services-layout-panel,
