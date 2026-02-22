@@ -4616,6 +4616,11 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 .industry-detail-clean .metric-card {
   box-shadow: none;
 }
+.industry-detail-clean .section-label--industry-challenges i {
+  color: #ff4a5f;
+  background: linear-gradient(135deg, rgba(255, 132, 148, 0.28), rgba(255, 95, 116, 0.2));
+  box-shadow: 0 8px 18px rgba(164, 26, 52, 0.34);
+}
 
 /* ============================================================
    RESPONSIVE
