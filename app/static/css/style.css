@@ -180,6 +180,7 @@ p { margin: 0 0 16px; }
 .hero-slogan-banner {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 5px 10px;
   border-radius: var(--radius-full);
@@ -194,7 +195,9 @@ p { margin: 0 0 16px; }
   text-transform: none;
   line-height: 1.2;
   max-width: 100%;
+  min-width: 0;
   white-space: normal;
+  overflow-wrap: anywhere;
 }
 .hero-slogan-banner i {
   color: #ff5f86;
@@ -205,11 +208,13 @@ p { margin: 0 0 16px; }
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px 4px;
   max-width: 100%;
+  min-width: 0;
 }
 .hero-slogan-word {
   white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .hero-slogan-sep {
   display: inline-flex;
@@ -4923,6 +4928,12 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     grid-template-columns: 1fr;
   }
 }
+@media (min-width: 992px) {
+  .hero-visual {
+    margin-left: auto;
+    padding-left: clamp(8px, 1.4vw, 20px);
+  }
+}
 @media (max-width: 767px) {
   .ambient-orb {
     display: none;
@@ -4946,12 +4957,15 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     text-align: left;
     white-space: normal;
     line-height: 1.3;
-    font-size: 0.54rem;
+    font-size: 0.5rem;
     letter-spacing: 0.035em;
     padding: 5px 8px;
   }
   .hero-slogan-text {
     justify-content: flex-start;
+  }
+  .hero-slogan-word {
+    white-space: normal;
   }
   .hero-buttons--landing > .btn:last-child:nth-child(odd) {
     grid-column: auto;
