@@ -37,6 +37,25 @@
   </div>
 </section>
 
+<section class="section-sm services-page-toolbar">
+  <div class="container">
+    <div class="services-toolbar reveal">
+      <a href="#professional" class="services-toolbar-item">
+        <span class="services-toolbar-label">Professional IT</span>
+        <strong>{{ pro_services|length }} Services</strong>
+      </a>
+      <a href="#repair" class="services-toolbar-item">
+        <span class="services-toolbar-label">Technical Repair</span>
+        <strong>{{ repair_services|length }} Services</strong>
+      </a>
+      <a href="{{ url_for('main.request_quote') }}" class="services-toolbar-item services-toolbar-item--cta">
+        <span class="services-toolbar-label">Need Scoping?</span>
+        <strong>Request Quote <i class="fa-solid fa-arrow-right"></i></strong>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- Professional IT Services -->
 <section class="section" id="professional">
   <div class="container">

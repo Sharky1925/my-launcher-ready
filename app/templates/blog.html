@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-<section class="page-header">
+<section class="page-header page-header--compact">
   <div class="container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -30,9 +30,9 @@
   </div>
 </section>
 
-<section class="section">
+<section class="section section--layout-open">
   <div class="container">
-    <div class="row g-5">
+    <div class="row g-5 page-layout-grid blog-layout-grid">
       <!-- Posts Grid -->
       <div class="col-lg-8">
         <!-- Search -->
@@ -101,7 +101,7 @@
       </div>
 
       <!-- Sidebar -->
-      <div class="col-lg-4">
+      <div class="col-lg-4 blog-sidebar">
         <div class="sidebar-filter reveal-right">
           <h4>Categories</h4>
           <a href="{{ url_for('main.blog') }}" class="filter-link {% if not current_category %}active{% endif %}">All Posts</a>

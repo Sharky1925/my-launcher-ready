@@ -70,7 +70,7 @@
 
 {% block content %}
 {% set selected_additional = request.form.getlist('additional_services') %}
-<section class="page-header">
+<section class="page-header page-header--compact">
   <div class="container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -83,7 +83,7 @@
   </div>
 </section>
 
-<section class="section quote-section">
+<section class="section quote-section section--layout-open">
   <div class="container">
     <div class="service-detail-hero service-detail-hero--v2 quote-hero-card reveal">
       <div class="service-kicker-badge">Quote Intake Workflow</div>
@@ -142,7 +142,7 @@
       </a>
     </div>
 
-    <div class="row g-4 mt-1" id="business-form">
+    <div class="row g-4 mt-1 page-layout-grid quote-layout-grid" id="business-form">
       <div class="col-xl-8 reveal-left">
         <div class="contact-form-wrap quote-form-wrap">
           <div class="quote-form-head">
@@ -297,10 +297,10 @@
         </div>
       </div>
 
-      <div class="col-xl-4 reveal-right">
+      <div class="col-xl-4 reveal-right quote-side-col">
         <div class="service-visual-panel quote-side-panel">
           <div class="service-panel-head">
-            <h2><i class="fa-solid fa-route"></i>What Happens Next</h2>
+            <h2><i class="fa-solid fa-route"></i> What Happens Next</h2>
             <p>Clear process from intake to final quote.</p>
           </div>
           <ul class="service-value-list quote-next-list">

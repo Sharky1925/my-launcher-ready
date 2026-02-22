@@ -21,7 +21,7 @@
 {% set metrics = cb.get('metrics', {}) %}
 {% set ms = cb.get('milestones', {}) %}
 {% set vals = cb.get('values', {}) %}
-<section class="page-header">
+<section class="page-header page-header--compact">
   <div class="container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -37,7 +37,7 @@
 <!-- Story + Metrics -->
 <section class="section">
   <div class="container">
-    <div class="row align-items-center g-5">
+    <div class="row align-items-center g-5 page-layout-grid">
       <div class="col-lg-6 reveal-left">
         <div class="section-label"><i class="fa-solid fa-book-open"></i> {{ story.get('label', 'Our Story') }}</div>
         <h2 class="content-section-title">{{ story.get('title', 'Building the Future of IT') }}</h2>
@@ -59,7 +59,7 @@
 <!-- Timeline -->
 <section class="section section--alt">
   <div class="container">
-    <div class="row g-5">
+    <div class="row g-5 page-layout-grid">
       <div class="col-lg-5 reveal-left">
         <div class="section-label"><i class="fa-solid fa-timeline"></i> {{ ms.get('label', 'Milestones') }}</div>
         <h2 class="content-section-title">{{ ms.get('title', 'Our Journey') }}</h2>
