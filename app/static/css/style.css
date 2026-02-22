@@ -2060,7 +2060,7 @@ main .container {
    PAGE HEADER
    ============================================================ */
 .page-header {
-  background: var(--bg-gradient); padding: 86px 0 64px;
+  background: var(--bg); padding: 86px 0 64px;
   position: relative; overflow: hidden;
 }
 .page-header.section-bottom-spacious {
@@ -2103,9 +2103,9 @@ main .container {
 }
 .page-header::before {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle at 18% 22%, rgba(59,130,246,0.2), transparent 62%),
-    radial-gradient(circle at 82% 8%, rgba(96,165,250,0.15), transparent 58%),
-    radial-gradient(circle at 46% -10%, rgba(79, 123, 255, 0.16), transparent 60%);
+  background: radial-gradient(circle at 86% 12%, rgba(59,130,246,0.16), transparent 52%),
+    radial-gradient(circle at 10% 26%, rgba(107,150,255,0.12), transparent 48%),
+    radial-gradient(circle at 52% -14%, rgba(79, 123, 255, 0.1), transparent 56%);
   animation: gradientFlow 30s ease-in-out infinite;
   pointer-events: none;
 }
@@ -2122,26 +2122,12 @@ main .container {
 .page-header .container::before {
   content: "";
   position: absolute;
-  width: 180px;
-  height: 180px;
-  right: -28px;
-  top: -36px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 40%, rgba(47, 203, 255, 0.24), rgba(47, 203, 255, 0));
-  animation: orbDrift 20s ease-in-out infinite;
-  pointer-events: none;
+  display: none;
 }
 .page-header .container::after {
   content: "";
   position: absolute;
-  width: 150px;
-  height: 150px;
-  left: -26px;
-  bottom: -44px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 45% 45%, rgba(46, 203, 255, 0.2), rgba(46, 203, 255, 0));
-  animation: orbDriftAlt 24s ease-in-out infinite;
-  pointer-events: none;
+  display: none;
 }
 .page-header h1 {
   font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; color: var(--text);
@@ -3081,9 +3067,9 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 }
 .service-theme::before {
   background:
-    radial-gradient(circle at 18% 22%, rgba(59,130,246,0.2), transparent 62%),
-    radial-gradient(circle at 82% 8%, rgba(96,165,250,0.15), transparent 58%),
-    radial-gradient(circle at 46% -10%, rgba(79, 123, 255, 0.16), transparent 60%);
+    radial-gradient(circle at 86% 12%, rgba(59,130,246,0.16), transparent 52%),
+    radial-gradient(circle at 10% 26%, rgba(107,150,255,0.12), transparent 48%),
+    radial-gradient(circle at 52% -14%, rgba(79, 123, 255, 0.1), transparent 56%);
 }
 .service-theme .ind-hero-icon {
   background: linear-gradient(135deg, var(--service-accent-a), var(--service-accent-b), var(--service-accent-c));
@@ -3132,9 +3118,9 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
    ============================================================ */
 .remote-page-header::before {
   background:
-    radial-gradient(circle at 18% 22%, rgba(59,130,246,0.2), transparent 62%),
-    radial-gradient(circle at 82% 8%, rgba(96,165,250,0.15), transparent 58%),
-    radial-gradient(circle at 46% -10%, rgba(79, 123, 255, 0.16), transparent 60%);
+    radial-gradient(circle at 86% 12%, rgba(59,130,246,0.16), transparent 52%),
+    radial-gradient(circle at 10% 26%, rgba(107,150,255,0.12), transparent 48%),
+    radial-gradient(circle at 52% -14%, rgba(79, 123, 255, 0.1), transparent 56%);
 }
 .remote-support-section {
   overflow: visible;
