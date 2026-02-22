@@ -1,7 +1,11 @@
-{% set slogan_text = slogan_text if slogan_text is defined else 'Fast-Prompt Response-Reliable-Result Driven' %}
+{% set slogan_segments = slogan_segments if slogan_segments is defined else ['Fast', 'Prompt Response', 'Reliable', 'Results-Driven'] %}
 <div class="hero-slogan-wrap">
-  <span class="hero-slogan-banner" role="note" aria-label="{{ slogan_text }}">
+  <span class="hero-slogan-banner" role="note" aria-label="{{ slogan_segments | join(' ') }}">
     <i class="fa-solid fa-bolt-lightning"></i>
-    <span>{{ slogan_text }}</span>
+    <span class="hero-slogan-text">
+      {% for item in slogan_segments %}
+      <span class="hero-slogan-word">{{ item }}</span>{% if not loop.last %}<span class="hero-slogan-dot" aria-hidden="true">○</span>{% endif %}
+      {% endfor %}
+    </span>
   </span>
 </div>

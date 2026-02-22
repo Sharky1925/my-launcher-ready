@@ -32,7 +32,7 @@
         <h1>{{ cb.get('hero', {}).get('title', 'Managed IT Services & Technical Repair Services in Orange County') }}</h1>
         {% include "_hero_slogan.html" %}
         <p class="lead">{{ cb.get('hero', {}).get('lead', 'One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.') }}</p>
-        <div class="hero-buttons">
+        <div class="hero-buttons hero-buttons--landing">
           <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Book Free Consultation</a>
           <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
           <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger" aria-label="Send a support message"><i class="fa-solid fa-envelope"></i> Send Message</a>
