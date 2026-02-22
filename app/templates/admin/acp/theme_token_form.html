@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
 {% block page_title %}{% if item %}Edit Theme Tokens{% else %}New Theme Tokens{% endif %}{% endblock %}
+{% set default_tokens_json = '{\n  "css_vars": {\n    "--accent-cyan": "#4f7bff",\n    "--font-body": "Manrope, sans-serif"\n  }\n}' %}
 
 {% block content %}
 <div class="card mb-3">
@@ -30,7 +31,7 @@
       </div>
       <div class="col-12">
         <label class="form-label">Tokens JSON</label>
-        <textarea class="form-control form-control-mono-sm" name="tokens_json" rows="12">{{ item.tokens_json if item else '{\n  "css_vars": {\n    "--accent-cyan": "#4f7bff",\n    "--font-body": "\\'Manrope\\', sans-serif"\n  }\n}' }}</textarea>
+        <textarea class="form-control form-control-mono-sm" name="tokens_json" rows="12">{{ item.tokens_json if item else default_tokens_json }}</textarea>
       </div>
       <div class="col-md-8">
         <label class="form-label">Change Note</label>

@@ -311,8 +311,15 @@ def test_acp_phase1_admin_sections_render(client):
     assert client.get("/admin/acp/content-types").status_code == 200
     assert client.get("/admin/acp/content-entries").status_code == 200
     assert client.get("/admin/acp/theme").status_code == 200
+    assert client.get("/admin/acp/theme/new").status_code == 200
     assert client.get("/admin/acp/mcp/servers").status_code == 200
     assert client.get("/admin/acp/mcp/audit").status_code == 200
+
+    with client.application.app_context():
+        token_set = AcpThemeTokenSet.query.first()
+        assert token_set is not None
+        token_id = token_set.id
+    assert client.get(f"/admin/acp/theme/{token_id}/edit").status_code == 200
 
 
 def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):
