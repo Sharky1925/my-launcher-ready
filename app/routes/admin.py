@@ -10,6 +10,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash, generate_password_hash
 from slugify import slugify
 try:
     from ..models import (
@@ -59,6 +60,7 @@ ADMIN_LOGIN_LIMIT = 5
 ADMIN_LOGIN_WINDOW_SECONDS = 300
 IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'}
 ADMIN_PASSWORD_MIN_LENGTH = 10
+AUTH_DUMMY_HASH = generate_password_hash('RightOnRepair::dummy-auth-check')
 QUOTE_INTAKE_EMAIL = 'quote-intake@rightonrepair.local'
 QUOTE_SUBJECT_PREFIX = 'quote request:'
 QUOTE_DETAILS_PREFIX = 'quote intake submission'
@@ -77,6 +79,21 @@ ALLOWED_RICH_TEXT_PROTOCOLS = ['http', 'https', 'mailto']
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+
+
+def _safe_upload_path(stored_name):
+    upload_root = os.path.abspath(current_app.config['UPLOAD_FOLDER'])
+    raw_name = (stored_name or '').strip()
+    safe_name = secure_filename(raw_name)
+    if not safe_name or safe_name != raw_name:
+        return None, None
+    full_path = os.path.abspath(os.path.join(upload_root, safe_name))
+    try:
+        if os.path.commonpath([upload_root, full_path]) != upload_root:
+            return None, None
+    except ValueError:
+        return None, None
+    return safe_name, full_path
 
 
 def parse_int(value, default=0, min_value=None, max_value=None):
@@ -263,10 +280,14 @@ def save_upload(file):
 
 @admin_bp.route('/uploads/<filename>')
 def uploaded_file(filename):
-    safe_filename = secure_filename(filename or '')
-    if not safe_filename or safe_filename != filename:
+    safe_filename, full_path = _safe_upload_path(filename)
+    if not safe_filename or not full_path or not os.path.exists(full_path):
         abort(404)
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], safe_filename)
+    response = send_from_directory(current_app.config['UPLOAD_FOLDER'], safe_filename, conditional=True, etag=True)
+    extension = safe_filename.rsplit('.', 1)[1].lower() if '.' in safe_filename else ''
+    if extension not in IMAGE_EXTENSIONS:
+        response.headers['Content-Disposition'] = f'attachment; filename="{safe_filename}"'
+    return response
 
 
 # Auth
@@ -283,7 +304,13 @@ def login():
         username = clean_text(request.form.get('username'), 80)
         password = request.form.get('password', '')
         user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
+        password_ok = False
+        if user:
+            password_ok = user.check_password(password)
+        else:
+            # Keep response timing closer for unknown usernames.
+            check_password_hash(AUTH_DUMMY_HASH, password or '')
+        if user and password_ok:
             clear_admin_login_failures()
             session.clear()
             login_user(user)
@@ -823,8 +850,8 @@ def media_upload():
 @login_required
 def media_delete(id):
     item = Media.query.get_or_404(id)
-    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], item.file_path)
-    if os.path.exists(filepath):
+    _, filepath = _safe_upload_path(item.file_path)
+    if filepath and os.path.exists(filepath):
         os.remove(filepath)
     db.session.delete(item)
     db.session.commit()

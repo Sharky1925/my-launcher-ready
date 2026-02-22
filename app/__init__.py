@@ -4,7 +4,7 @@ import secrets
 from urllib.parse import urlparse
 from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
 from flask_login import LoginManager
-from markupsafe import Markup
+from markupsafe import Markup, escape
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -60,7 +60,7 @@ def get_csrf_token():
 
 def csrf_input():
     token = get_csrf_token()
-    return Markup(f'<input type="hidden" name="_csrf_token" value="{token}">')
+    return Markup(f'<input type="hidden" name="_csrf_token" value="{escape(token)}">')  # nosec B704
 
 
 def get_csp_nonce():
@@ -245,8 +245,14 @@ def create_app(config_overrides=None):
         response.headers.setdefault('X-Permitted-Cross-Domain-Policies', 'none')
         response.headers.setdefault('Origin-Agent-Cluster', '?1')
         response.headers.setdefault('Cross-Origin-Opener-Policy', 'same-origin')
-        if request.is_secure:
-            response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+        if request.is_secure and app.config.get('HSTS_ENABLED', True):
+            hsts_max_age = max(0, int(app.config.get('HSTS_MAX_AGE', 31536000)))
+            hsts_parts = [f'max-age={hsts_max_age}']
+            if app.config.get('HSTS_INCLUDE_SUBDOMAINS', True):
+                hsts_parts.append('includeSubDomains')
+            if app.config.get('HSTS_PRELOAD', False):
+                hsts_parts.append('preload')
+            response.headers.setdefault('Strict-Transport-Security', '; '.join(hsts_parts))
         if request.path.startswith('/admin') or request.path.startswith('/remote-support'):
             response.headers.setdefault('X-Robots-Tag', 'noindex, nofollow, noarchive')
 

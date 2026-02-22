@@ -91,4 +91,83 @@ This audit reviewed Flask backend security controls, auth/session handling, CSRF
 
 ## Remaining Risk / Recommended Next Steps
 1. `AuthRateLimitBucket` uses the app DB. For horizontally scaled production, ensure all app instances share the same DB backend.
-2. Seed/bootstrap path prints generated admin password to stdout when `ADMIN_PASSWORD` is unset (`app/seed.py:18`). Avoid log exposure in production environments.
+2. Set `ADMIN_PASSWORD` explicitly in production and rotate periodically to avoid unmanaged bootstrap credentials.
+
+## 2026-02-22 Intensive Audit Addendum
+
+### Executive Summary
+Completed a full code + runtime security audit and applied hardening fixes for credential leakage, auth timing behavior, upload path safety, and header handling. No regression was introduced (`22` tests passing).
+
+### Findings (Fixed)
+
+#### F-004
+- Rule ID: FLASK-CONFIG-001
+- Severity: High
+- Location: `app/seed.py:29`
+- Evidence: bootstrap flow printed generated admin password directly to stdout.
+- Impact: secrets exposure in deployment logs.
+- Fix: removed plaintext password logging; startup now logs only a rotation instruction.
+- Mitigation: always set `ADMIN_PASSWORD` in production and rotate through environment.
+
+#### F-005
+- Rule ID: FLASK-AUTH-ENUM-001
+- Severity: Medium
+- Location: `app/routes/admin.py:304`, `app/routes/main.py:1723`
+- Evidence: login flow only performed password hash checks for existing accounts.
+- Impact: measurable timing differences can help username/email enumeration.
+- Fix: added dummy hash verification path for unknown principals to reduce timing signal.
+- Mitigation: keep rate limits enabled and monitor repeated auth failures.
+
+#### F-006
+- Rule ID: FLASK-FILE-TRAVERSAL-001
+- Severity: Medium
+- Location: `app/routes/admin.py:84`, `app/routes/admin.py:853`
+- Evidence: media delete path previously relied on DB file path directly.
+- Impact: tampered DB path could trigger file deletion outside upload directory.
+- Fix: centralized `_safe_upload_path()` now enforces basename + commonpath confinement before file access/removal.
+- Mitigation: continue validating upload filenames and keep DB access restricted.
+
+#### F-007
+- Rule ID: FLASK-FILE-SERVE-001
+- Severity: Medium
+- Location: `app/routes/admin.py:281`
+- Evidence: uploaded non-image files were served inline without forced download behavior.
+- Impact: increased browser attack surface for user-uploaded active document types.
+- Fix: serve uploads with conditional/etag and force `Content-Disposition: attachment` for non-image files.
+- Mitigation: keep allowed MIME/extensions strict and avoid enabling SVG/HTML uploads.
+
+#### F-008
+- Rule ID: FLASK-CONFIG-HSTS-001
+- Severity: Low
+- Location: `app/config.py:77`, `app/__init__.py:248`
+- Evidence: HSTS policy was hardcoded with `preload`.
+- Impact: preload can cause difficult domain lock-in/outage scenarios when not fully prepared.
+- Fix: made HSTS configurable (`HSTS_ENABLED`, `HSTS_MAX_AGE`, `HSTS_INCLUDE_SUBDOMAINS`, `HSTS_PRELOAD`) and disabled preload by default.
+- Mitigation: enable `HSTS_PRELOAD=1` only after domain/subdomain readiness verification.
+
+#### F-009
+- Rule ID: FLASK-EMAIL-HEADER-001
+- Severity: Medium
+- Location: `app/notifications.py:11`
+- Evidence: user-influenced subject fields were passed to email headers without explicit CR/LF sanitization.
+- Impact: potential header-injection edge cases and delivery instability.
+- Fix: added `_safe_header_value()` and applied it to sender, recipients, and subject paths before SMTP/Mailgun send.
+- Mitigation: keep input validation in contact/quote routes and reject malformed emails.
+
+#### F-010
+- Rule ID: FLASK-CONFIG-COOKIE-001
+- Severity: Medium
+- Location: `app/config.py:11`
+- Evidence: secure cookie and proxy trust defaults could be missed in production unless env vars were manually set.
+- Impact: insecure session cookie transport and missing HTTPS/proxy awareness in managed deployments.
+- Fix: added managed/production runtime detection and hardened defaults:
+  - `SESSION_COOKIE_SECURE` now defaults to enabled in production runtimes.
+  - `TRUST_PROXY_HEADERS` now defaults to enabled on managed platforms (Railway/Render/Vercel), while still overridable via env vars.
+- Mitigation: explicitly set `SESSION_COOKIE_SECURE=1` and `TRUST_PROXY_HEADERS=1` in production environment config for clarity.
+
+### Verification
+- `cd app && source venv/bin/activate && PYTHONPATH=/Users/umutdemirkapu/mylauncher pytest -q tests` -> `22 passed`
+- `cd app && source venv/bin/activate && python -m compileall -q .` -> passed
+- `cd app && source venv/bin/activate && pip-audit -r requirements.txt` -> `No known vulnerabilities found`
+- `cd app && source venv/bin/activate && bandit -q -r . -x ./venv,./tests,.pytest_cache` -> no findings (only `# nosec` warning on intentional safe markup helper)
+- Route smoke crawl with Flask test client -> `35` paths checked, `0` failures

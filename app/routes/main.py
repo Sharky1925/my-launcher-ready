@@ -1,11 +1,12 @@
 from datetime import timedelta
+from html import escape as xml_escape
 import json
 import re
 import secrets
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-from xml.sax.saxutils import escape as xml_escape
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app
+from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
     from ..models import (
@@ -130,6 +131,7 @@ QUOTE_URGENCY_OPTIONS = {
 CONTACT_FORM_SCOPE = 'contact_form'
 QUOTE_FORM_SCOPE = 'quote_form'
 PERSONAL_QUOTE_FORM_SCOPE = 'personal_quote_form'
+AUTH_DUMMY_HASH = generate_password_hash('RightOnRepair::dummy-auth-check')
 
 
 SERVICE_PROFILES = {
@@ -716,7 +718,7 @@ def verify_turnstile_response():
         headers={'Content-Type': 'application/x-www-form-urlencoded'},
     )
     try:
-        with urlopen(req, timeout=10) as response:
+        with urlopen(req, timeout=10) as response:  # nosec B310
             result = json.loads(response.read().decode('utf-8'))
         return bool(result.get('success'))
     except Exception:
@@ -1719,8 +1721,14 @@ def remote_support_login():
         return redirect(url_for('main.remote_support'))
 
     client = SupportClient.query.filter_by(email=email).first()
+    password_ok = False
+    if client:
+        password_ok = client.check_password(password)
+    else:
+        # Keep response timing closer for unknown accounts.
+        check_password_hash(AUTH_DUMMY_HASH, password or '')
 
-    if not client or not client.check_password(password):
+    if not client or not password_ok:
         attempts = register_remote_auth_failure()
         remaining = max(0, REMOTE_AUTH_LIMIT - attempts)
         if remaining == 0:

@@ -28,7 +28,10 @@ def seed_database():
     # Admin user
     if not env_password:
         env_password = secrets.token_urlsafe(16)
-        print(f'[seed] Generated random admin password (set ADMIN_PASSWORD env var to override): {env_password}')
+        print(
+            '[seed] ADMIN_PASSWORD not set. Seeded admin with a random password. '
+            'Set ADMIN_PASSWORD and restart to rotate it to a known value.'
+        )
     admin = User(username='admin', email='admin@example.com')
     admin.set_password(env_password)
     db.session.add(admin)

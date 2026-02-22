@@ -131,7 +131,7 @@ def test_public_pages_and_security_headers(client):
 def test_hsts_header_on_https_requests(client):
     response = client.get("/", base_url="https://example.com")
     assert response.status_code == 200
-    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains; preload"
+    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
 
 
 def test_hsts_header_on_trusted_forwarded_proto(tmp_path, monkeypatch):
@@ -139,7 +139,7 @@ def test_hsts_header_on_trusted_forwarded_proto(tmp_path, monkeypatch):
     proxied_client = proxied_app.test_client()
     response = proxied_client.get("/", base_url="http://example.com", headers={"X-Forwarded-Proto": "https"})
     assert response.status_code == 200
-    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains; preload"
+    assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
 
 
 def test_health_endpoint_reports_ok(client):

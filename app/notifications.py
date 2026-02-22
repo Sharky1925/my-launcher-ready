@@ -8,8 +8,19 @@ from email.message import EmailMessage
 from flask import current_app
 
 
+def _safe_header_value(value, max_length=240):
+    # Prevent header injection by stripping CR/LF and collapsing whitespace.
+    cleaned = ' '.join((value or '').replace('\r', ' ').replace('\n', ' ').split())
+    return cleaned[:max_length]
+
+
 def _split_recipients(raw):
-    return [item.strip() for item in (raw or '').split(',') if item.strip()]
+    recipients = []
+    for item in (raw or '').split(','):
+        cleaned = _safe_header_value(item, max_length=320)
+        if cleaned:
+            recipients.append(cleaned)
+    return recipients
 
 
 def _ticket_admin_url(ticket_id):
@@ -40,7 +51,7 @@ def _send_via_mailgun(subject, body, recipients, mail_from):
     req.add_header('Authorization', f'Basic {auth}')
 
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
             current_app.logger.info('Mailgun email sent successfully.')
             return True
     except urllib.error.HTTPError as e:
@@ -93,14 +104,15 @@ def _send_email(subject, body, recipients):
     if not recipients:
         return False
 
-    mail_from = current_app.config.get('MAIL_FROM') or 'no-reply@localhost'
+    mail_from = _safe_header_value(current_app.config.get('MAIL_FROM') or 'no-reply@localhost', max_length=254)
+    safe_subject = _safe_header_value(subject, max_length=240)
 
     # Try Mailgun first (works on Railway), fall back to SMTP
-    result = _send_via_mailgun(subject, body, recipients, mail_from)
+    result = _send_via_mailgun(safe_subject, body, recipients, mail_from)
     if result is not None:
         return result
 
-    result = _send_via_smtp(subject, body, recipients, mail_from)
+    result = _send_via_smtp(safe_subject, body, recipients, mail_from)
     if result is not None:
         return result
 
@@ -113,7 +125,7 @@ def send_contact_notification(submission):
     if not recipients:
         return False
 
-    subject_text = (submission.subject or 'Website Contact').strip()
+    subject_text = _safe_header_value(submission.subject or 'Website Contact', max_length=180) or 'Website Contact'
     subject = f"[Website] New contact submission: {subject_text}"
     body = "\n".join([
         "A new contact form submission has been received.",

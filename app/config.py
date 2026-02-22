@@ -1,10 +1,29 @@
 import os
+import tempfile
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 def _is_vercel_runtime():
     return bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
+
+
+def _is_managed_runtime():
+    return bool(
+        os.environ.get('RAILWAY_ENVIRONMENT')
+        or os.environ.get('RAILWAY_PROJECT_ID')
+        or os.environ.get('RENDER')
+        or os.environ.get('RENDER_SERVICE_ID')
+        or _is_vercel_runtime()
+    )
+
+
+def _is_production_runtime():
+    flask_env = (os.environ.get('FLASK_ENV') or '').strip().lower()
+    railway_env = (os.environ.get('RAILWAY_ENVIRONMENT') or '').strip().lower()
+    render_env = (os.environ.get('RENDER_ENV') or '').strip().lower()
+    vercel_env = (os.environ.get('VERCEL_ENV') or '').strip().lower()
+    return flask_env == 'production' or railway_env == 'production' or render_env == 'production' or vercel_env == 'production'
 
 
 def _as_bool(value, default=False):
@@ -47,7 +66,7 @@ class Config:
     }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = (os.environ.get('UPLOAD_FOLDER') or '').strip() or (
-        '/tmp/uploads' if _is_vercel_runtime() else os.path.join(basedir, 'uploads')
+        os.path.join(tempfile.gettempdir(), 'uploads') if _is_vercel_runtime() else os.path.join(basedir, 'uploads')
     )
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
     MAX_UPLOAD_IMAGE_PIXELS = _as_int(os.environ.get('MAX_UPLOAD_IMAGE_PIXELS'), 40_000_000)
@@ -65,15 +84,19 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = _as_bool(
         os.environ.get('SESSION_COOKIE_SECURE'),
-        (os.environ.get('PREFERRED_URL_SCHEME') or '').lower() == 'https',
+        ((os.environ.get('PREFERRED_URL_SCHEME') or '').lower() == 'https') or _is_production_runtime(),
     )
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
     REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
-    TRUST_PROXY_HEADERS = _as_bool(os.environ.get('TRUST_PROXY_HEADERS'), False)
+    TRUST_PROXY_HEADERS = _as_bool(os.environ.get('TRUST_PROXY_HEADERS'), _is_managed_runtime())
     PREFERRED_URL_SCHEME = os.environ.get('PREFERRED_URL_SCHEME') or ('https' if SESSION_COOKIE_SECURE else 'http')
     APP_BASE_URL = (os.environ.get('APP_BASE_URL') or '').rstrip('/')
     ASSET_VERSION = (os.environ.get('ASSET_VERSION') or '').strip()
+    HSTS_ENABLED = _as_bool(os.environ.get('HSTS_ENABLED'), True)
+    HSTS_MAX_AGE = _as_int(os.environ.get('HSTS_MAX_AGE'), 31536000)
+    HSTS_INCLUDE_SUBDOMAINS = _as_bool(os.environ.get('HSTS_INCLUDE_SUBDOMAINS'), True)
+    HSTS_PRELOAD = _as_bool(os.environ.get('HSTS_PRELOAD'), False)
     _trusted_hosts = [h.strip() for h in os.environ.get('TRUSTED_HOSTS', '').split(',') if h.strip()]
     TRUSTED_HOSTS = _trusted_hosts or None
 
