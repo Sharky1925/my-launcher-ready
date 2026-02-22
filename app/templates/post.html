@@ -36,6 +36,7 @@
     <span class="hero-badge hero-badge-spaced">{{ post.category.name }}</span>
     {% endif %}
     <h1>{{ post.title }}</h1>
+    {% include "_hero_slogan.html" %}
     <p><i class="fa-regular fa-calendar me-2"></i>{{ post.created_at.strftime('%B %d, %Y') }}</p>
   </div>
 </section>

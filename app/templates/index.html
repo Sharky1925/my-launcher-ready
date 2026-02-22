@@ -30,6 +30,7 @@
         </div>
         <div class="hero-badge"><span class="pulse-dot"></span> {{ cb.get('hero', {}).get('badge', 'Managed IT + Technical Repair for Orange County') }}</div>
         <h1>{{ cb.get('hero', {}).get('title', 'Managed IT Services & Technical Repair Services in Orange County') }}</h1>
+        {% include "_hero_slogan.html" %}
         <p class="lead">{{ cb.get('hero', {}).get('lead', 'One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.') }}</p>
         <div class="hero-buttons">
           <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Book Free Consultation</a>

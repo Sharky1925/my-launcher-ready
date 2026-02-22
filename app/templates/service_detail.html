@@ -214,6 +214,7 @@
         <div class="service-kicker-badge">{{ profile.get('positioning_badge') }}</div>
         {% endif %}
         <h1>{{ service.title }} <span class="gradient-text">{{ profile.get('intro_kicker', 'Solutions') }}</span></h1>
+        {% include "_hero_slogan.html" %}
         <p class="industry-hero-description">{{ meta_desc }}</p>
         <div class="hero-buttons industry-hero-actions">
           <a href="{{ url_for('main.request_quote') }}" class="btn btn-primary">Free IT Assessment <i class="fa-solid fa-magnifying-glass-chart"></i></a>
