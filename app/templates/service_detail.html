@@ -588,16 +588,18 @@
       <div class="section-label"><i class="fa-solid fa-building"></i> Industry Coverage</div>
       <h2>Playbooks for Sector-Specific Environments</h2>
     </div>
-    <div class="row g-4">
+    <div class="row g-4 service-industries-grid">
       {% set ind_colors = ['blue', 'purple', 'green', 'amber', 'rose', 'cyan'] %}
       {% for ind in featured_industries %}
       <div class="col-md-6 col-lg-4">
-        <article class="industry-card reveal stagger-{{ loop.index }}">
+        <a href="{{ url_for('main.industry_detail', slug=ind.slug) }}"
+           class="industry-card industry-card--service-link reveal stagger-{{ loop.index }} h-100 text-decoration-none"
+           aria-label="View {{ ind.title }} industry playbook">
           <div class="ind-icon {{ ind_colors[(loop.index0) % 6] }}"><i class="{{ ind.icon_class }}"></i></div>
           <h3>{{ ind.title }}</h3>
           <p>{{ (ind.description or '')[:140] }}{% if ind.description and ind.description|length > 140 %}...{% endif %}</p>
-          <a class="ind-link" href="{{ url_for('main.industry_detail', slug=ind.slug) }}">See industry playbook <i class="fa-solid fa-arrow-right"></i></a>
-        </article>
+          <span class="ind-link">See industry playbook <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
       </div>
       {% endfor %}
     </div>

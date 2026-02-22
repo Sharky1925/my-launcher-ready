@@ -1518,6 +1518,27 @@ main .container {
   display: inline-flex; align-items: center; gap: 6px; transition: gap var(--transition-fast);
 }
 .industry-card:hover .ind-link { gap: 10px; }
+.service-industries-grid > [class*="col-"] {
+  display: flex;
+}
+.industry-card--service-link {
+  width: 100%;
+  min-height: 100%;
+  color: inherit;
+}
+.industry-card--service-link:hover,
+.industry-card--service-link:focus {
+  color: inherit;
+}
+.industry-card--service-link:focus-visible {
+  outline: 2px solid var(--accent-electric);
+  outline-offset: 2px;
+}
+.industry-card--service-link .ind-link {
+  margin-top: auto;
+  min-height: 42px;
+  padding-top: 8px;
+}
 
 /* ============================================================
    STATS
@@ -4910,6 +4931,13 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .industry-card--industries-page {
     min-height: 0;
   }
+  .service-industries-grid {
+    --bs-gutter-x: 1rem;
+    --bs-gutter-y: 1rem;
+  }
+  .industry-card--service-link {
+    padding: 24px 18px;
+  }
   .service-kicker-badge {
     font-size: .62rem;
     letter-spacing: .07em;
@@ -4962,6 +4990,18 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .service-tool-cloud--compact .service-tool-pill {
     flex: 1 1 calc(50% - 8px);
     justify-content: center;
+  }
+  .industry-card--service-link h3 {
+    font-size: .94rem;
+  }
+  .industry-card--service-link p {
+    font-size: .82rem;
+    margin-bottom: 8px;
+  }
+  .industry-card--service-link .ind-link {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
   .lead-time-grid {
     grid-template-columns: 1fr;
