@@ -231,6 +231,16 @@ p { margin: 0 0 16px; }
   margin-top: 8px;
   margin-bottom: 12px;
 }
+.hero-visual .hero-slogan-wrap {
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: center;
+}
+.hero-visual .hero-slogan-banner {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
 
 ::selection { background: var(--blue-500); color: #fff; }
 
