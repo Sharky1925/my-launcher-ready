@@ -1038,8 +1038,8 @@ p { margin: 0 0 16px; }
 }
 .hero-visual-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: clamp(10px, 1.4vw, 14px);
+  grid-template-columns: repeat(3, minmax(130px, 1fr));
+  gap: clamp(14px, 1.8vw, 20px);
   width: 100%;
   position: relative;
   z-index: 2;
@@ -1048,8 +1048,9 @@ p { margin: 0 0 16px; }
   background: rgba(14, 22, 35, 0.92);
   backdrop-filter: blur(18px);
   border: 1px solid var(--border); border-radius: var(--radius-md);
-  padding: clamp(16px, 2vw, 22px) clamp(12px, 1.6vw, 16px);
-  min-height: clamp(130px, 14vw, 170px);
+  padding: clamp(16px, 2vw, 22px) clamp(12px, 1.6vw, 17px);
+  aspect-ratio: 1 / 1.02;
+  min-height: clamp(148px, 15.5vw, 188px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4757,8 +4758,8 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
   .hero-content { padding: 24px; }
   .hero-visual { margin-top: 20px; }
-  .hero-visual-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .hero-icon-card { min-height: 130px; }
+  .hero-visual-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .hero-icon-card { min-height: 136px; }
   .section { padding: 60px 0; }
   .cta-section { margin: 0; border-radius: 0; }
   .cta-strip { border-radius: var(--radius-md); }
@@ -4983,8 +4984,11 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
   .cta-actions .btn { width: 100%; min-width: 0; }
   .hero-visual { margin-top: 16px; }
-  .hero-visual-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .hero-icon-card { min-height: 0; padding: 14px 10px; }
+  .hero-visual-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .hero-icon-card {
+    min-height: 122px;
+    padding: 14px 10px;
+  }
   .service-card .card-link {
     width: 100%;
     justify-content: space-between;
