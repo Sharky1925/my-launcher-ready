@@ -1880,6 +1880,13 @@ main .container {
 .page-header.page-header--landing-tight {
   padding-top: clamp(92px, 9vw, 108px);
 }
+.page-header.page-header--repair-tight {
+  padding-top: clamp(72px, 7vw, 86px);
+  padding-bottom: clamp(28px, 4vw, 42px);
+}
+.page-header.page-header--repair-tight .breadcrumb {
+  margin-bottom: 10px;
+}
 .page-header::before {
   content: ''; position: absolute; inset: 0;
   background: radial-gradient(circle at 18% 22%, rgba(59,130,246,0.2), transparent 62%),
@@ -4529,6 +4536,10 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .page-header.page-header--landing-tight {
     padding-top: 86px;
   }
+  .page-header.page-header--repair-tight {
+    padding-top: 66px;
+    padding-bottom: 28px;
+  }
   .hero { min-height: auto; padding: 120px 0 60px; }
   .hero h1 { font-size: 2rem; }
   .hero-content { padding: 24px; }
@@ -4741,6 +4752,10 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .page-header.page-header--landing-tight {
     padding-top: 76px;
     padding-bottom: 20px;
+  }
+  .page-header.page-header--repair-tight {
+    padding-top: 58px;
+    padding-bottom: 16px;
   }
   .section-header h2, .section-heading h2 { font-size: 1.4rem; }
   .chip-list { justify-content: center; }
