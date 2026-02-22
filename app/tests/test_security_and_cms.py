@@ -128,6 +128,15 @@ def test_public_pages_and_security_headers(client):
     assert "style=" not in admin_login_html
 
 
+def test_admin_dashboard_control_center_search_renders(client):
+    admin_login(client)
+    response = client.get("/admin/?q=service")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Unified Control Center" in html
+    assert "Unified Search Results" in html
+
+
 def test_hsts_header_on_https_requests(client):
     response = client.get("/", base_url="https://example.com")
     assert response.status_code == 200

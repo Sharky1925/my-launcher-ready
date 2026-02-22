@@ -336,26 +336,325 @@ def logout():
 @admin_bp.route('/')
 @login_required
 def dashboard():
-    last_24h = utc_now_naive() - timedelta(hours=24)
+    now = utc_now_naive()
+    last_24h = now - timedelta(hours=24)
+    last_7d = now - timedelta(days=7)
+    stale_cutoff = now - timedelta(days=14)
+    open_ticket_statuses = ['open', 'in_progress', 'waiting_customer']
+    quote_filter = quote_ticket_filter_expression()
+
+    site_settings = {s.key: s.value for s in SiteSetting.query.all()}
+    missing_setting_keys = [
+        key for key in ('company_name', 'email', 'meta_title', 'meta_description')
+        if not (site_settings.get(key) or '').strip()
+    ]
+
+    published_posts_count = Post.query.filter_by(is_published=True).count()
+    draft_posts_count = Post.query.filter_by(is_published=False).count()
+    contacts_24h = ContactSubmission.query.filter(ContactSubmission.created_at >= last_24h).count()
+    tickets_24h = SupportTicket.query.filter(SupportTicket.created_at >= last_24h).count()
+    support_waiting_count = SupportTicket.query.filter(SupportTicket.status == 'waiting_customer').count()
+    critical_open_tickets = SupportTicket.query.filter(
+        SupportTicket.status.in_(open_ticket_statuses),
+        SupportTicket.priority.in_(['high', 'critical']),
+    ).count()
+    quote_open_count = SupportTicket.query.join(
+        SupportClient,
+        SupportTicket.client_id == SupportClient.id,
+    ).filter(
+        quote_filter,
+        SupportTicket.status.in_(open_ticket_statuses),
+    ).count()
+    support_open_count = SupportTicket.query.join(
+        SupportClient,
+        SupportTicket.client_id == SupportClient.id,
+    ).filter(
+        ~quote_filter,
+        SupportTicket.status.in_(open_ticket_statuses),
+    ).count()
+    resolved_7d_count = SupportTicket.query.filter(
+        SupportTicket.status == 'resolved',
+        SupportTicket.updated_at >= last_7d,
+    ).count()
+
+    services_missing_profile = Service.query.filter(
+        or_(
+            Service.profile_json.is_(None),
+            func.trim(Service.profile_json) == '',
+        )
+    ).count()
+    services_missing_image = Service.query.filter(
+        or_(
+            Service.image.is_(None),
+            func.trim(Service.image) == '',
+        )
+    ).count()
+    industries_incomplete = Industry.query.filter(
+        or_(
+            Industry.hero_description.is_(None),
+            func.trim(Industry.hero_description) == '',
+            Industry.challenges.is_(None),
+            func.trim(Industry.challenges) == '',
+            Industry.solutions.is_(None),
+            func.trim(Industry.solutions) == '',
+        )
+    ).count()
+    published_posts_missing_excerpt = Post.query.filter(
+        Post.is_published.is_(True),
+        or_(Post.excerpt.is_(None), func.trim(Post.excerpt) == ''),
+    ).count()
+    stale_drafts = Post.query.filter(
+        Post.is_published.is_(False),
+        Post.updated_at <= stale_cutoff,
+    ).order_by(Post.updated_at.asc()).limit(6).all()
+
+    status_rows = db.session.query(
+        SupportTicket.status,
+        func.count(SupportTicket.id),
+    ).group_by(SupportTicket.status).all()
+    status_map = {status: count for status, count in status_rows}
+    ticket_status = [
+        {'key': 'open', 'label': 'Open', 'count': status_map.get('open', 0)},
+        {'key': 'in_progress', 'label': 'In Progress', 'count': status_map.get('in_progress', 0)},
+        {'key': 'waiting_customer', 'label': 'Waiting Client', 'count': status_map.get('waiting_customer', 0)},
+        {'key': 'resolved', 'label': 'Resolved', 'count': status_map.get('resolved', 0)},
+        {'key': 'closed', 'label': 'Closed', 'count': status_map.get('closed', 0)},
+    ]
+    max_status_count = max(1, *(item['count'] for item in ticket_status))
+    for item in ticket_status:
+        item['pct'] = int(round((item['count'] / max_status_count) * 100)) if item['count'] else 0
+
+    service_title_map = {slug: title for slug, title in Service.query.with_entities(Service.slug, Service.title).all()}
+    popular_service_rows = db.session.query(
+        SupportTicket.service_slug,
+        func.count(SupportTicket.id).label('count'),
+    ).filter(
+        SupportTicket.service_slug.isnot(None),
+        func.trim(SupportTicket.service_slug) != '',
+    ).group_by(
+        SupportTicket.service_slug,
+    ).order_by(
+        func.count(SupportTicket.id).desc(),
+    ).limit(6).all()
+    popular_services = []
+    for slug, count in popular_service_rows:
+        normalized_slug = (slug or '').strip()
+        if not normalized_slug:
+            continue
+        popular_services.append({
+            'slug': normalized_slug,
+            'title': service_title_map.get(normalized_slug, normalized_slug.replace('-', ' ').title()),
+            'count': count,
+        })
+
     stats = {
         'services': Service.query.count(),
+        'industries': Industry.query.count(),
         'team': TeamMember.query.count(),
         'posts': Post.query.count(),
+        'published_posts': published_posts_count,
+        'draft_posts': draft_posts_count,
+        'stale_drafts': len(stale_drafts),
+        'content_blocks': ContentBlock.query.count(),
         'contacts': ContactSubmission.query.filter_by(is_read=False).count(),
+        'contacts_24h': contacts_24h,
         'testimonials': Testimonial.query.count(),
         'media': Media.query.count(),
-        'support_tickets': SupportTicket.query.filter(SupportTicket.status.in_(['open', 'in_progress', 'waiting_customer'])).count(),
+        'support_tickets': SupportTicket.query.filter(SupportTicket.status.in_(open_ticket_statuses)).count(),
         'support_clients': SupportClient.query.count(),
+        'support_open': support_open_count,
+        'quote_open': quote_open_count,
+        'critical_open_tickets': critical_open_tickets,
+        'support_waiting': support_waiting_count,
+        'resolved_7d': resolved_7d_count,
+        'tickets_24h': tickets_24h,
         'security_events_24h': SecurityEvent.query.filter(
             SecurityEvent.created_at >= last_24h,
             SecurityEvent.event_type.in_(['turnstile_failed', 'rate_limited']),
         ).count(),
+        'security_turnstile_24h': SecurityEvent.query.filter(
+            SecurityEvent.created_at >= last_24h,
+            SecurityEvent.event_type == 'turnstile_failed',
+        ).count(),
+        'security_rate_limited_24h': SecurityEvent.query.filter(
+            SecurityEvent.created_at >= last_24h,
+            SecurityEvent.event_type == 'rate_limited',
+        ).count(),
+        'active_admin_buckets': AuthRateLimitBucket.query.filter(
+            AuthRateLimitBucket.scope == 'admin_login',
+            AuthRateLimitBucket.count > 0,
+            AuthRateLimitBucket.reset_at > now,
+        ).count(),
+        'services_missing_profile': services_missing_profile,
+        'services_missing_image': services_missing_image,
+        'industries_incomplete': industries_incomplete,
+        'published_posts_missing_excerpt': published_posts_missing_excerpt,
+        'missing_setting_keys': len(missing_setting_keys),
     }
-    recent_contacts = ContactSubmission.query.order_by(ContactSubmission.created_at.desc()).limit(5).all()
-    recent_tickets = SupportTicket.query.order_by(SupportTicket.updated_at.desc()).limit(5).all()
+
+    response_backlog = stats['contacts'] + stats['support_waiting'] + stats['critical_open_tickets']
+    content_issues = stats['services_missing_profile'] + stats['industries_incomplete']
+    seo_issues = stats['published_posts_missing_excerpt'] + stats['missing_setting_keys']
+    security_issues = stats['security_events_24h'] + stats['active_admin_buckets']
+    health_penalty = (content_issues * 4) + (seo_issues * 3) + (response_backlog * 2) + (security_issues * 2)
+    health_score = max(10, min(100, 100 - health_penalty))
+
+    health_checks = [
+        {
+            'label': 'Content Structure',
+            'issues': content_issues,
+            'href': url_for('admin.services'),
+            'description': 'Service profiles and industry challenge/solution completeness.',
+        },
+        {
+            'label': 'SEO Readiness',
+            'issues': seo_issues,
+            'href': url_for('admin.posts'),
+            'description': 'Published excerpts plus global metadata settings coverage.',
+        },
+        {
+            'label': 'Response Backlog',
+            'issues': response_backlog,
+            'href': url_for('admin.support_tickets'),
+            'description': 'Unread leads, waiting-client tickets, and urgent open support items.',
+        },
+        {
+            'label': 'Security Watchlist',
+            'issues': security_issues,
+            'href': url_for('admin.security_events'),
+            'description': 'Rate-limiting and Turnstile failures in the last 24 hours.',
+        },
+    ]
+    for item in health_checks:
+        issues = item['issues']
+        if issues == 0:
+            item['state'] = 'good'
+        elif issues <= 3:
+            item['state'] = 'warn'
+        else:
+            item['state'] = 'critical'
+
+    urgent_tickets = SupportTicket.query.filter(
+        SupportTicket.status.in_(open_ticket_statuses),
+        SupportTicket.priority.in_(['high', 'critical']),
+    ).order_by(SupportTicket.updated_at.desc()).limit(6).all()
+    unread_contacts = ContactSubmission.query.filter_by(is_read=False).order_by(ContactSubmission.created_at.desc()).limit(6).all()
+    recent_contacts = ContactSubmission.query.order_by(ContactSubmission.created_at.desc()).limit(6).all()
+    recent_tickets = SupportTicket.query.order_by(SupportTicket.updated_at.desc()).limit(6).all()
+    recent_posts = Post.query.order_by(Post.updated_at.desc()).limit(6).all()
+    recent_security = SecurityEvent.query.order_by(SecurityEvent.created_at.desc()).limit(6).all()
+
+    search_query = clean_text(request.args.get('q', ''), 120).lower().strip()
+    search_results = {
+        'services': [],
+        'industries': [],
+        'posts': [],
+        'contacts': [],
+        'tickets': [],
+    }
+    if search_query:
+        safe_search = escape_like(search_query)
+        like_pattern = f'%{safe_search}%'
+        search_results['services'] = Service.query.filter(
+            or_(
+                func.lower(Service.title).like(like_pattern),
+                func.lower(Service.slug).like(like_pattern),
+                func.lower(Service.description).like(like_pattern),
+            )
+        ).order_by(Service.sort_order.asc(), Service.id.asc()).limit(6).all()
+        search_results['industries'] = Industry.query.filter(
+            or_(
+                func.lower(Industry.title).like(like_pattern),
+                func.lower(Industry.slug).like(like_pattern),
+                func.lower(Industry.description).like(like_pattern),
+            )
+        ).order_by(Industry.sort_order.asc(), Industry.id.asc()).limit(6).all()
+        search_results['posts'] = Post.query.filter(
+            or_(
+                func.lower(Post.title).like(like_pattern),
+                func.lower(Post.slug).like(like_pattern),
+                func.lower(Post.excerpt).like(like_pattern),
+            )
+        ).order_by(Post.updated_at.desc()).limit(6).all()
+        search_results['contacts'] = ContactSubmission.query.filter(
+            or_(
+                func.lower(ContactSubmission.name).like(like_pattern),
+                func.lower(ContactSubmission.email).like(like_pattern),
+                func.lower(ContactSubmission.subject).like(like_pattern),
+            )
+        ).order_by(ContactSubmission.created_at.desc()).limit(6).all()
+        search_results['tickets'] = SupportTicket.query.join(
+            SupportClient,
+            SupportTicket.client_id == SupportClient.id,
+        ).filter(
+            or_(
+                func.lower(SupportTicket.ticket_number).like(like_pattern),
+                func.lower(SupportTicket.subject).like(like_pattern),
+                func.lower(SupportClient.full_name).like(like_pattern),
+                func.lower(SupportClient.email).like(like_pattern),
+            )
+        ).order_by(SupportTicket.updated_at.desc()).limit(6).all()
+
+    search_total = sum(len(results) for results in search_results.values())
+
+    activity_feed = []
+    for item in recent_contacts:
+        activity_feed.append({
+            'at': item.created_at,
+            'icon': 'fa-solid fa-envelope',
+            'tone': 'info',
+            'title': item.subject or f'Contact from {item.name}',
+            'meta': f'{item.name} · {item.email}',
+            'href': url_for('admin.contact_view', id=item.id),
+        })
+    for item in recent_tickets:
+        ticket_type = 'Quote' if is_quote_ticket(item) else 'Support'
+        activity_feed.append({
+            'at': item.updated_at,
+            'icon': 'fa-solid fa-ticket',
+            'tone': 'primary',
+            'title': f'{ticket_type} ticket {item.ticket_number}',
+            'meta': f'{item.subject} · {item.status.replace("_", " ").title()}',
+            'href': url_for('admin.support_ticket_view', id=item.id),
+        })
+    for item in recent_posts:
+        activity_feed.append({
+            'at': item.updated_at,
+            'icon': 'fa-solid fa-newspaper',
+            'tone': 'success',
+            'title': f'Post updated: {item.title}',
+            'meta': 'Published' if item.is_published else 'Draft',
+            'href': url_for('admin.post_edit', id=item.id),
+        })
+    for item in recent_security:
+        activity_feed.append({
+            'at': item.created_at,
+            'icon': 'fa-solid fa-shield-halved',
+            'tone': 'warning',
+            'title': item.event_type.replace('_', ' ').title(),
+            'meta': f'{item.scope} · {item.ip}',
+            'href': url_for('admin.security_events'),
+        })
+    activity_feed.sort(key=lambda event: event['at'] or now, reverse=True)
+    activity_feed = activity_feed[:12]
+
     return render_template(
         'admin/dashboard.html',
         stats=stats,
+        health_score=health_score,
+        health_checks=health_checks,
+        missing_setting_keys=missing_setting_keys,
+        ticket_status=ticket_status,
+        popular_services=popular_services,
+        urgent_tickets=urgent_tickets,
+        unread_contacts=unread_contacts,
+        stale_drafts=stale_drafts,
+        recent_posts=recent_posts,
+        recent_security=recent_security,
+        activity_feed=activity_feed,
+        search_query=search_query,
+        search_results=search_results,
+        search_total=search_total,
         recent_contacts=recent_contacts,
         recent_tickets=recent_tickets,
         is_quote_ticket=is_quote_ticket,
