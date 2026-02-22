@@ -8,14 +8,15 @@
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Scheduled (UTC)</th><th>Updated</th><th>Actions</th></tr></thead>
       <tbody>
         {% for p in items %}
         <tr>
           <td>{{ p.title }}</td>
           <td>{{ p.category.name if p.category else '-' }}</td>
-          <td>{% if p.is_published %}<span class="badge bg-success">Published</span>{% else %}<span class="badge bg-warning">Draft</span>{% endif %}</td>
-          <td>{{ p.created_at.strftime('%b %d, %Y') }}</td>
+          <td><span class="badge {{ workflow_status_badge(p.workflow_status) }}">{{ workflow_status_label(p.workflow_status) }}</span></td>
+          <td>{{ p.scheduled_publish_at.strftime('%Y-%m-%d %H:%M') if p.scheduled_publish_at else '—' }}</td>
+          <td>{{ (p.updated_at or p.created_at).strftime('%b %d, %Y') if (p.updated_at or p.created_at) else '—' }}</td>
           <td>
             <a href="{{ url_for('admin.post_edit', id=p.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
             <form method="post" action="{{ url_for('admin.post_delete', id=p.id) }}" class="d-inline confirm-delete">
@@ -25,7 +26,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="text-center text-muted py-3">No posts yet</td></tr>
+        <tr><td colspan="6" class="text-center text-muted py-3">No posts yet</td></tr>
         {% endfor %}
       </tbody>
     </table>

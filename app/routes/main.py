@@ -22,6 +22,7 @@ try:
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        WORKFLOW_PUBLISHED,
     )
     from ..notifications import send_contact_notification, send_ticket_notification
     from ..service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -40,6 +41,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        WORKFLOW_PUBLISHED,
     )
     from notifications import send_contact_notification, send_ticket_notification
     from service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -1416,11 +1418,19 @@ def build_sitemap_entry(path, lastmod=None, changefreq='weekly', priority='0.6')
 @main_bp.route('/')
 def index():
     pro_services = normalize_icon_attr(
-        Service.query.filter_by(service_type='professional', is_featured=True).order_by(Service.sort_order).all(),
+        Service.query.filter_by(
+            service_type='professional',
+            is_featured=True,
+            workflow_status=WORKFLOW_PUBLISHED,
+        ).order_by(Service.sort_order).all(),
         'fa-solid fa-gear'
     )
     repair_services = normalize_icon_attr(
-        Service.query.filter_by(service_type='repair', is_featured=True).order_by(Service.sort_order).all(),
+        Service.query.filter_by(
+            service_type='repair',
+            is_featured=True,
+            workflow_status=WORKFLOW_PUBLISHED,
+        ).order_by(Service.sort_order).all(),
         'fa-solid fa-wrench'
     )
     testimonials = Testimonial.query.filter_by(is_featured=True).all()
@@ -1482,11 +1492,17 @@ def about():
 def services():
     service_type = request.args.get('type')
     pro_services = normalize_icon_attr(
-        Service.query.filter_by(service_type='professional').order_by(Service.sort_order).all(),
+        Service.query.filter_by(
+            service_type='professional',
+            workflow_status=WORKFLOW_PUBLISHED,
+        ).order_by(Service.sort_order).all(),
         'fa-solid fa-gear'
     )
     repair_services = normalize_icon_attr(
-        Service.query.filter_by(service_type='repair').order_by(Service.sort_order).all(),
+        Service.query.filter_by(
+            service_type='repair',
+            workflow_status=WORKFLOW_PUBLISHED,
+        ).order_by(Service.sort_order).all(),
         'fa-solid fa-wrench'
     )
     cb = get_page_content('services')
@@ -1505,9 +1521,14 @@ def services_repair_track():
 
 @main_bp.route('/services/<slug>')
 def service_detail(slug):
-    service = Service.query.filter_by(slug=slug).first()
+    service = Service.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).first()
     if service is None and slug in SERVICE_SLUG_ALIASES:
-        return redirect(url_for('main.service_detail', slug=SERVICE_SLUG_ALIASES[slug]), code=301)
+        aliased_service = Service.query.filter_by(
+            slug=SERVICE_SLUG_ALIASES[slug],
+            workflow_status=WORKFLOW_PUBLISHED,
+        ).first()
+        if aliased_service:
+            return redirect(url_for('main.service_detail', slug=SERVICE_SLUG_ALIASES[slug]), code=301)
     if service is None:
         abort(404)
     service.icon_class = normalize_icon_class(service.icon_class, 'fa-solid fa-gear')
@@ -1516,6 +1537,7 @@ def service_detail(slug):
         Service.query.filter(
             Service.id != service.id,
             Service.service_type == service.service_type,
+            Service.workflow_status == WORKFLOW_PUBLISHED,
         ).order_by(Service.sort_order.asc(), Service.id.asc()).limit(4).all(),
         'fa-solid fa-gear',
     )
@@ -1523,26 +1545,27 @@ def service_detail(slug):
         Service.query.filter(
             Service.id != service.id,
             Service.service_type != service.service_type,
+            Service.workflow_status == WORKFLOW_PUBLISHED,
         ).order_by(Service.sort_order.asc(), Service.id.asc()).limit(2).all(),
         'fa-solid fa-wrench',
     )
     related_services = related_services_same_type + related_services_other_type
 
     featured_industries = normalize_icon_attr(
-        Industry.query.order_by(Industry.sort_order.asc(), Industry.id.asc()).limit(6).all(),
+        Industry.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Industry.sort_order.asc(), Industry.id.asc()).limit(6).all(),
         'fa-solid fa-building',
     )
 
     related_posts = []
     safe_title = escape_like(service.title)
     if safe_title:
-        related_posts = Post.query.filter_by(is_published=True)\
+        related_posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED)\
             .filter(Post.title.ilike(f'%{safe_title}%'))\
             .order_by(Post.created_at.desc())\
             .limit(3).all()
     if len(related_posts) < 3:
         existing_ids = {post.id for post in related_posts}
-        fallback_posts = Post.query.filter_by(is_published=True)\
+        fallback_posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED)\
             .order_by(Post.created_at.desc())\
             .limit(6).all()
         for post in fallback_posts:
@@ -1570,7 +1593,7 @@ def blog():
     category_slug = clean_text(request.args.get('category', ''), 120)
     search = clean_text(request.args.get('q', ''), 120)
 
-    query = Post.query.filter_by(is_published=True)
+    query = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED)
 
     if category_slug:
         cat = Category.query.filter_by(slug=category_slug).first()
@@ -1589,8 +1612,8 @@ def blog():
 
 @main_bp.route('/blog/<slug>')
 def post(slug):
-    post = Post.query.filter_by(slug=slug, is_published=True).first_or_404()
-    recent_posts = Post.query.filter_by(is_published=True).filter(Post.id != post.id)\
+    post = Post.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).first_or_404()
+    recent_posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(Post.id != post.id)\
         .order_by(Post.created_at.desc()).limit(3).all()
     return render_template('post.html', post=post, recent_posts=recent_posts)
 
@@ -1598,7 +1621,7 @@ def post(slug):
 @main_bp.route('/industries')
 def industries():
     all_industries = normalize_icon_attr(
-        Industry.query.order_by(Industry.sort_order).all(),
+        Industry.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Industry.sort_order).all(),
         'fa-solid fa-building'
     )
     cb = get_page_content('industries')
@@ -1607,14 +1630,22 @@ def industries():
 
 @main_bp.route('/industries/<slug>')
 def industry_detail(slug):
-    industry = Industry.query.filter_by(slug=slug).first()
+    industry = Industry.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).first()
     if industry is None and slug in INDUSTRY_SLUG_ALIASES:
-        return redirect(url_for('main.industry_detail', slug=INDUSTRY_SLUG_ALIASES[slug]), code=301)
+        aliased_industry = Industry.query.filter_by(
+            slug=INDUSTRY_SLUG_ALIASES[slug],
+            workflow_status=WORKFLOW_PUBLISHED,
+        ).first()
+        if aliased_industry:
+            return redirect(url_for('main.industry_detail', slug=INDUSTRY_SLUG_ALIASES[slug]), code=301)
     if industry is None:
         abort(404)
     industry.icon_class = normalize_icon_class(industry.icon_class, 'fa-solid fa-building')
     services = normalize_icon_attr(
-        Service.query.filter_by(is_featured=True).order_by(Service.sort_order).limit(6).all(),
+        Service.query.filter_by(
+            is_featured=True,
+            workflow_status=WORKFLOW_PUBLISHED,
+        ).order_by(Service.sort_order).limit(6).all(),
         'fa-solid fa-gear'
     )
     return render_template('industry_detail.html', industry=industry, services=services)
@@ -1623,7 +1654,10 @@ def industry_detail(slug):
 @main_bp.route('/remote-support')
 def remote_support():
     portal_client = get_logged_support_client()
-    services = normalize_icon_attr(Service.query.order_by(Service.title).all(), 'fa-solid fa-gear')
+    services = normalize_icon_attr(
+        Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Service.title).all(),
+        'fa-solid fa-gear',
+    )
     tickets = []
 
     if portal_client:
@@ -1778,7 +1812,7 @@ def remote_support_create_ticket():
     if priority not in valid_priorities:
         priority = 'normal'
 
-    if service_slug and not Service.query.filter_by(slug=service_slug).first():
+    if service_slug and not Service.query.filter_by(slug=service_slug, workflow_status=WORKFLOW_PUBLISHED).first():
         service_slug = ''
 
     register_form_submission_attempt(TICKET_CREATE_SCOPE, TICKET_CREATE_WINDOW_SECONDS)
@@ -1802,7 +1836,10 @@ def remote_support_create_ticket():
 
 @main_bp.route('/request-quote', methods=['GET', 'POST'])
 def request_quote():
-    services = normalize_icon_attr(Service.query.order_by(Service.service_type, Service.sort_order, Service.title).all(), 'fa-solid fa-gear')
+    services = normalize_icon_attr(
+        Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Service.service_type, Service.sort_order, Service.title).all(),
+        'fa-solid fa-gear',
+    )
     professional_services = [service for service in services if service.service_type == 'professional']
     repair_services = [service for service in services if service.service_type == 'repair']
     service_map = {service.slug: service for service in services}
@@ -1968,7 +2005,7 @@ def request_quote():
 @main_bp.route('/request-quote/personal', methods=['GET', 'POST'])
 def request_quote_personal():
     services = normalize_icon_attr(
-        Service.query.order_by(Service.service_type, Service.sort_order, Service.title).all(),
+        Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Service.service_type, Service.sort_order, Service.title).all(),
         'fa-solid fa-gear',
     )
     service_map = {service.slug: service for service in services}
@@ -2145,29 +2182,29 @@ def sitemap_xml():
     ]
 
     try:
-        services = Service.query.order_by(Service.sort_order.asc(), Service.id.asc()).all()
+        services = Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Service.sort_order.asc(), Service.id.asc()).all()
         for service in services:
             entries.append(
                 build_sitemap_entry(
                     url_for('main.service_detail', slug=service.slug),
-                    lastmod=service.created_at,
+                    lastmod=service.published_at or service.updated_at or service.created_at,
                     changefreq='monthly',
                     priority='0.8',
                 )
             )
 
-        industries = Industry.query.order_by(Industry.sort_order.asc(), Industry.id.asc()).all()
+        industries = Industry.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Industry.sort_order.asc(), Industry.id.asc()).all()
         for industry in industries:
             entries.append(
                 build_sitemap_entry(
                     url_for('main.industry_detail', slug=industry.slug),
-                    lastmod=industry.created_at,
+                    lastmod=industry.published_at or industry.updated_at or industry.created_at,
                     changefreq='monthly',
                     priority='0.7',
                 )
             )
 
-        posts = Post.query.filter_by(is_published=True).order_by(Post.updated_at.desc(), Post.id.desc()).all()
+        posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Post.updated_at.desc(), Post.id.desc()).all()
         for post_item in posts:
             entries.append(
                 build_sitemap_entry(

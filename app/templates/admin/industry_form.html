@@ -3,6 +3,8 @@
 {% block content %}
 <div class="card border-0 shadow-sm">
   <div class="card-body">
+    {% set current_status = request.form.get('workflow_status', item.workflow_status if item and item.workflow_status else 'draft') %}
+    {% set current_schedule = request.form.get('scheduled_publish_at', format_datetime_local(item.scheduled_publish_at) if item else '') %}
     <form method="post">
       {{ csrf_input() }}
       <div class="row g-3">
@@ -42,6 +44,24 @@
         <div class="col-md-4">
           <label class="form-label">Sort Order</label>
           <input type="number" name="sort_order" class="form-control" value="{{ item.sort_order if item else 0 }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Workflow Status</label>
+          <select name="workflow_status" class="form-select">
+            {% for status_key in workflow_options %}
+            <option value="{{ status_key }}" {{ 'selected' if current_status == status_key }}>{{ workflow_status_label(status_key) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Scheduled Publish (UTC)</label>
+          <input
+            type="datetime-local"
+            name="scheduled_publish_at"
+            class="form-control"
+            value="{{ current_schedule }}"
+          >
+          <small class="text-muted">Optional. Requires Publisher/Admin role.</small>
         </div>
         <div class="col-12">
           <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Industry</button>

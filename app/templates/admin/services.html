@@ -8,12 +8,14 @@
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Icon</th><th>Title</th><th>Featured</th><th>Order</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Icon</th><th>Title</th><th>Workflow</th><th>Scheduled (UTC)</th><th>Featured</th><th>Order</th><th>Actions</th></tr></thead>
       <tbody>
         {% for s in items %}
         <tr>
           <td><i class="{{ s.icon_class }} text-primary"></i></td>
           <td>{{ s.title }}</td>
+          <td><span class="badge {{ workflow_status_badge(s.workflow_status) }}">{{ workflow_status_label(s.workflow_status) }}</span></td>
+          <td>{{ s.scheduled_publish_at.strftime('%Y-%m-%d %H:%M') if s.scheduled_publish_at else '—' }}</td>
           <td>{% if s.is_featured %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
           <td>{{ s.sort_order }}</td>
           <td>
@@ -25,7 +27,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="text-center text-muted py-3">No services yet</td></tr>
+        <tr><td colspan="7" class="text-center text-muted py-3">No services yet</td></tr>
         {% endfor %}
       </tbody>
     </table>

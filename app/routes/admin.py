@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import json
 import os
 import re
@@ -30,6 +30,22 @@ try:
         SecurityEvent,
         Industry,
         ContentBlock,
+        WORKFLOW_DRAFT,
+        WORKFLOW_REVIEW,
+        WORKFLOW_APPROVED,
+        WORKFLOW_PUBLISHED,
+        WORKFLOW_STATUSES,
+        WORKFLOW_STATUS_LABELS,
+        ROLE_OWNER,
+        ROLE_ADMIN,
+        ROLE_PUBLISHER,
+        ROLE_REVIEWER,
+        ROLE_EDITOR,
+        ROLE_SUPPORT,
+        USER_ROLE_CHOICES,
+        USER_ROLE_LABELS,
+        normalize_workflow_status,
+        normalize_user_role,
     )
     from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from ..content_schemas import CONTENT_SCHEMAS
@@ -51,6 +67,22 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SecurityEvent,
         Industry,
         ContentBlock,
+        WORKFLOW_DRAFT,
+        WORKFLOW_REVIEW,
+        WORKFLOW_APPROVED,
+        WORKFLOW_PUBLISHED,
+        WORKFLOW_STATUSES,
+        WORKFLOW_STATUS_LABELS,
+        ROLE_OWNER,
+        ROLE_ADMIN,
+        ROLE_PUBLISHER,
+        ROLE_REVIEWER,
+        ROLE_EDITOR,
+        ROLE_SUPPORT,
+        USER_ROLE_CHOICES,
+        USER_ROLE_LABELS,
+        normalize_workflow_status,
+        normalize_user_role,
     )
     from utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from content_schemas import CONTENT_SCHEMAS
@@ -75,6 +107,57 @@ ALLOWED_RICH_TEXT_ATTRIBUTES = {
     'img': ['src', 'alt', 'title', 'width', 'height'],
 }
 ALLOWED_RICH_TEXT_PROTOCOLS = ['http', 'https', 'mailto']
+ROLE_OPTIONS = [ROLE_OWNER, ROLE_ADMIN, ROLE_PUBLISHER, ROLE_REVIEWER, ROLE_EDITOR, ROLE_SUPPORT]
+WORKFLOW_INPUT_DATE_FORMAT = '%Y-%m-%dT%H:%M'
+WORKFLOW_STATUS_BADGES = {
+    WORKFLOW_DRAFT: 'bg-warning text-dark',
+    WORKFLOW_REVIEW: 'bg-info text-dark',
+    WORKFLOW_APPROVED: 'bg-primary',
+    WORKFLOW_PUBLISHED: 'bg-success',
+}
+ADMIN_PERMISSION_MAP = {
+    'admin.dashboard': 'dashboard:view',
+    'admin.services': 'content:manage',
+    'admin.service_add': 'content:manage',
+    'admin.service_edit': 'content:manage',
+    'admin.service_delete': 'content:manage',
+    'admin.team': 'content:manage',
+    'admin.team_add': 'content:manage',
+    'admin.team_edit': 'content:manage',
+    'admin.team_delete': 'content:manage',
+    'admin.testimonials': 'content:manage',
+    'admin.testimonial_add': 'content:manage',
+    'admin.testimonial_edit': 'content:manage',
+    'admin.testimonial_delete': 'content:manage',
+    'admin.categories': 'content:manage',
+    'admin.category_add': 'content:manage',
+    'admin.category_edit': 'content:manage',
+    'admin.category_delete': 'content:manage',
+    'admin.posts': 'content:manage',
+    'admin.post_add': 'content:manage',
+    'admin.post_edit': 'content:manage',
+    'admin.post_delete': 'content:manage',
+    'admin.media': 'content:manage',
+    'admin.media_upload': 'content:manage',
+    'admin.media_delete': 'content:manage',
+    'admin.industries': 'content:manage',
+    'admin.industry_add': 'content:manage',
+    'admin.industry_edit': 'content:manage',
+    'admin.industry_delete': 'content:manage',
+    'admin.content_list': 'content:manage',
+    'admin.content_edit': 'content:manage',
+    'admin.contacts': 'support:manage',
+    'admin.contact_view': 'support:manage',
+    'admin.contact_delete': 'support:manage',
+    'admin.support_tickets': 'support:manage',
+    'admin.support_ticket_view': 'support:manage',
+    'admin.security_events': 'security:view',
+    'admin.settings': 'settings:manage',
+    'admin.users': 'users:manage',
+    'admin.user_add': 'users:manage',
+    'admin.user_edit': 'users:manage',
+    'admin.user_delete': 'users:manage',
+}
 
 
 def allowed_file(filename):
@@ -116,6 +199,123 @@ def parse_positive_int(value):
     if parsed <= 0:
         return None
     return parsed
+
+
+def parse_datetime_local(value):
+    raw = (value or '').strip()
+    if not raw:
+        return None
+    for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M', '%Y-%m-%dT%H:%M:%S'):
+        try:
+            return datetime.strptime(raw, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def format_datetime_local(value):
+    if not value:
+        return ''
+    return value.strftime(WORKFLOW_INPUT_DATE_FORMAT)
+
+
+def get_workflow_status_options(user):
+    options = [WORKFLOW_DRAFT, WORKFLOW_REVIEW]
+    if getattr(user, 'has_permission', None) and user.has_permission('workflow:review'):
+        options.append(WORKFLOW_APPROVED)
+    if getattr(user, 'has_permission', None) and user.has_permission('workflow:publish'):
+        options.append(WORKFLOW_PUBLISHED)
+    deduped = []
+    for status in options:
+        if status not in deduped:
+            deduped.append(status)
+    return deduped
+
+
+def get_assignable_roles(user):
+    if not getattr(user, 'is_authenticated', False):
+        return [ROLE_EDITOR]
+    if getattr(user, 'role_key', '') == ROLE_OWNER:
+        return ROLE_OPTIONS
+    if getattr(user, 'role_key', '') == ROLE_ADMIN:
+        return [role for role in ROLE_OPTIONS if role != ROLE_OWNER]
+    return [getattr(user, 'role_key', ROLE_EDITOR)]
+
+
+def workflow_status_label(status):
+    normalized = normalize_workflow_status(status, default=WORKFLOW_DRAFT)
+    return WORKFLOW_STATUS_LABELS.get(normalized, WORKFLOW_STATUS_LABELS[WORKFLOW_DRAFT])
+
+
+def workflow_status_badge(status):
+    normalized = normalize_workflow_status(status, default=WORKFLOW_DRAFT)
+    return WORKFLOW_STATUS_BADGES.get(normalized, WORKFLOW_STATUS_BADGES[WORKFLOW_DRAFT])
+
+
+def has_permission(user, permission):
+    if not permission:
+        return True
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    checker = getattr(user, 'has_permission', None)
+    if callable(checker):
+        return bool(checker(permission))
+    return False
+
+
+def is_allowed_workflow_transition(user, target_status):
+    status = normalize_workflow_status(target_status, default=WORKFLOW_DRAFT)
+    if status in {WORKFLOW_DRAFT, WORKFLOW_REVIEW}:
+        return has_permission(user, 'content:manage')
+    if status == WORKFLOW_APPROVED:
+        return has_permission(user, 'workflow:review')
+    if status == WORKFLOW_PUBLISHED:
+        return has_permission(user, 'workflow:publish')
+    return False
+
+
+def apply_workflow_form_fields(item, form, user, default_status=WORKFLOW_DRAFT):
+    requested_status = normalize_workflow_status(form.get('workflow_status'), default=default_status)
+    # Backward-compatible fallback for legacy tests/forms using the old checkbox only.
+    if not (form.get('workflow_status') or '').strip() and 'is_published' in form:
+        requested_status = WORKFLOW_PUBLISHED if form.get('is_published') else WORKFLOW_DRAFT
+
+    schedule_raw = (form.get('scheduled_publish_at') or '').strip()
+    scheduled_publish_at = None
+    if schedule_raw:
+        scheduled_publish_at = parse_datetime_local(schedule_raw)
+        if not scheduled_publish_at:
+            return False, 'Invalid scheduled publish date/time. Use the date picker format.'
+        if not has_permission(user, 'workflow:publish'):
+            return False, 'Your role cannot schedule publishing.'
+
+    if not is_allowed_workflow_transition(user, requested_status):
+        return False, 'Your role cannot set this workflow status.'
+
+    now = utc_now_naive()
+    if requested_status == WORKFLOW_PUBLISHED and scheduled_publish_at and scheduled_publish_at > now:
+        requested_status = WORKFLOW_APPROVED
+    if requested_status == WORKFLOW_APPROVED and scheduled_publish_at and scheduled_publish_at <= now:
+        requested_status = WORKFLOW_PUBLISHED
+
+    if scheduled_publish_at and requested_status not in {WORKFLOW_APPROVED, WORKFLOW_PUBLISHED}:
+        return False, 'Scheduled publishing requires status Approved or Published.'
+
+    item.workflow_status = requested_status
+    if requested_status in {WORKFLOW_REVIEW, WORKFLOW_APPROVED, WORKFLOW_PUBLISHED}:
+        item.reviewed_at = item.reviewed_at or now
+    if requested_status in {WORKFLOW_APPROVED, WORKFLOW_PUBLISHED}:
+        item.approved_at = item.approved_at or now
+    if requested_status == WORKFLOW_PUBLISHED:
+        item.published_at = now
+        item.scheduled_publish_at = None
+    else:
+        item.scheduled_publish_at = scheduled_publish_at
+    if hasattr(item, 'is_published'):
+        item.is_published = requested_status == WORKFLOW_PUBLISHED
+    if hasattr(item, 'updated_at'):
+        item.updated_at = now
+    return True, None
 
 
 def is_strong_password(value):
@@ -290,6 +490,33 @@ def uploaded_file(filename):
     return response
 
 
+@admin_bp.before_request
+def enforce_role_permissions():
+    endpoint = request.endpoint or ''
+    if endpoint == 'admin.login':
+        return
+    if not current_user.is_authenticated:
+        return
+    required_permission = ADMIN_PERMISSION_MAP.get(endpoint)
+    if not required_permission:
+        return
+    if has_permission(current_user, required_permission):
+        return
+    flash('Your role does not have access to that area.', 'danger')
+    return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.app_context_processor
+def inject_admin_template_helpers():
+    return {
+        'workflow_status_label': workflow_status_label,
+        'workflow_status_badge': workflow_status_badge,
+        'workflow_status_labels': WORKFLOW_STATUS_LABELS,
+        'role_labels': USER_ROLE_LABELS,
+        'format_datetime_local': format_datetime_local,
+    }
+
+
 # Auth
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -349,8 +576,8 @@ def dashboard():
         if not (site_settings.get(key) or '').strip()
     ]
 
-    published_posts_count = Post.query.filter_by(is_published=True).count()
-    draft_posts_count = Post.query.filter_by(is_published=False).count()
+    published_posts_count = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).count()
+    draft_posts_count = Post.query.filter(Post.workflow_status != WORKFLOW_PUBLISHED).count()
     contacts_24h = ContactSubmission.query.filter(ContactSubmission.created_at >= last_24h).count()
     tickets_24h = SupportTicket.query.filter(SupportTicket.created_at >= last_24h).count()
     support_waiting_count = SupportTicket.query.filter(SupportTicket.status == 'waiting_customer').count()
@@ -400,11 +627,11 @@ def dashboard():
         )
     ).count()
     published_posts_missing_excerpt = Post.query.filter(
-        Post.is_published.is_(True),
+        Post.workflow_status == WORKFLOW_PUBLISHED,
         or_(Post.excerpt.is_(None), func.trim(Post.excerpt) == ''),
     ).count()
     stale_drafts = Post.query.filter(
-        Post.is_published.is_(False),
+        Post.workflow_status.in_([WORKFLOW_DRAFT, WORKFLOW_REVIEW, WORKFLOW_APPROVED]),
         Post.updated_at <= stale_cutoff,
     ).order_by(Post.updated_at.asc()).limit(6).all()
 
@@ -623,7 +850,7 @@ def dashboard():
             'icon': 'fa-solid fa-newspaper',
             'tone': 'success',
             'title': f'Post updated: {item.title}',
-            'meta': 'Published' if item.is_published else 'Draft',
+            'meta': workflow_status_label(item.workflow_status),
             'href': url_for('admin.post_edit', id=item.id),
         })
     for item in recent_security:
@@ -658,6 +885,8 @@ def dashboard():
         recent_contacts=recent_contacts,
         recent_tickets=recent_tickets,
         is_quote_ticket=is_quote_ticket,
+        workflow_status_label=workflow_status_label,
+        workflow_status_badge=workflow_status_badge,
     )
 
 
@@ -665,13 +894,14 @@ def dashboard():
 @admin_bp.route('/services')
 @login_required
 def services():
-    items = Service.query.order_by(Service.sort_order).all()
+    items = Service.query.order_by(Service.sort_order, Service.id).all()
     return render_template('admin/services.html', items=items)
 
 
 @admin_bp.route('/services/add', methods=['GET', 'POST'])
 @login_required
 def service_add():
+    workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 200)
         description = clean_text(request.form.get('description'), 10000)
@@ -682,15 +912,15 @@ def service_add():
 
         if not title or not description:
             flash('Title and description are required.', 'danger')
-            return render_template('admin/service_form.html', item=None)
+            return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
 
         slug = slugify(title)
         if not slug:
             flash('Unable to generate a valid slug from title.', 'danger')
-            return render_template('admin/service_form.html', item=None)
+            return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
         if Service.query.filter_by(slug=slug).first():
             flash('A service with that title already exists.', 'danger')
-            return render_template('admin/service_form.html', item=None)
+            return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
 
         profile_json_raw = request.form.get('profile_json', '').strip()
         if profile_json_raw:
@@ -698,7 +928,7 @@ def service_add():
                 json.loads(profile_json_raw)
             except (json.JSONDecodeError, TypeError):
                 flash('Invalid JSON in service profile.', 'danger')
-                return render_template('admin/service_form.html', item=None)
+                return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
 
         image = save_upload(request.files.get('image')) if request.files.get('image') else None
         item = Service(
@@ -712,22 +942,32 @@ def service_add():
             sort_order=sort_order,
             profile_json=profile_json_raw or None,
         )
+        ok, workflow_error = apply_workflow_form_fields(
+            item,
+            request.form,
+            current_user,
+            default_status=WORKFLOW_DRAFT,
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
         db.session.add(item)
         try:
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
             flash('Unable to save service due to duplicate data.', 'danger')
-            return render_template('admin/service_form.html', item=None)
+            return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
         flash('Service added.', 'success')
         return redirect(url_for('admin.services'))
-    return render_template('admin/service_form.html', item=None)
+    return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
 
 
 @admin_bp.route('/services/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def service_edit(id):
     item = Service.query.get_or_404(id)
+    workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 200)
         description = clean_text(request.form.get('description'), 10000)
@@ -738,16 +978,16 @@ def service_edit(id):
 
         if not title or not description:
             flash('Title and description are required.', 'danger')
-            return render_template('admin/service_form.html', item=item)
+            return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
 
         slug = slugify(title)
         if not slug:
             flash('Unable to generate a valid slug from title.', 'danger')
-            return render_template('admin/service_form.html', item=item)
+            return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
         slug_exists = Service.query.filter(Service.slug == slug, Service.id != item.id).first()
         if slug_exists:
             flash('Another service already uses this title/slug.', 'danger')
-            return render_template('admin/service_form.html', item=item)
+            return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
 
         profile_json_raw = request.form.get('profile_json', '').strip()
         if profile_json_raw:
@@ -755,7 +995,7 @@ def service_edit(id):
                 json.loads(profile_json_raw)
             except (json.JSONDecodeError, TypeError):
                 flash('Invalid JSON in service profile.', 'danger')
-                return render_template('admin/service_form.html', item=item)
+                return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
 
         item.title = title
         item.slug = slug
@@ -765,21 +1005,30 @@ def service_edit(id):
         item.is_featured = 'is_featured' in request.form
         item.sort_order = sort_order
         item.profile_json = profile_json_raw or None
+        ok, workflow_error = apply_workflow_form_fields(
+            item,
+            request.form,
+            current_user,
+            default_status=normalize_workflow_status(item.workflow_status, default=WORKFLOW_DRAFT),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
         if request.files.get('image') and request.files['image'].filename:
             uploaded_image = save_upload(request.files['image'])
             if not uploaded_image:
                 flash('Invalid image upload.', 'danger')
-                return render_template('admin/service_form.html', item=item)
+                return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
             item.image = uploaded_image
         try:
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
             flash('Unable to update service due to duplicate data.', 'danger')
-            return render_template('admin/service_form.html', item=item)
+            return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
         flash('Service updated.', 'success')
         return redirect(url_for('admin.services'))
-    return render_template('admin/service_form.html', item=item)
+    return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
 
 
 @admin_bp.route('/services/<int:id>/delete', methods=['POST'])
@@ -991,13 +1240,14 @@ def category_delete(id):
 @admin_bp.route('/posts')
 @login_required
 def posts():
-    items = Post.query.order_by(Post.created_at.desc()).all()
+    items = Post.query.order_by(Post.updated_at.desc(), Post.created_at.desc()).all()
     return render_template('admin/posts.html', items=items)
 
 
 @admin_bp.route('/posts/add', methods=['GET', 'POST'])
 @login_required
 def post_add():
+    workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 300)
         excerpt = clean_text(request.form.get('excerpt', ''), 2000)
@@ -1007,26 +1257,26 @@ def post_add():
         if raw_category_id and category_id is None:
             flash('Invalid category value.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=None, categories=cats)
+            return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
         if category_id and not db.session.get(Category, category_id):
             flash('Selected category does not exist.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=None, categories=cats)
+            return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
 
         if not title or not content:
             flash('Title and content are required.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=None, categories=cats)
+            return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
 
         slug = slugify(title)
         if not slug:
             flash('Unable to generate a valid post slug.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=None, categories=cats)
+            return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
         if Post.query.filter_by(slug=slug).first():
             flash('A post with that title already exists.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=None, categories=cats)
+            return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
 
         image = save_upload(request.files.get('featured_image')) if request.files.get('featured_image') else None
         item = Post(
@@ -1036,8 +1286,17 @@ def post_add():
             content=content,
             featured_image=image,
             category_id=category_id,
-            is_published='is_published' in request.form
         )
+        ok, workflow_error = apply_workflow_form_fields(
+            item,
+            request.form,
+            current_user,
+            default_status=WORKFLOW_DRAFT,
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            cats = Category.query.all()
+            return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
         db.session.add(item)
         try:
             db.session.commit()
@@ -1045,17 +1304,18 @@ def post_add():
             db.session.rollback()
             flash('Unable to create post due to duplicate data.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=None, categories=cats)
+            return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
         flash('Post created.', 'success')
         return redirect(url_for('admin.posts'))
     cats = Category.query.all()
-    return render_template('admin/post_form.html', item=None, categories=cats)
+    return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
 
 
 @admin_bp.route('/posts/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def post_edit(id):
     item = Post.query.get_or_404(id)
+    workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 300)
         excerpt = clean_text(request.form.get('excerpt', ''), 2000)
@@ -1065,40 +1325,49 @@ def post_edit(id):
         if raw_category_id and category_id is None:
             flash('Invalid category value.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=item, categories=cats)
+            return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
         if category_id and not db.session.get(Category, category_id):
             flash('Selected category does not exist.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=item, categories=cats)
+            return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
 
         if not title or not content:
             flash('Title and content are required.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=item, categories=cats)
+            return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
 
         slug = slugify(title)
         if not slug:
             flash('Unable to generate a valid post slug.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=item, categories=cats)
+            return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
         slug_exists = Post.query.filter(Post.slug == slug, Post.id != item.id).first()
         if slug_exists:
             flash('Another post already uses this title/slug.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=item, categories=cats)
+            return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
 
         item.title = title
         item.slug = slug
         item.excerpt = excerpt
         item.content = content
         item.category_id = category_id
-        item.is_published = 'is_published' in request.form
+        ok, workflow_error = apply_workflow_form_fields(
+            item,
+            request.form,
+            current_user,
+            default_status=normalize_workflow_status(item.workflow_status, default=WORKFLOW_DRAFT),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            cats = Category.query.all()
+            return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
         if request.files.get('featured_image') and request.files['featured_image'].filename:
             uploaded_image = save_upload(request.files['featured_image'])
             if not uploaded_image:
                 flash('Invalid featured image upload.', 'danger')
                 cats = Category.query.all()
-                return render_template('admin/post_form.html', item=item, categories=cats)
+                return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
             item.featured_image = uploaded_image
         try:
             db.session.commit()
@@ -1106,11 +1375,11 @@ def post_edit(id):
             db.session.rollback()
             flash('Unable to update post due to duplicate data.', 'danger')
             cats = Category.query.all()
-            return render_template('admin/post_form.html', item=item, categories=cats)
+            return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
         flash('Post updated.', 'success')
         return redirect(url_for('admin.posts'))
     cats = Category.query.all()
-    return render_template('admin/post_form.html', item=item, categories=cats)
+    return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
 
 
 @admin_bp.route('/posts/<int:id>/delete', methods=['POST'])
@@ -1214,33 +1483,39 @@ def users():
 @admin_bp.route('/users/add', methods=['GET', 'POST'])
 @login_required
 def user_add():
+    assignable_roles = get_assignable_roles(current_user)
+    default_role = ROLE_ADMIN if ROLE_ADMIN in assignable_roles else assignable_roles[0]
     if request.method == 'POST':
         username = clean_text(request.form.get('username', ''), 80)
         email = clean_text(request.form.get('email', ''), 120)
         password = request.form.get('password', '')
+        role = normalize_user_role(request.form.get('role', default_role), default=default_role)
+        if role not in assignable_roles:
+            flash('You do not have permission to assign that role.', 'danger')
+            return render_template('admin/user_form.html', user=None, assignable_roles=assignable_roles, default_role=default_role)
         if not username or not email or not password:
             flash('Username, email, and password are required.', 'danger')
-            return render_template('admin/user_form.html', user=None)
+            return render_template('admin/user_form.html', user=None, assignable_roles=assignable_roles, default_role=default_role)
         if not is_strong_password(password):
             flash(
                 f'Password must be at least {ADMIN_PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, a digit, and a special character.',
                 'danger',
             )
-            return render_template('admin/user_form.html', user=None)
+            return render_template('admin/user_form.html', user=None, assignable_roles=assignable_roles, default_role=default_role)
         if not is_valid_email(email):
             flash('Please provide a valid email address.', 'danger')
-            return render_template('admin/user_form.html', user=None)
+            return render_template('admin/user_form.html', user=None, assignable_roles=assignable_roles, default_role=default_role)
         existing = User.query.filter((User.username == username) | (User.email == email)).first()
         if existing:
             flash('Username or email already exists.', 'danger')
-            return render_template('admin/user_form.html', user=None)
-        user = User(username=username, email=email)
+            return render_template('admin/user_form.html', user=None, assignable_roles=assignable_roles, default_role=default_role)
+        user = User(username=username, email=email, role=role)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
         flash(f'Admin user "{username}" created.', 'success')
         return redirect(url_for('admin.users'))
-    return render_template('admin/user_form.html', user=None)
+    return render_template('admin/user_form.html', user=None, assignable_roles=assignable_roles, default_role=default_role)
 
 
 @admin_bp.route('/users/<int:id>/edit', methods=['GET', 'POST'])
@@ -1250,30 +1525,43 @@ def user_edit(id):
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('admin.users'))
+    assignable_roles = get_assignable_roles(current_user)
+    if user.role_key not in assignable_roles:
+        assignable_roles = [user.role_key] + assignable_roles
     if request.method == 'POST':
         email = clean_text(request.form.get('email', ''), 120)
         password = request.form.get('password', '')
+        requested_role = normalize_user_role(request.form.get('role', user.role_key), default=user.role_key)
+        if requested_role not in assignable_roles:
+            flash('You do not have permission to assign that role.', 'danger')
+            return render_template('admin/user_form.html', user=user, assignable_roles=assignable_roles, default_role=user.role_key)
+        if user.role_key == ROLE_OWNER and requested_role != ROLE_OWNER:
+            owner_count = User.query.filter_by(role=ROLE_OWNER).count()
+            if owner_count <= 1:
+                flash('Cannot remove the final owner role from the last owner account.', 'danger')
+                return render_template('admin/user_form.html', user=user, assignable_roles=assignable_roles, default_role=user.role_key)
         if email and not is_valid_email(email):
             flash('Please provide a valid email address.', 'danger')
-            return render_template('admin/user_form.html', user=user)
+            return render_template('admin/user_form.html', user=user, assignable_roles=assignable_roles, default_role=user.role_key)
         if email:
             dup = User.query.filter(User.email == email, User.id != user.id).first()
             if dup:
                 flash('Email already in use by another user.', 'danger')
-                return render_template('admin/user_form.html', user=user)
+                return render_template('admin/user_form.html', user=user, assignable_roles=assignable_roles, default_role=user.role_key)
             user.email = email
+        user.role = requested_role
         if password:
             if not is_strong_password(password):
                 flash(
                     f'Password must be at least {ADMIN_PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, a digit, and a special character.',
                     'danger',
                 )
-                return render_template('admin/user_form.html', user=user)
+                return render_template('admin/user_form.html', user=user, assignable_roles=assignable_roles, default_role=user.role_key)
             user.set_password(password)
         db.session.commit()
         flash(f'User "{user.username}" updated.', 'success')
         return redirect(url_for('admin.users'))
-    return render_template('admin/user_form.html', user=user)
+    return render_template('admin/user_form.html', user=user, assignable_roles=assignable_roles, default_role=user.role_key)
 
 
 @admin_bp.route('/users/<int:id>/delete', methods=['POST'])
@@ -1284,6 +1572,8 @@ def user_delete(id):
         flash('User not found.', 'danger')
     elif user.id == current_user.id:
         flash('You cannot delete your own account.', 'danger')
+    elif user.role_key == ROLE_OWNER and User.query.filter_by(role=ROLE_OWNER).count() <= 1:
+        flash('Cannot delete the last owner account.', 'danger')
     elif User.query.count() <= 1:
         flash('Cannot delete the last admin user.', 'danger')
     else:
@@ -1425,13 +1715,14 @@ def support_ticket_view(id):
 @admin_bp.route('/industries')
 @login_required
 def industries():
-    items = Industry.query.order_by(Industry.sort_order).all()
+    items = Industry.query.order_by(Industry.sort_order, Industry.id).all()
     return render_template('admin/industries.html', items=items)
 
 
 @admin_bp.route('/industries/add', methods=['GET', 'POST'])
 @login_required
 def industry_add():
+    workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 200)
         description = clean_text(request.form.get('description'), 10000)
@@ -1444,15 +1735,15 @@ def industry_add():
 
         if not title or not description:
             flash('Title and description are required.', 'danger')
-            return render_template('admin/industry_form.html', item=None)
+            return render_template('admin/industry_form.html', item=None, workflow_options=workflow_options)
 
         slug = slugify(title)
         if not slug:
             flash('Unable to generate a valid slug from title.', 'danger')
-            return render_template('admin/industry_form.html', item=None)
+            return render_template('admin/industry_form.html', item=None, workflow_options=workflow_options)
         if Industry.query.filter_by(slug=slug).first():
             flash('An industry with that title already exists.', 'danger')
-            return render_template('admin/industry_form.html', item=None)
+            return render_template('admin/industry_form.html', item=None, workflow_options=workflow_options)
 
         item = Industry(
             title=title, slug=slug, description=description,
@@ -1460,22 +1751,32 @@ def industry_add():
             challenges=challenges, solutions=solutions,
             stats=stats, sort_order=sort_order,
         )
+        ok, workflow_error = apply_workflow_form_fields(
+            item,
+            request.form,
+            current_user,
+            default_status=WORKFLOW_DRAFT,
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/industry_form.html', item=None, workflow_options=workflow_options)
         db.session.add(item)
         try:
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
             flash('Unable to save industry due to duplicate data.', 'danger')
-            return render_template('admin/industry_form.html', item=None)
+            return render_template('admin/industry_form.html', item=None, workflow_options=workflow_options)
         flash('Industry added.', 'success')
         return redirect(url_for('admin.industries'))
-    return render_template('admin/industry_form.html', item=None)
+    return render_template('admin/industry_form.html', item=None, workflow_options=workflow_options)
 
 
 @admin_bp.route('/industries/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def industry_edit(id):
     item = Industry.query.get_or_404(id)
+    workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 200)
         description = clean_text(request.form.get('description'), 10000)
@@ -1488,16 +1789,16 @@ def industry_edit(id):
 
         if not title or not description:
             flash('Title and description are required.', 'danger')
-            return render_template('admin/industry_form.html', item=item)
+            return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
 
         slug = slugify(title)
         if not slug:
             flash('Unable to generate a valid slug from title.', 'danger')
-            return render_template('admin/industry_form.html', item=item)
+            return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
         slug_exists = Industry.query.filter(Industry.slug == slug, Industry.id != item.id).first()
         if slug_exists:
             flash('Another industry already uses this title/slug.', 'danger')
-            return render_template('admin/industry_form.html', item=item)
+            return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
 
         item.title = title
         item.slug = slug
@@ -1508,15 +1809,24 @@ def industry_edit(id):
         item.solutions = solutions
         item.stats = stats
         item.sort_order = sort_order
+        ok, workflow_error = apply_workflow_form_fields(
+            item,
+            request.form,
+            current_user,
+            default_status=normalize_workflow_status(item.workflow_status, default=WORKFLOW_DRAFT),
+        )
+        if not ok:
+            flash(workflow_error, 'danger')
+            return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
         try:
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
             flash('Unable to update industry due to duplicate data.', 'danger')
-            return render_template('admin/industry_form.html', item=item)
+            return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
         flash('Industry updated.', 'success')
         return redirect(url_for('admin.industries'))
-    return render_template('admin/industry_form.html', item=item)
+    return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
 
 
 @admin_bp.route('/industries/<int:id>/delete', methods=['POST'])

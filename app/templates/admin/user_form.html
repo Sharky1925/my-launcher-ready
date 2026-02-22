@@ -9,6 +9,7 @@
 <div class="card admin-card-slim">
   <div class="card-body p-4">
     <h3 class="mb-4">{{ 'Edit User' if user else 'Add Admin User' }}</h3>
+    {% set selected_role = request.form.get('role', user.role_key if user else default_role) %}
     <form method="POST">
       {{ csrf_input() }}
 
@@ -25,6 +26,16 @@
       <div class="mb-3">
         <label class="form-label" for="email">Email</label>
         <input type="email" class="form-control" id="email" name="email" value="{{ user.email if user else '' }}" placeholder="admin@example.com" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="role">Role Tier</label>
+        <select id="role" name="role" class="form-select">
+          {% for role in assignable_roles %}
+          <option value="{{ role }}" {{ 'selected' if selected_role == role }}>{{ role_labels.get(role, role|title) }}</option>
+          {% endfor %}
+        </select>
+        <small class="text-muted">Role tiers control who can review, approve, publish, and manage settings/users.</small>
       </div>
 
       <div class="mb-3">

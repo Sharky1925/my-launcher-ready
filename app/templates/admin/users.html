@@ -13,6 +13,7 @@
       <tr>
         <th>Username</th>
         <th>Email</th>
+        <th>Role Tier</th>
         <th>Created</th>
         <th class="text-end">Actions</th>
       </tr>
@@ -22,6 +23,7 @@
       <tr>
         <td><i class="fa-solid fa-user-shield me-2 text-info"></i>{{ user.username }}</td>
         <td>{{ user.email }}</td>
+        <td><span class="badge bg-primary-subtle text-primary-emphasis">{{ role_labels.get(user.role_key, user.role_key|title) }}</span></td>
         <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '—' }}</td>
         <td class="text-end">
           <a href="{{ url_for('admin.user_edit', id=user.id) }}" class="btn btn-sm btn-outline-light me-1"><i class="fa-solid fa-pen"></i></a>

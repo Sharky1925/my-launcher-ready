@@ -10,12 +10,12 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     from .config import Config
-    from .models import db, User, Service, SiteSetting, Industry, ContentBlock
-    from .utils import get_page_content
+    from .models import db, User, Service, SiteSetting, Industry, ContentBlock, WORKFLOW_PUBLISHED, run_scheduled_publication_cycle
+    from .utils import get_page_content, utc_now_naive
 except ImportError:  # pragma: no cover - fallback when running from app/ as script root
     from config import Config
-    from models import db, User, Service, SiteSetting, Industry, ContentBlock
-    from utils import get_page_content
+    from models import db, User, Service, SiteSetting, Industry, ContentBlock, WORKFLOW_PUBLISHED, run_scheduled_publication_cycle
+    from utils import get_page_content, utc_now_naive
 
 login_manager = LoginManager()
 login_manager.login_view = 'admin.login'
@@ -29,6 +29,7 @@ _ICON_CLASS_ALIASES = {
 }
 _ICON_STYLES = {'fa-solid', 'fa-regular', 'fa-brands'}
 _sentry_initialized = False
+WORKFLOW_SCHEDULE_POLL_SECONDS = 30
 
 
 @login_manager.user_loader
@@ -206,12 +207,33 @@ def create_app(config_overrides=None):
     def ensure_csp_nonce():
         get_csp_nonce()
 
+    @app.before_request
+    def publish_scheduled_content():
+        now = utc_now_naive()
+        last_run = app.extensions.get('workflow_scheduler_last_run')
+        if last_run and (now - last_run).total_seconds() < WORKFLOW_SCHEDULE_POLL_SECONDS:
+            return
+        app.extensions['workflow_scheduler_last_run'] = now
+        try:
+            run_scheduled_publication_cycle(now=now)
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Scheduled publication cycle failed.')
+
     @app.context_processor
     def inject_globals():
         try:
-            nav_professional = Service.query.filter_by(service_type='professional').order_by(Service.sort_order).all()
-            nav_repair = Service.query.filter_by(service_type='repair').order_by(Service.sort_order).all()
-            nav_industries = Industry.query.order_by(Industry.sort_order).all()
+            nav_professional = Service.query.filter_by(
+                service_type='professional',
+                workflow_status=WORKFLOW_PUBLISHED,
+            ).order_by(Service.sort_order).all()
+            nav_repair = Service.query.filter_by(
+                service_type='repair',
+                workflow_status=WORKFLOW_PUBLISHED,
+            ).order_by(Service.sort_order).all()
+            nav_industries = Industry.query.filter_by(
+                workflow_status=WORKFLOW_PUBLISHED,
+            ).order_by(Industry.sort_order).all()
             nav_professional = _normalize_icon_attr(nav_professional, 'fa-solid fa-gear')
             nav_repair = _normalize_icon_attr(nav_repair, 'fa-solid fa-wrench')
             nav_industries = _normalize_icon_attr(nav_industries, 'fa-solid fa-building')

@@ -1,15 +1,248 @@
 import json
 import os
 import secrets
+from sqlalchemy import inspect, text
 from slugify import slugify
 
 try:
-    from .models import db, User, Service, TeamMember, Testimonial, Category, Post, SiteSetting, Industry, ContentBlock
+    from .models import (
+        db,
+        User,
+        Service,
+        TeamMember,
+        Testimonial,
+        Category,
+        Post,
+        SiteSetting,
+        Industry,
+        ContentBlock,
+        ROLE_ADMIN,
+        ROLE_OWNER,
+        WORKFLOW_DRAFT,
+        WORKFLOW_PUBLISHED,
+        utc_now_naive,
+    )
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
-    from models import db, User, Service, TeamMember, Testimonial, Category, Post, SiteSetting, Industry, ContentBlock
+    from models import (
+        db,
+        User,
+        Service,
+        TeamMember,
+        Testimonial,
+        Category,
+        Post,
+        SiteSetting,
+        Industry,
+        ContentBlock,
+        ROLE_ADMIN,
+        ROLE_OWNER,
+        WORKFLOW_DRAFT,
+        WORKFLOW_PUBLISHED,
+        utc_now_naive,
+    )
+
+
+def _get_table_columns(table_name):
+    inspector = inspect(db.engine)
+    try:
+        return {column['name'] for column in inspector.get_columns(table_name)}
+    except Exception:
+        return set()
+
+
+def _identifier(name, dialect):
+    if dialect == 'postgresql':
+        return f'"{name}"'
+    return name
+
+
+def ensure_phase2_schema():
+    """Best-effort additive schema updates for phase-2 workflow and roles."""
+    dialect = db.engine.dialect.name
+    datetime_type = 'TIMESTAMP WITHOUT TIME ZONE' if dialect == 'postgresql' else 'DATETIME'
+    table_specs = {
+        'user': [
+            ('role', f"VARCHAR(30) NOT NULL DEFAULT '{ROLE_ADMIN}'"),
+        ],
+        'post': [
+            ('workflow_status', f"VARCHAR(20) NOT NULL DEFAULT '{WORKFLOW_DRAFT}'"),
+            ('scheduled_publish_at', datetime_type),
+            ('reviewed_at', datetime_type),
+            ('approved_at', datetime_type),
+            ('published_at', datetime_type),
+        ],
+        'service': [
+            ('workflow_status', f"VARCHAR(20) NOT NULL DEFAULT '{WORKFLOW_DRAFT}'"),
+            ('scheduled_publish_at', datetime_type),
+            ('reviewed_at', datetime_type),
+            ('approved_at', datetime_type),
+            ('published_at', datetime_type),
+            ('updated_at', datetime_type),
+        ],
+        'industry': [
+            ('workflow_status', f"VARCHAR(20) NOT NULL DEFAULT '{WORKFLOW_DRAFT}'"),
+            ('scheduled_publish_at', datetime_type),
+            ('reviewed_at', datetime_type),
+            ('approved_at', datetime_type),
+            ('published_at', datetime_type),
+            ('updated_at', datetime_type),
+        ],
+    }
+
+    for table_name, columns in table_specs.items():
+        existing_columns = _get_table_columns(table_name)
+        for column_name, definition in columns:
+            if column_name in existing_columns:
+                continue
+            table_id = _identifier(table_name, dialect)
+            column_id = _identifier(column_name, dialect)
+            ddl = f'ALTER TABLE {table_id} ADD COLUMN {column_id} {definition}'
+            try:
+                db.session.execute(text(ddl))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+    indexed_columns = [
+        ('user', 'role'),
+        ('post', 'workflow_status'),
+        ('post', 'scheduled_publish_at'),
+        ('post', 'published_at'),
+        ('service', 'workflow_status'),
+        ('service', 'scheduled_publish_at'),
+        ('service', 'published_at'),
+        ('industry', 'workflow_status'),
+        ('industry', 'scheduled_publish_at'),
+        ('industry', 'published_at'),
+    ]
+    for table_name, column_name in indexed_columns:
+        existing_columns = _get_table_columns(table_name)
+        if column_name not in existing_columns:
+            continue
+        index_name = f'ix_{table_name}_{column_name}'
+        table_id = _identifier(table_name, dialect)
+        column_id = _identifier(column_name, dialect)
+        ddl = f'CREATE INDEX IF NOT EXISTS {index_name} ON {table_id} ({column_id})'
+        try:
+            db.session.execute(text(ddl))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
+def backfill_phase2_defaults():
+    dialect = db.engine.dialect.name
+    table_user = _identifier('user', dialect)
+    table_post = _identifier('post', dialect)
+    table_service = _identifier('service', dialect)
+    table_industry = _identifier('industry', dialect)
+    true_lit = 'TRUE' if dialect == 'postgresql' else '1'
+    false_lit = 'FALSE' if dialect == 'postgresql' else '0'
+
+    try:
+        user_columns = _get_table_columns('user')
+        if 'role' in user_columns:
+            db.session.execute(
+                text(f"UPDATE {table_user} SET role = :role WHERE role IS NULL OR TRIM(role) = ''"),
+                {'role': ROLE_OWNER},
+            )
+            first_user_id = db.session.execute(text(f"SELECT MIN(id) FROM {table_user}")).scalar()
+            if first_user_id:
+                db.session.execute(
+                    text(f"UPDATE {table_user} SET role = :role WHERE id = :user_id"),
+                    {'role': ROLE_OWNER, 'user_id': first_user_id},
+                )
+
+        post_columns = _get_table_columns('post')
+        if {'workflow_status', 'is_published'}.issubset(post_columns):
+            db.session.execute(
+                text(
+                    f"UPDATE {table_post} SET workflow_status = :published "
+                    "WHERE is_published = :true_value AND (workflow_status IS NULL OR TRIM(workflow_status) = '' OR workflow_status = :draft)"
+                ),
+                {'published': WORKFLOW_PUBLISHED, 'true_value': True, 'draft': WORKFLOW_DRAFT},
+            )
+            db.session.execute(
+                text(
+                    f"UPDATE {table_post} SET workflow_status = :draft "
+                    "WHERE workflow_status IS NULL OR TRIM(workflow_status) = ''"
+                ),
+                {'draft': WORKFLOW_DRAFT},
+            )
+            db.session.execute(
+                text(
+                    f"UPDATE {table_post} SET reviewed_at = COALESCE(reviewed_at, created_at) "
+                    "WHERE workflow_status IN ('review', 'approved', 'published')"
+                )
+            )
+            db.session.execute(
+                text(
+                    f"UPDATE {table_post} SET approved_at = COALESCE(approved_at, reviewed_at, created_at) "
+                    "WHERE workflow_status IN ('approved', 'published')"
+                )
+            )
+            db.session.execute(
+                text(
+                    f"UPDATE {table_post} SET published_at = COALESCE(published_at, approved_at, reviewed_at, created_at) "
+                    "WHERE workflow_status = :published"
+                ),
+                {'published': WORKFLOW_PUBLISHED},
+            )
+            db.session.execute(
+                text(
+                    f"UPDATE {table_post} SET is_published = CASE "
+                    f"WHEN workflow_status = :published THEN {true_lit} "
+                    f"ELSE {false_lit} END"
+                ),
+                {'published': WORKFLOW_PUBLISHED},
+            )
+
+        for table_name, table_id in (('service', table_service), ('industry', table_industry)):
+            columns = _get_table_columns(table_name)
+            if 'workflow_status' not in columns:
+                continue
+            db.session.execute(
+                text(
+                    f"UPDATE {table_id} SET workflow_status = :published "
+                    "WHERE workflow_status IS NULL OR TRIM(workflow_status) = ''"
+                ),
+                {'published': WORKFLOW_PUBLISHED},
+            )
+            if 'reviewed_at' in columns:
+                db.session.execute(
+                    text(
+                        f"UPDATE {table_id} SET reviewed_at = COALESCE(reviewed_at, created_at) "
+                        "WHERE workflow_status IN ('review', 'approved', 'published')"
+                    )
+                )
+            if 'approved_at' in columns:
+                db.session.execute(
+                    text(
+                        f"UPDATE {table_id} SET approved_at = COALESCE(approved_at, reviewed_at, created_at) "
+                        "WHERE workflow_status IN ('approved', 'published')"
+                    )
+                )
+            if 'published_at' in columns:
+                db.session.execute(
+                    text(
+                        f"UPDATE {table_id} SET published_at = COALESCE(published_at, approved_at, reviewed_at, created_at) "
+                        "WHERE workflow_status = :published"
+                    ),
+                    {'published': WORKFLOW_PUBLISHED},
+                )
+            if 'updated_at' in columns:
+                db.session.execute(
+                    text(f"UPDATE {table_id} SET updated_at = COALESCE(updated_at, created_at)")
+                )
+
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 def seed_database():
+    ensure_phase2_schema()
+    backfill_phase2_defaults()
     env_password = os.environ.get('ADMIN_PASSWORD') or ''
 
     # Always sync admin password with env var on startup
@@ -32,7 +265,7 @@ def seed_database():
             '[seed] ADMIN_PASSWORD not set. Seeded admin with a random password. '
             'Set ADMIN_PASSWORD and restart to rotate it to a known value.'
         )
-    admin = User(username='admin', email='admin@example.com')
+    admin = User(username='admin', email='admin@example.com', role=ROLE_OWNER)
     admin.set_password(env_password)
     db.session.add(admin)
 
@@ -67,7 +300,9 @@ def seed_database():
         db.session.add(Service(
             title=title, slug=slugify(title), description=desc,
             icon_class=icon, is_featured=featured, sort_order=i,
-            service_type='professional'
+            service_type='professional',
+            workflow_status=WORKFLOW_PUBLISHED,
+            published_at=utc_now_naive(),
         ))
 
     # Technical Repair Services (Right On catalog)
@@ -82,7 +317,9 @@ def seed_database():
         db.session.add(Service(
             title=title, slug=slugify(title), description=desc,
             icon_class=icon, is_featured=featured, sort_order=i,
-            service_type='repair'
+            service_type='repair',
+            workflow_status=WORKFLOW_PUBLISHED,
+            published_at=utc_now_naive(),
         ))
 
     # Team members
@@ -136,7 +373,11 @@ def seed_database():
         db.session.add(Post(
             title=title, slug=slugify(title), excerpt=excerpt,
             content=content, category_id=cat_objects[cat_name].id,
-            is_published=True
+            is_published=True,
+            workflow_status=WORKFLOW_PUBLISHED,
+            reviewed_at=utc_now_naive(),
+            approved_at=utc_now_naive(),
+            published_at=utc_now_naive(),
         ))
 
     # Industries
@@ -220,7 +461,11 @@ def seed_database():
             description=ind['description'], icon_class=ind['icon_class'],
             hero_description=ind['hero_description'],
             challenges=ind['challenges'], solutions=ind['solutions'],
-            stats=ind['stats'], sort_order=i
+            stats=ind['stats'], sort_order=i,
+            workflow_status=WORKFLOW_PUBLISHED,
+            reviewed_at=utc_now_naive(),
+            approved_at=utc_now_naive(),
+            published_at=utc_now_naive(),
         ))
 
     # Content blocks — default page content

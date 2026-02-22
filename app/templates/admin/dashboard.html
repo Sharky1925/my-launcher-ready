@@ -700,7 +700,7 @@
           <li>
             <a href="{{ url_for('admin.post_edit', id=item.id) }}">
               <strong>{{ item.title }}</strong>
-              <span>{% if item.is_published %}Published{% else %}Draft{% endif %}</span>
+              <span>{{ workflow_status_label(item.workflow_status) }}</span>
             </a>
           </li>
           {% endfor %}

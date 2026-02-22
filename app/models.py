@@ -5,9 +5,105 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
+WORKFLOW_DRAFT = 'draft'
+WORKFLOW_REVIEW = 'review'
+WORKFLOW_APPROVED = 'approved'
+WORKFLOW_PUBLISHED = 'published'
+WORKFLOW_STATUSES = (
+    WORKFLOW_DRAFT,
+    WORKFLOW_REVIEW,
+    WORKFLOW_APPROVED,
+    WORKFLOW_PUBLISHED,
+)
+WORKFLOW_STATUS_LABELS = {
+    WORKFLOW_DRAFT: 'Draft',
+    WORKFLOW_REVIEW: 'In Review',
+    WORKFLOW_APPROVED: 'Approved',
+    WORKFLOW_PUBLISHED: 'Published',
+}
+
+ROLE_OWNER = 'owner'
+ROLE_ADMIN = 'admin'
+ROLE_PUBLISHER = 'publisher'
+ROLE_REVIEWER = 'reviewer'
+ROLE_EDITOR = 'editor'
+ROLE_SUPPORT = 'support'
+USER_ROLE_CHOICES = (
+    ROLE_OWNER,
+    ROLE_ADMIN,
+    ROLE_PUBLISHER,
+    ROLE_REVIEWER,
+    ROLE_EDITOR,
+    ROLE_SUPPORT,
+)
+USER_ROLE_LABELS = {
+    ROLE_OWNER: 'Owner',
+    ROLE_ADMIN: 'Admin',
+    ROLE_PUBLISHER: 'Publisher',
+    ROLE_REVIEWER: 'Reviewer',
+    ROLE_EDITOR: 'Editor',
+    ROLE_SUPPORT: 'Support',
+}
+ROLE_DEFAULT = ROLE_ADMIN
+ROLE_PERMISSIONS = {
+    ROLE_OWNER: {
+        'dashboard:view',
+        'content:manage',
+        'workflow:review',
+        'workflow:publish',
+        'support:manage',
+        'security:view',
+        'settings:manage',
+        'users:manage',
+    },
+    ROLE_ADMIN: {
+        'dashboard:view',
+        'content:manage',
+        'workflow:review',
+        'workflow:publish',
+        'support:manage',
+        'security:view',
+        'settings:manage',
+        'users:manage',
+    },
+    ROLE_PUBLISHER: {
+        'dashboard:view',
+        'content:manage',
+        'workflow:review',
+        'workflow:publish',
+    },
+    ROLE_REVIEWER: {
+        'dashboard:view',
+        'content:manage',
+        'workflow:review',
+    },
+    ROLE_EDITOR: {
+        'dashboard:view',
+        'content:manage',
+    },
+    ROLE_SUPPORT: {
+        'dashboard:view',
+        'support:manage',
+    },
+}
+
 
 def utc_now_naive():
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def normalize_workflow_status(value, default=WORKFLOW_DRAFT):
+    candidate = (value or '').strip().lower()
+    if candidate in WORKFLOW_STATUSES:
+        return candidate
+    return default
+
+
+def normalize_user_role(value, default=ROLE_DEFAULT):
+    candidate = (value or '').strip().lower()
+    if candidate in USER_ROLE_CHOICES:
+        return candidate
+    return default
 
 
 class User(UserMixin, db.Model):
@@ -15,6 +111,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(30), nullable=False, default=ROLE_DEFAULT, index=True)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
 
     def set_password(self, password):
@@ -22,6 +119,25 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def role_key(self):
+        return normalize_user_role(self.role, default=ROLE_DEFAULT)
+
+    @property
+    def role_label(self):
+        return USER_ROLE_LABELS.get(self.role_key, USER_ROLE_LABELS[ROLE_DEFAULT])
+
+    def has_permission(self, permission):
+        return permission in ROLE_PERMISSIONS.get(self.role_key, ROLE_PERMISSIONS[ROLE_DEFAULT])
+
+    def can_assign_role(self, role):
+        target = normalize_user_role(role, default=ROLE_DEFAULT)
+        if self.role_key == ROLE_OWNER:
+            return target in USER_ROLE_CHOICES
+        if self.role_key != ROLE_ADMIN:
+            return False
+        return target in USER_ROLE_CHOICES and target != ROLE_OWNER
 
 
 class Service(db.Model):
@@ -35,7 +151,13 @@ class Service(db.Model):
     is_featured = db.Column(db.Boolean, default=False, index=True)
     sort_order = db.Column(db.Integer, default=0)
     profile_json = db.Column(db.Text)
+    workflow_status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
+    scheduled_publish_at = db.Column(db.DateTime, index=True)
+    reviewed_at = db.Column(db.DateTime)
+    approved_at = db.Column(db.DateTime)
+    published_at = db.Column(db.DateTime, index=True)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
 
 class TeamMember(db.Model):
@@ -75,6 +197,11 @@ class Post(db.Model):
     featured_image = db.Column(db.String(300))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     is_published = db.Column(db.Boolean, default=False, index=True)
+    workflow_status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
+    scheduled_publish_at = db.Column(db.DateTime, index=True)
+    reviewed_at = db.Column(db.DateTime)
+    approved_at = db.Column(db.DateTime)
+    published_at = db.Column(db.DateTime, index=True)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
     updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
@@ -143,7 +270,13 @@ class Industry(db.Model):
     solutions = db.Column(db.Text)   # pipe-separated: "solution1|solution2|solution3"
     stats = db.Column(db.Text)       # pipe-separated: "label1:value1|label2:value2"
     sort_order = db.Column(db.Integer, default=0)
+    workflow_status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
+    scheduled_publish_at = db.Column(db.DateTime, index=True)
+    reviewed_at = db.Column(db.DateTime)
+    approved_at = db.Column(db.DateTime)
+    published_at = db.Column(db.DateTime, index=True)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
 
 class ContentBlock(db.Model):
@@ -194,3 +327,30 @@ class SecurityEvent(db.Model):
         db.Index('ix_security_event_scope_created_at', 'scope', 'created_at'),
         db.Index('ix_security_event_type_created_at', 'event_type', 'created_at'),
     )
+
+
+def run_scheduled_publication_cycle(now=None):
+    now = now or utc_now_naive()
+    total_published = 0
+    for model in (Post, Service, Industry):
+        due_items = model.query.filter(
+            model.workflow_status == WORKFLOW_APPROVED,
+            model.scheduled_publish_at.isnot(None),
+            model.scheduled_publish_at <= now,
+        ).all()
+        if not due_items:
+            continue
+        for item in due_items:
+            item.workflow_status = WORKFLOW_PUBLISHED
+            item.reviewed_at = item.reviewed_at or now
+            item.approved_at = item.approved_at or now
+            item.published_at = now
+            item.scheduled_publish_at = None
+            if hasattr(item, 'is_published'):
+                item.is_published = True
+            if hasattr(item, 'updated_at'):
+                item.updated_at = now
+        total_published += len(due_items)
+    if total_published:
+        db.session.commit()
+    return total_published

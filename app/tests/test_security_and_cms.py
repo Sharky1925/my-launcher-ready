@@ -1,5 +1,6 @@
 import re
 import uuid
+from datetime import timedelta
 
 import pytest
 
@@ -12,12 +13,18 @@ try:
         ContactSubmission,
         Post,
         Service,
+        User,
         SupportClient,
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        WORKFLOW_APPROVED,
+        WORKFLOW_PUBLISHED,
+        WORKFLOW_DRAFT,
+        ROLE_EDITOR,
         db,
     )
+    from app.utils import utc_now_naive
 except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd test runs
     import routes.admin as admin_routes
     import routes.main as main_routes
@@ -27,12 +34,18 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         ContactSubmission,
         Post,
         Service,
+        User,
         SupportClient,
         SupportTicket,
         AuthRateLimitBucket,
         SecurityEvent,
+        WORKFLOW_APPROVED,
+        WORKFLOW_PUBLISHED,
+        WORKFLOW_DRAFT,
+        ROLE_EDITOR,
         db,
     )
+    from utils import utc_now_naive
 
 CSRF_TOKEN_RE = re.compile(r'name="_csrf_token" value="([^"]+)"')
 
@@ -77,6 +90,10 @@ def client(app):
 
 
 def admin_login(client):
+    return admin_login_as(client, "admin", "admin123")
+
+
+def admin_login_as(client, username, password):
     login_page = client.get("/admin/login")
     csrf_token = extract_csrf_token(login_page.get_data(as_text=True))
     assert csrf_token
@@ -85,8 +102,8 @@ def admin_login(client):
         "/admin/login",
         data={
             "_csrf_token": csrf_token,
-            "username": "admin",
-            "password": "admin123",
+            "username": username,
+            "password": password,
         },
         follow_redirects=False,
     )
@@ -797,3 +814,77 @@ def test_csrf_failure_redirect_rejects_external_referrer(client):
     location = response.headers.get("Location") or ""
     assert location.startswith("/")
     assert "evil.example" not in location
+
+
+def test_role_tier_editor_cannot_open_settings_or_users(client, app):
+    admin_login(client)
+    with app.app_context():
+        editor = User(username=f"editor-{uuid.uuid4().hex[:6]}", email=f"editor-{uuid.uuid4().hex[:6]}@example.com", role=ROLE_EDITOR)
+        editor.set_password("EditorPass!123")
+        db.session.add(editor)
+        db.session.commit()
+        editor_username = editor.username
+
+    dashboard = client.get("/admin/")
+    csrf_token = extract_csrf_token(dashboard.get_data(as_text=True))
+    assert csrf_token
+    client.post("/admin/logout", data={"_csrf_token": csrf_token}, follow_redirects=False)
+
+    admin_login_as(client, editor_username, "EditorPass!123")
+    assert client.get("/admin/posts", follow_redirects=False).status_code == 200
+    denied_settings = client.get("/admin/settings", follow_redirects=False)
+    denied_users = client.get("/admin/users", follow_redirects=False)
+    assert denied_settings.status_code in (302, 303)
+    assert denied_users.status_code in (302, 303)
+    assert denied_settings.headers.get("Location", "").endswith("/admin/")
+    assert denied_users.headers.get("Location", "").endswith("/admin/")
+
+
+def test_scheduled_publish_promotes_approved_post(client, app):
+    with app.app_context():
+        category = Category.query.first()
+        assert category is not None
+        post = Post(
+            title=f"Scheduled publish {uuid.uuid4().hex[:8]}",
+            slug=f"scheduled-publish-{uuid.uuid4().hex[:8]}",
+            excerpt="Scheduled excerpt",
+            content="<p>Scheduled content.</p>",
+            category_id=category.id,
+            workflow_status=WORKFLOW_APPROVED,
+            scheduled_publish_at=utc_now_naive() - timedelta(minutes=2),
+            is_published=False,
+        )
+        db.session.add(post)
+        db.session.commit()
+        created_id = post.id
+
+    client.get("/")
+
+    with app.app_context():
+        refreshed = db.session.get(Post, created_id)
+        assert refreshed is not None
+        assert refreshed.workflow_status == WORKFLOW_PUBLISHED
+        assert refreshed.is_published is True
+        assert refreshed.scheduled_publish_at is None
+        assert refreshed.published_at is not None
+
+
+def test_draft_service_is_hidden_from_public_routes(client, app):
+    with app.app_context():
+        service = Service(
+            title=f"Hidden Service {uuid.uuid4().hex[:6]}",
+            slug=f"hidden-service-{uuid.uuid4().hex[:6]}",
+            description="Should not be visible publicly.",
+            service_type="professional",
+            workflow_status=WORKFLOW_DRAFT,
+            is_featured=True,
+        )
+        db.session.add(service)
+        db.session.commit()
+        hidden_slug = service.slug
+        hidden_title = service.title
+
+    services_page = client.get("/services")
+    assert services_page.status_code == 200
+    assert hidden_title not in services_page.get_data(as_text=True)
+    assert client.get(f"/services/{hidden_slug}").status_code == 404
