@@ -212,6 +212,7 @@ SUPPORT_TICKET_EVENT_BADGES = {
     SUPPORT_TICKET_EVENT_ADMIN_UPDATE: 'bg-secondary',
 }
 ADMIN_PERMISSION_MAP = {
+    'admin.control_center': 'dashboard:view',
     'admin.dashboard': 'dashboard:view',
     'admin.services': 'content:manage',
     'admin.service_add': 'content:manage',
@@ -1166,6 +1167,172 @@ def logout():
     logout_user()
     session.clear()
     return redirect(url_for('admin.login'))
+
+
+@admin_bp.route('/control-center')
+@login_required
+def control_center():
+    now = utc_now_naive()
+    last_24h = now - timedelta(hours=24)
+    open_ticket_statuses = [
+        SUPPORT_TICKET_STATUS_OPEN,
+        SUPPORT_TICKET_STATUS_IN_PROGRESS,
+        SUPPORT_TICKET_STATUS_WAITING_CUSTOMER,
+    ]
+
+    page_count = AcpPageDocument.query.count()
+    dashboard_count = AcpDashboardDocument.query.count()
+    published_page_count = AcpPageDocument.query.filter_by(status=WORKFLOW_PUBLISHED).count()
+    published_dashboard_count = AcpDashboardDocument.query.filter_by(status=WORKFLOW_PUBLISHED).count()
+    content_type_count = AcpContentType.query.filter_by(is_enabled=True).count()
+    content_entry_count = AcpContentEntry.query.count()
+    theme_token_count = AcpThemeTokenSet.query.count()
+    registry_component_count = AcpComponentDefinition.query.filter_by(is_enabled=True).count()
+    registry_widget_count = AcpWidgetDefinition.query.filter_by(is_enabled=True).count()
+    metric_count = AcpMetricDefinition.query.filter_by(is_enabled=True).count()
+    mcp_server_count = AcpMcpServer.query.count()
+    services_count = Service.query.count()
+    industries_count = Industry.query.count()
+    media_count = Media.query.count()
+    content_block_count = ContentBlock.query.count()
+
+    ticket_open_count = SupportTicket.query.filter(SupportTicket.status.in_(open_ticket_statuses)).count()
+    contacts_unread_count = ContactSubmission.query.filter_by(is_read=False).count()
+    security_24h_count = SecurityEvent.query.filter(SecurityEvent.created_at >= last_24h).count()
+    users_count = User.query.count()
+
+    website_modules = [
+        {
+            'title': 'Visual Pages',
+            'description': 'Edit page routes, layout blocks, hero sections, and per-page SEO.',
+            'icon': 'fa-solid fa-layer-group',
+            'href': url_for('admin.acp_pages'),
+            'permission': 'acp:pages:manage',
+            'metric': f'{page_count} pages',
+        },
+        {
+            'title': 'Theme, Fonts, Icons, Motion',
+            'description': 'Manage color tokens, typography scale, spacing, icon presets, and animation defaults.',
+            'icon': 'fa-solid fa-palette',
+            'href': url_for('admin.acp_theme_tokens'),
+            'permission': 'acp:theme:manage',
+            'metric': f'{theme_token_count} token sets',
+        },
+        {
+            'title': 'Content Models & Entries',
+            'description': 'Configure structured data models and editable website content entries.',
+            'icon': 'fa-solid fa-table-list',
+            'href': url_for('admin.acp_content_types'),
+            'permission': 'acp:content:manage',
+            'metric': f'{content_type_count} types / {content_entry_count} entries',
+        },
+        {
+            'title': 'Services, Industries, Media',
+            'description': 'Update service pages, industry pages, imagery, and website-facing business content.',
+            'icon': 'fa-solid fa-briefcase',
+            'href': url_for('admin.services'),
+            'permission': 'content:manage',
+            'metric': f'{services_count} services / {industries_count} industries / {media_count} assets',
+        },
+        {
+            'title': 'Component & Widget Registry',
+            'description': 'Control allowed building blocks, input schemas, and design guardrails.',
+            'icon': 'fa-solid fa-puzzle-piece',
+            'href': url_for('admin.acp_registry'),
+            'permission': 'acp:registry:manage',
+            'metric': f'{registry_component_count} components / {registry_widget_count} widgets',
+        },
+        {
+            'title': 'Route Sync & Editability',
+            'description': 'Audit web routes against CMS page records and fix out-of-sync pages.',
+            'icon': 'fa-solid fa-arrows-rotate',
+            'href': url_for('admin.acp_sync_status'),
+            'permission': 'acp:pages:manage',
+            'metric': 'Sync monitor',
+        },
+    ]
+
+    operations_modules = [
+        {
+            'title': 'Operations Dashboard',
+            'description': 'Monitor KPIs, queue health, service workload, and recent platform activity.',
+            'icon': 'fa-solid fa-gauge-high',
+            'href': url_for('admin.dashboard'),
+            'permission': 'dashboard:view',
+            'metric': 'Live KPIs',
+        },
+        {
+            'title': 'Dashboard Studio',
+            'description': 'Build role-based internal dashboards with widgets, filters, and visibility rules.',
+            'icon': 'fa-solid fa-chart-line',
+            'href': url_for('admin.acp_dashboards'),
+            'permission': 'acp:dashboards:manage',
+            'metric': f'{dashboard_count} dashboards',
+        },
+        {
+            'title': 'Support Tickets',
+            'description': 'Review client tickets, set pending/done/closed status, and manage ticket timeline.',
+            'icon': 'fa-solid fa-ticket',
+            'href': url_for('admin.support_tickets'),
+            'permission': 'support:manage',
+            'metric': f'{ticket_open_count} open',
+        },
+        {
+            'title': 'Contact Inbox',
+            'description': 'Manage contact submissions, quote leads, and inbound requests from the website.',
+            'icon': 'fa-solid fa-envelope',
+            'href': url_for('admin.contacts'),
+            'permission': 'support:manage',
+            'metric': f'{contacts_unread_count} unread',
+        },
+        {
+            'title': 'Security & Access',
+            'description': 'Review security events, role access, and operational risk indicators.',
+            'icon': 'fa-solid fa-shield-halved',
+            'href': url_for('admin.security_events'),
+            'permission': 'security:view',
+            'metric': f'{security_24h_count} events (24h)',
+        },
+        {
+            'title': 'Admin Users & Settings',
+            'description': 'Manage admin accounts, role tiers, global settings, and business profile details.',
+            'icon': 'fa-solid fa-user-shield',
+            'href': url_for('admin.users'),
+            'permission': 'users:manage',
+            'metric': f'{users_count} users',
+        },
+    ]
+
+    visible_website_modules = [item for item in website_modules if has_permission(current_user, item['permission'])]
+    visible_operations_modules = [item for item in operations_modules if has_permission(current_user, item['permission'])]
+
+    quick_actions = []
+    if has_permission(current_user, 'acp:pages:manage'):
+        quick_actions.append({'label': 'New Visual Page', 'href': url_for('admin.acp_page_add'), 'icon': 'fa-solid fa-layer-group'})
+    if has_permission(current_user, 'acp:dashboards:manage'):
+        quick_actions.append({'label': 'New Dashboard', 'href': url_for('admin.acp_dashboard_add'), 'icon': 'fa-solid fa-chart-line'})
+    if has_permission(current_user, 'acp:content:manage'):
+        quick_actions.append({'label': 'New Content Type', 'href': url_for('admin.acp_content_type_add'), 'icon': 'fa-solid fa-table-list'})
+    if has_permission(current_user, 'support:manage'):
+        quick_actions.append({'label': 'Open Ticket Queue', 'href': url_for('admin.support_tickets'), 'icon': 'fa-solid fa-ticket'})
+    if has_permission(current_user, 'acp:mcp:manage'):
+        quick_actions.append({'label': 'MCP Servers', 'href': url_for('admin.acp_mcp_servers'), 'icon': 'fa-solid fa-plug-circle-bolt'})
+
+    return render_template(
+        'admin/control_center.html',
+        website_modules=visible_website_modules,
+        operations_modules=visible_operations_modules,
+        quick_actions=quick_actions,
+        section_stats={
+            'website_total': len(visible_website_modules),
+            'operations_total': len(visible_operations_modules),
+            'published_pages': published_page_count,
+            'published_dashboards': published_dashboard_count,
+            'metrics': metric_count,
+            'mcp_servers': mcp_server_count,
+            'content_blocks': content_block_count,
+        },
+    )
 
 
 # Dashboard

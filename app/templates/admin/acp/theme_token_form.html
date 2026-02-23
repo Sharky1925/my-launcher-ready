@@ -1,6 +1,47 @@
 {% extends "admin/base.html" %}
 {% block page_title %}{% if item %}Edit Theme Tokens{% else %}New Theme Tokens{% endif %}{% endblock %}
-{% set default_tokens_json = '{\n  "css_vars": {\n    "--accent-cyan": "#4f7bff",\n    "--font-body": "Manrope, sans-serif"\n  }\n}' %}
+{% set default_tokens_json %}
+{
+  "css_vars": {
+    "--bg-primary": "#05080f",
+    "--bg-surface": "#0f1a2b",
+    "--text-primary": "#eff7ff",
+    "--text-muted": "#9db0c5",
+    "--accent-primary": "#4f7bff",
+    "--accent-secondary": "#34d399",
+    "--font-body": "Manrope, sans-serif",
+    "--font-heading": "Sora, sans-serif",
+    "--radius-md": "14px",
+    "--space-unit": "8px"
+  },
+  "typography": {
+    "h1": { "fontFamily": "Sora", "fontSize": "clamp(2rem, 4vw, 3rem)", "fontWeight": 800, "lineHeight": 1.1 },
+    "body": { "fontFamily": "Manrope", "fontSize": "1rem", "fontWeight": 500, "lineHeight": 1.55 },
+    "button": { "fontFamily": "Manrope", "fontSize": "0.9rem", "fontWeight": 700, "letterSpacing": "0.01em" }
+  },
+  "icons": {
+    "library": "fontawesome",
+    "style": "duotone",
+    "defaults": {
+      "services": "fa-solid fa-gear",
+      "industries": "fa-solid fa-building",
+      "support": "fa-solid fa-ticket"
+    }
+  },
+  "motion": {
+    "enabled": true,
+    "durationFastMs": 180,
+    "durationBaseMs": 280,
+    "durationSlowMs": 420,
+    "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+    "presets": {
+      "heroReveal": "fade-up",
+      "cardIn": "fade-in",
+      "buttonHover": "soft-lift"
+    }
+  }
+}
+{% endset %}
 
 {% block content %}
 <div class="card mb-3">
@@ -32,6 +73,9 @@
       <div class="col-12">
         <label class="form-label">Tokens JSON</label>
         <textarea class="form-control form-control-mono-sm" name="tokens_json" rows="12">{{ item.tokens_json if item else default_tokens_json }}</textarea>
+        <div class="small text-muted mt-2">
+          Use this schema to configure colors, fonts, spacing, icon defaults, and animation presets used across the website and internal dashboard UI.
+        </div>
       </div>
       <div class="col-md-8">
         <label class="form-label">Change Note</label>

@@ -185,6 +185,18 @@ def test_admin_dashboard_control_center_search_renders(client):
     assert "Unified Search Results" in html
 
 
+def test_admin_control_center_two_main_sections_render(client):
+    admin_login(client)
+    response = client.get("/admin/control-center")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Two Main Sections: Website Studio + Operations Hub" in html
+    assert "1. Website Studio" in html
+    assert "2. Operations Hub" in html
+    assert "Theme, Fonts, Icons, Motion" in html
+    assert "Support Tickets" in html
+
+
 def test_acp_studio_pages_and_dashboards_render_for_admin(client):
     admin_login(client)
     studio = client.get("/admin/acp/studio")

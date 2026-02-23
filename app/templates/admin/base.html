@@ -92,6 +92,15 @@
       gap: 4px;
       padding: 12px 10px 18px;
     }
+    .sidebar-label {
+      color: #9cb4d2;
+      font-size: .67rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      padding: 8px 12px 4px;
+      opacity: .85;
+    }
     .sidebar-nav .nav-link {
       display: flex;
       align-items: center;
@@ -159,6 +168,16 @@
     .mobile-admin-nav .nav-link:hover {
       color: var(--text);
       background: rgba(79, 123, 255, 0.12);
+    }
+    .mobile-admin-nav .nav-section-label {
+      color: #9fb7d4;
+      font-size: .66rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-top: 8px;
+      padding: 5px 10px;
+      opacity: .9;
     }
 
     .main-content {
@@ -478,17 +497,37 @@
     </div>
     <nav class="sidebar-nav">
       {% if current_user.has_permission('dashboard:view') %}
+      <a class="nav-link {% if request.endpoint == 'admin.control_center' %}active{% endif %}" href="{{ url_for('admin.control_center') }}"><i class="fa-solid fa-sliders"></i>Control Center</a>
+      {% endif %}
+      <div class="sidebar-label">Operations Hub</div>
+      {% if current_user.has_permission('dashboard:view') %}
       <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}"><i class="fa-solid fa-gauge"></i>Dashboard</a>
       {% endif %}
+      {% if current_user.has_permission('acp:dashboards:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}"><i class="fa-solid fa-chart-line"></i>Dashboard Studio</a>
+      {% endif %}
+      {% if current_user.has_permission('support:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.contacts', 'admin.contact_view'] %}active{% endif %}" href="{{ url_for('admin.contacts') }}"><i class="fa-solid fa-envelope"></i>Contacts</a>
+      <a class="nav-link {% if request.endpoint in ['admin.support_tickets', 'admin.support_ticket_view'] %}active{% endif %}" href="{{ url_for('admin.support_tickets') }}"><i class="fa-solid fa-ticket"></i>Support Tickets</a>
+      {% endif %}
+      {% if current_user.has_permission('security:view') %}
+      <a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}"><i class="fa-solid fa-shield-halved"></i>Security Events</a>
+      {% endif %}
+      {% if current_user.has_permission('users:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_add', 'admin.user_edit'] %}active{% endif %}" href="{{ url_for('admin.users') }}"><i class="fa-solid fa-user-shield"></i>Admin Users</a>
+      {% endif %}
+      {% if current_user.has_permission('settings:manage') %}
+      <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}"><i class="fa-solid fa-sliders"></i>Settings</a>
+      {% endif %}
+
+      <div class="sidebar-sep"></div>
+      <div class="sidebar-label">Website Studio</div>
       {% if current_user.has_permission('acp:studio:view') %}
       <a class="nav-link {% if request.endpoint == 'admin.acp_studio' %}active{% endif %}" href="{{ url_for('admin.acp_studio') }}"><i class="fa-solid fa-screwdriver-wrench"></i>ACP Studio</a>
       {% endif %}
       {% if current_user.has_permission('acp:pages:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.acp_pages', 'admin.acp_page_add', 'admin.acp_page_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_pages') }}"><i class="fa-solid fa-layer-group"></i>Visual Pages</a>
       <a class="nav-link {% if request.endpoint in ['admin.acp_sync_status'] %}active{% endif %}" href="{{ url_for('admin.acp_sync_status') }}"><i class="fa-solid fa-arrows-rotate"></i>Page Sync Status</a>
-      {% endif %}
-      {% if current_user.has_permission('acp:dashboards:manage') %}
-      <a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}"><i class="fa-solid fa-chart-line"></i>Dashboard Studio</a>
       {% endif %}
       {% if current_user.has_permission('acp:content:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.acp_content_types', 'admin.acp_content_type_add', 'admin.acp_content_type_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_content_types') }}"><i class="fa-solid fa-table-list"></i>Content Types</a>
@@ -521,22 +560,9 @@
       <a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}"><i class="fa-solid fa-photo-film"></i>Media</a>
       <a class="nav-link {% if request.endpoint in ['admin.industries', 'admin.industry_add', 'admin.industry_edit'] %}active{% endif %}" href="{{ url_for('admin.industries') }}"><i class="fa-solid fa-building"></i>Industries</a>
       {% endif %}
-      {% if current_user.has_permission('support:manage') %}
-      <a class="nav-link {% if request.endpoint in ['admin.contacts', 'admin.contact_view'] %}active{% endif %}" href="{{ url_for('admin.contacts') }}"><i class="fa-solid fa-envelope"></i>Contacts</a>
-      <a class="nav-link {% if request.endpoint in ['admin.support_tickets', 'admin.support_ticket_view'] %}active{% endif %}" href="{{ url_for('admin.support_tickets') }}"><i class="fa-solid fa-ticket"></i>Support Tickets</a>
-      {% endif %}
-      {% if current_user.has_permission('security:view') %}
-      <a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}"><i class="fa-solid fa-shield-halved"></i>Security Events</a>
-      {% endif %}
       <div class="sidebar-sep"></div>
       {% if current_user.has_permission('content:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}"><i class="fa-solid fa-file-pen"></i>Page Content</a>
-      {% endif %}
-      {% if current_user.has_permission('users:manage') %}
-      <a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_add', 'admin.user_edit'] %}active{% endif %}" href="{{ url_for('admin.users') }}"><i class="fa-solid fa-user-shield"></i>Admin Users</a>
-      {% endif %}
-      {% if current_user.has_permission('settings:manage') %}
-      <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}"><i class="fa-solid fa-sliders"></i>Settings</a>
       {% endif %}
       <div class="sidebar-sep"></div>
       <a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i>View Site</a>
@@ -553,17 +579,36 @@
       <div class="collapse navbar-collapse" id="adminMobileNav">
         <ul class="navbar-nav pt-2">
           {% if current_user.has_permission('dashboard:view') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.control_center' %}active{% endif %}" href="{{ url_for('admin.control_center') }}">Control Center</a></li>
+          {% endif %}
+          <li class="nav-section-label">Operations Hub</li>
+          {% if current_user.has_permission('dashboard:view') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
           {% endif %}
+          {% if current_user.has_permission('acp:dashboards:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}">Dashboard Studio</a></li>
+          {% endif %}
+          {% if current_user.has_permission('support:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.contacts', 'admin.contact_view'] %}active{% endif %}" href="{{ url_for('admin.contacts') }}">Contacts</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.support_tickets', 'admin.support_ticket_view'] %}active{% endif %}" href="{{ url_for('admin.support_tickets') }}">Support Tickets</a></li>
+          {% endif %}
+          {% if current_user.has_permission('security:view') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}">Security Events</a></li>
+          {% endif %}
+          {% if current_user.has_permission('users:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_add', 'admin.user_edit'] %}active{% endif %}" href="{{ url_for('admin.users') }}">Admin Users</a></li>
+          {% endif %}
+          {% if current_user.has_permission('settings:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Settings</a></li>
+          {% endif %}
+
+          <li class="nav-section-label">Website Studio</li>
           {% if current_user.has_permission('acp:studio:view') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_studio' %}active{% endif %}" href="{{ url_for('admin.acp_studio') }}">ACP Studio</a></li>
           {% endif %}
           {% if current_user.has_permission('acp:pages:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_pages', 'admin.acp_page_add', 'admin.acp_page_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_pages') }}">Visual Pages</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_sync_status'] %}active{% endif %}" href="{{ url_for('admin.acp_sync_status') }}">Page Sync Status</a></li>
-          {% endif %}
-          {% if current_user.has_permission('acp:dashboards:manage') %}
-          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}">Dashboard Studio</a></li>
           {% endif %}
           {% if current_user.has_permission('acp:content:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_content_types', 'admin.acp_content_type_add', 'admin.acp_content_type_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_content_types') }}">Content Types</a></li>
@@ -596,21 +641,8 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}">Media</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.industries', 'admin.industry_add', 'admin.industry_edit'] %}active{% endif %}" href="{{ url_for('admin.industries') }}">Industries</a></li>
           {% endif %}
-          {% if current_user.has_permission('support:manage') %}
-          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.contacts', 'admin.contact_view'] %}active{% endif %}" href="{{ url_for('admin.contacts') }}">Contacts</a></li>
-          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.support_tickets', 'admin.support_ticket_view'] %}active{% endif %}" href="{{ url_for('admin.support_tickets') }}">Support Tickets</a></li>
-          {% endif %}
-          {% if current_user.has_permission('security:view') %}
-          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.security_events' %}active{% endif %}" href="{{ url_for('admin.security_events') }}">Security Events</a></li>
-          {% endif %}
           {% if current_user.has_permission('content:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}">Page Content</a></li>
-          {% endif %}
-          {% if current_user.has_permission('users:manage') %}
-          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.users', 'admin.user_add', 'admin.user_edit'] %}active{% endif %}" href="{{ url_for('admin.users') }}">Admin Users</a></li>
-          {% endif %}
-          {% if current_user.has_permission('settings:manage') %}
-          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Settings</a></li>
           {% endif %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener">View Site</a></li>
           <li class="nav-item"><form method="POST" action="{{ url_for('admin.logout') }}" class="logout-inline-form">{{ csrf_input() }}<button type="submit" class="nav-link logout-nav-btn">Logout</button></form></li>
