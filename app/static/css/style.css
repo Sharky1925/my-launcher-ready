@@ -5836,6 +5836,7 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   position: absolute;
   font-size: 1rem;
   transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
 }
 
 /* Dark mode: show sun icon (click to go light) */
@@ -5869,10 +5870,6 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   font-size: 0.85rem;
   font-weight: 600;
   margin-left: 4px;
-}
-.theme-toggle .theme-icon-sun,
-.theme-toggle .theme-icon-moon {
-  /* In mobile variant, make icons flow inline */
 }
 .theme-toggle-mobile .theme-icon-sun,
 .theme-toggle-mobile .theme-icon-moon {

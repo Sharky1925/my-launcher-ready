@@ -47,7 +47,7 @@
   <link href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version }}" rel="stylesheet">
   {% if theme_css_vars %}
   <style nonce="{{ csp_nonce }}">
-  :root {
+  [data-theme="{{ theme_mode|default('dark') }}"] {
     {% for key, value in theme_css_vars.items() %}
     {{ key }}: {{ value }};
     {% endfor %}
@@ -358,11 +358,14 @@
   function setTheme(t){
     document.documentElement.setAttribute('data-theme',t);
     document.documentElement.setAttribute('data-bs-theme',t);
-    localStorage.setItem('theme',t);
+    try{localStorage.setItem('theme',t)}catch(e){}
   }
   function toggle(){setTheme(getTheme()==='dark'?'light':'dark')}
-  var btns=document.querySelectorAll('.theme-toggle');
-  for(var i=0;i<btns.length;i++){btns[i].addEventListener('click',toggle)}
+  function bind(){
+    var btns=document.querySelectorAll('.theme-toggle');
+    for(var i=0;i<btns.length;i++){btns[i].addEventListener('click',toggle)}
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',bind)}else{bind()}
 })();
 </script>
 {% block scripts %}{% endblock %}
