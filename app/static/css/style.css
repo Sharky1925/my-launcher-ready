@@ -5802,3 +5802,99 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   border-color: rgba(255, 255, 255, 0.4);
   color: var(--white);
 }
+
+/* ============================================================
+   Theme Toggle Button
+   ============================================================ */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
+  padding: 0;
+}
+.theme-toggle:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(79, 123, 255, 0.25);
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+.theme-toggle .theme-icon-sun,
+.theme-toggle .theme-icon-moon {
+  position: absolute;
+  font-size: 1rem;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Dark mode: show sun icon (click to go light) */
+[data-theme="dark"] .theme-toggle .theme-icon-sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+[data-theme="dark"] .theme-toggle .theme-icon-moon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+}
+
+/* Light mode: show moon icon (click to go dark) */
+[data-theme="light"] .theme-toggle .theme-icon-sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+[data-theme="light"] .theme-toggle .theme-icon-moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* Mobile theme toggle — full-width pill */
+.theme-toggle.theme-toggle-mobile {
+  width: 100%;
+  height: 42px;
+  border-radius: 12px;
+  gap: 8px;
+}
+.theme-toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.theme-toggle .theme-icon-sun,
+.theme-toggle .theme-icon-moon {
+  /* In mobile variant, make icons flow inline */
+}
+.theme-toggle-mobile .theme-icon-sun,
+.theme-toggle-mobile .theme-icon-moon {
+  position: static;
+}
+
+/* Mobile label visibility */
+[data-theme="dark"] .theme-label-dark { display: inline; }
+[data-theme="dark"] .theme-label-light { display: none; }
+[data-theme="light"] .theme-label-dark { display: none; }
+[data-theme="light"] .theme-label-light { display: inline; }
+
+/* Mobile: hide icons that are inactive (reuse same logic, but inline) */
+[data-theme="dark"] .theme-toggle-mobile .theme-icon-sun {
+  display: inline-block;
+}
+[data-theme="dark"] .theme-toggle-mobile .theme-icon-moon {
+  display: none;
+}
+[data-theme="light"] .theme-toggle-mobile .theme-icon-sun {
+  display: none;
+}
+[data-theme="light"] .theme-toggle-mobile .theme-icon-moon {
+  display: inline-block;
+}
