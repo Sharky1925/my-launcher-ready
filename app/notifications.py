@@ -5,7 +5,7 @@ import urllib.parse
 import urllib.request
 from email.message import EmailMessage
 
-from flask import current_app
+from flask import current_app, has_request_context, request
 
 
 def _safe_header_value(value, max_length=240):
@@ -16,22 +16,25 @@ def _safe_header_value(value, max_length=240):
 
 def _split_recipients(raw):
     recipients = []
+    seen = set()
     for item in (raw or '').split(','):
         cleaned = _safe_header_value(item, max_length=320)
-        if cleaned:
+        normalized = cleaned.lower()
+        if cleaned and normalized not in seen:
             recipients.append(cleaned)
+            seen.add(normalized)
     return recipients
 
 
 def _ticket_admin_url(ticket_id):
-    base = (current_app.config.get('APP_BASE_URL') or '').rstrip('/')
+    base = _resolve_base_url()
     if not base:
         return f"/admin/support-tickets/{ticket_id}"
     return f"{base}/admin/support-tickets/{ticket_id}"
 
 
 def _ticket_status_url(ticket_number):
-    base = (current_app.config.get('APP_BASE_URL') or '').rstrip('/')
+    base = _resolve_base_url()
     query = urllib.parse.urlencode({'ticket_number': ticket_number})
     if not base:
         return f"/ticket-search?{query}"
@@ -39,11 +42,11 @@ def _ticket_status_url(ticket_number):
 
 
 def _ticket_verify_url(ticket_number, token):
-    base = (current_app.config.get('APP_BASE_URL') or '').rstrip('/')
+    base = _resolve_base_url()
     query = urllib.parse.urlencode({'ticket_number': ticket_number, 'token': token})
     if not base:
-        return f"/ticket-verify?{query}"
-    return f"{base}/ticket-verify?{query}"
+        return f"/ticket-search?{query}"
+    return f"{base}/ticket-search?{query}"
 
 
 def _ticket_kind_label(ticket_kind):
@@ -53,6 +56,31 @@ def _ticket_kind_label(ticket_kind):
     if normalized == 'contact':
         return 'Contact'
     return 'Support'
+
+
+def _filter_recipients(recipients, exclude_emails=None):
+    if not recipients:
+        return []
+    excludes = set()
+    for item in (exclude_emails or []):
+        cleaned = _safe_header_value(item, max_length=320).lower()
+        if cleaned:
+            excludes.add(cleaned)
+    if not excludes:
+        return list(recipients)
+    return [recipient for recipient in recipients if recipient.lower() not in excludes]
+
+
+def _resolve_base_url():
+    configured = (current_app.config.get('APP_BASE_URL') or '').rstrip('/')
+    if configured:
+        return configured
+    if has_request_context():
+        try:
+            return (request.host_url or '').rstrip('/')
+        except RuntimeError:
+            return ''
+    return ''
 
 
 def _send_via_mailgun(subject, body, recipients, mail_from):
@@ -145,8 +173,9 @@ def _send_email(subject, body, recipients):
     return False
 
 
-def send_contact_notification(submission):
+def send_contact_notification(submission, exclude_emails=None):
     recipients = _split_recipients(current_app.config.get('CONTACT_NOTIFICATION_EMAILS'))
+    recipients = _filter_recipients(recipients, exclude_emails=exclude_emails)
     if not recipients:
         return False
 
@@ -166,8 +195,9 @@ def send_contact_notification(submission):
     return _send_email(subject, body, recipients)
 
 
-def send_ticket_notification(ticket, ticket_kind='support'):
+def send_ticket_notification(ticket, ticket_kind='support', exclude_emails=None):
     recipients = _split_recipients(current_app.config.get('TICKET_NOTIFICATION_EMAILS'))
+    recipients = _filter_recipients(recipients, exclude_emails=exclude_emails)
     if not recipients:
         return False
 
@@ -208,12 +238,11 @@ def send_ticket_verification_email(ticket, recipient_email, token, ticket_kind='
         f"Ticket Number: {ticket.ticket_number}",
         f"Subject: {ticket.subject}",
         "",
-        "To securely view status updates, verify your email using this link:",
+        "Use this secure link to check ticket status:",
         verify_url,
         "",
-        "After verification, you can track updates from:",
-        status_url,
-        "",
-        "If you did not submit this request, you can ignore this email.",
+        "This link verifies your email automatically and opens the latest status page.",
+        f"Direct status page: {status_url}",
+        "If you did not submit this request, ignore this email.",
     ])
     return _send_email(subject, body, [safe_email])

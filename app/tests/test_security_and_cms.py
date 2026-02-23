@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 
 try:
+    from app import notifications as notifications_module
     from app.seed import backfill_phase2_defaults
     from app.routes import admin as admin_routes
     from app.routes import main as main_routes
@@ -42,6 +43,7 @@ try:
     )
     from app.utils import utc_now_naive
 except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd test runs
+    import notifications as notifications_module
     from seed import backfill_phase2_defaults
     import routes.admin as admin_routes
     import routes.main as main_routes
@@ -774,6 +776,111 @@ def test_request_quote_creates_cms_ticket(client, app):
         assert verification is not None
 
 
+def test_admin_ticket_notification_excludes_requester_email(app, monkeypatch):
+    captured = {}
+
+    def fake_send_email(subject, body, recipients):
+        captured['subject'] = subject
+        captured['body'] = body
+        captured['recipients'] = recipients
+        return True
+
+    monkeypatch.setattr(notifications_module, '_send_email', fake_send_email)
+
+    with app.app_context():
+        service = Service.query.first()
+        assert service is not None
+        requester_email = f"notify-{uuid.uuid4().hex[:8]}@example.com"
+        support_client = SupportClient(
+            full_name="Requester User",
+            email=requester_email,
+            company="Requester Co",
+            phone="+1 (555) 222-0000",
+        )
+        support_client.set_password("NotifyRequester123!")
+        db.session.add(support_client)
+        db.session.commit()
+
+        ticket = SupportTicket(
+            ticket_number=f"RS-N-{uuid.uuid4().hex[:10].upper()}",
+            client_id=support_client.id,
+            subject="Requester exclusion",
+            service_slug=service.slug,
+            priority="normal",
+            status="open",
+            details="Internal recipient filter coverage.",
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        ticket_id = ticket.id
+
+        app.config['TICKET_NOTIFICATION_EMAILS'] = f'{requester_email},ops@example.com'
+        current_ticket = SupportTicket.query.get(ticket_id)
+        sent = notifications_module.send_ticket_notification(
+            current_ticket,
+            ticket_kind='support',
+            exclude_emails=[requester_email],
+        )
+
+    assert sent is True
+    assert captured.get('recipients') == ['ops@example.com']
+
+
+def test_client_verification_email_uses_single_secure_status_link(app, monkeypatch):
+    captured = {}
+
+    def fake_send_email(subject, body, recipients):
+        captured['subject'] = subject
+        captured['body'] = body
+        captured['recipients'] = recipients
+        return True
+
+    monkeypatch.setattr(notifications_module, '_send_email', fake_send_email)
+
+    with app.app_context():
+        service = Service.query.first()
+        assert service is not None
+        support_client = SupportClient(
+            full_name="Secure Link User",
+            email=f"secure-link-{uuid.uuid4().hex[:8]}@example.com",
+            company="Secure Link Co",
+            phone="+1 (555) 333-0000",
+        )
+        support_client.set_password("SecureLink123!")
+        db.session.add(support_client)
+        db.session.commit()
+
+        ticket = SupportTicket(
+            ticket_number=f"RS-L-{uuid.uuid4().hex[:10].upper()}",
+            client_id=support_client.id,
+            subject="Secure status link",
+            service_slug=service.slug,
+            priority="normal",
+            status="open",
+            details="Status link coverage.",
+        )
+        db.session.add(ticket)
+        db.session.commit()
+        ticket_id = ticket.id
+
+    with app.test_request_context('/'):
+        app.config['APP_BASE_URL'] = 'https://mylauncher-ready-production.up.railway.app'
+        with app.app_context():
+            current_ticket = SupportTicket.query.get(ticket_id)
+            sent = notifications_module.send_ticket_verification_email(
+                current_ticket,
+                "client@example.com",
+                "test-token-123",
+                ticket_kind='support',
+            )
+
+    assert sent is True
+    body = captured.get('body', '')
+    assert "Use this secure link to check ticket status:" in body
+    assert "ticket-search?ticket_number=" in body
+    assert "token=test-token-123" in body
+
+
 def test_request_quote_form_rate_limit_blocks_second_submission(client, app):
     app.config.update(
         {
@@ -1316,8 +1423,10 @@ def test_public_ticket_search_page_lookup(client, app):
         follow_redirects=False,
     )
     assert verify_response.status_code in (302, 303)
+    verify_location = verify_response.headers.get('Location', '')
+    assert 'token=' in verify_location
 
-    verified_search_page = client.get("/ticket-search", query_string={"ticket_number": ticket_number.lower()})
+    verified_search_page = client.get(verify_location, follow_redirects=False)
     assert verified_search_page.status_code == 200
     verified_html = verified_search_page.get_data(as_text=True)
     assert "Ticket Found" in verified_html

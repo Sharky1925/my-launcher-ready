@@ -1005,6 +1005,36 @@ def infer_ticket_kind(ticket):
     return 'support'
 
 
+def _get_active_ticket_verification(ticket_id):
+    return (
+        SupportTicketEmailVerification.query
+        .filter(
+            SupportTicketEmailVerification.ticket_id == ticket_id,
+            SupportTicketEmailVerification.is_verified.is_(True),
+            SupportTicketEmailVerification.expires_at >= utc_now_naive(),
+        )
+        .first()
+    )
+
+
+def _verify_ticket_token(ticket, token):
+    if not ticket or not token:
+        return False
+    token_hash = _hash_ticket_verification_token(token)
+    verification = (
+        SupportTicketEmailVerification.query
+        .filter_by(ticket_id=ticket.id, token_hash=token_hash)
+        .first()
+    )
+    if not verification or verification.expires_at < utc_now_naive():
+        return False
+    if not verification.is_verified:
+        verification.is_verified = True
+        verification.verified_at = utc_now_naive()
+        db.session.commit()
+    return True
+
+
 def generate_ticket_number():
     while True:
         token = secrets.token_hex(3).upper()
@@ -1987,6 +2017,7 @@ def remote_support_logout():
 @main_bp.route('/ticket-search')
 def ticket_search():
     ticket_number_input = clean_text(request.args.get('ticket_number', ''), 40)
+    token_input = clean_text(request.args.get('token', ''), 500)
     requester_email_input = clean_text(request.args.get('email', ''), 200).lower()
     normalized_ticket_number = normalize_ticket_number(ticket_number_input)
     ticket = None
@@ -1994,16 +2025,10 @@ def ticket_search():
     ticket_verified = False
     if normalized_ticket_number:
         candidate = SupportTicket.query.filter_by(ticket_number=normalized_ticket_number).first()
+        if candidate and token_input and _verify_ticket_token(candidate, token_input):
+            mark_ticket_verified_in_session(normalized_ticket_number)
         if candidate and is_ticket_verified_in_session(normalized_ticket_number):
-            active_verification = (
-                SupportTicketEmailVerification.query
-                .filter(
-                    SupportTicketEmailVerification.ticket_id == candidate.id,
-                    SupportTicketEmailVerification.is_verified.is_(True),
-                    SupportTicketEmailVerification.expires_at >= utc_now_naive(),
-                )
-                .first()
-            )
+            active_verification = _get_active_ticket_verification(candidate.id)
             if active_verification:
                 ticket = candidate
                 ticket_stage = support_ticket_stage_for_status(ticket.status)
@@ -2075,31 +2100,8 @@ def ticket_verify():
     normalized_ticket_number = normalize_ticket_number(ticket_number_input)
 
     if not normalized_ticket_number or not token:
-        flash('Verification link is invalid or incomplete.', 'danger')
         return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
-
-    ticket = SupportTicket.query.filter_by(ticket_number=normalized_ticket_number).first()
-    if not ticket:
-        flash('Verification link is invalid or expired.', 'danger')
-        return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
-
-    now = utc_now_naive()
-    token_hash = _hash_ticket_verification_token(token)
-    verification = (
-        SupportTicketEmailVerification.query
-        .filter_by(ticket_id=ticket.id, token_hash=token_hash)
-        .first()
-    )
-    if not verification or verification.expires_at < now:
-        flash('Verification link is invalid or expired. Request a new link to continue.', 'danger')
-        return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
-
-    verification.is_verified = True
-    verification.verified_at = now
-    db.session.commit()
-    mark_ticket_verified_in_session(normalized_ticket_number)
-    flash(f'Email verified. You can now view status for ticket {normalized_ticket_number}.', 'success')
-    return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
+    return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number, token=token))
 
 
 @main_bp.route('/remote-support/tickets', methods=['POST'])
@@ -2159,7 +2161,7 @@ def remote_support_create_ticket():
     )
     _, verification_token = issue_ticket_email_verification(ticket, portal_client.email)
     db.session.commit()
-    send_ticket_notification(ticket, ticket_kind='support')
+    send_ticket_notification(ticket, ticket_kind='support', exclude_emails=[portal_client.email])
     if verification_token:
         send_ticket_verification_email(ticket, portal_client.email, verification_token, ticket_kind='support')
 
@@ -2344,7 +2346,7 @@ def request_quote():
         )
         _, verification_token = issue_ticket_email_verification(ticket, email)
         db.session.commit()
-        send_ticket_notification(ticket, ticket_kind='quote')
+        send_ticket_notification(ticket, ticket_kind='quote', exclude_emails=[email])
         if verification_token:
             send_ticket_verification_email(ticket, email, verification_token, ticket_kind='quote')
 
@@ -2471,7 +2473,7 @@ def request_quote_personal():
         )
         _, verification_token = issue_ticket_email_verification(ticket, email)
         db.session.commit()
-        send_ticket_notification(ticket, ticket_kind='quote')
+        send_ticket_notification(ticket, ticket_kind='quote', exclude_emails=[email])
         if verification_token:
             send_ticket_verification_email(ticket, email, verification_token, ticket_kind='quote')
 
@@ -2567,8 +2569,8 @@ def contact():
 
         db.session.commit()
         current_app.logger.info(f'Contact submission saved (id={submission.id})')
-        contact_email_result = send_contact_notification(submission)
-        ticket_email_result = send_ticket_notification(ticket, ticket_kind='contact')
+        contact_email_result = send_contact_notification(submission, exclude_emails=[email])
+        ticket_email_result = send_ticket_notification(ticket, ticket_kind='contact', exclude_emails=[email])
         verification_email_result = False
         if verification_token:
             verification_email_result = send_ticket_verification_email(ticket, email, verification_token, ticket_kind='contact')
