@@ -1171,12 +1171,30 @@ p { margin: 0 0 16px; }
 /* Hero — centered text + full-width card grid layout */
 .hero-command-top {
   text-align: center;
-  max-width: 800px;
-  margin: 0 auto 48px;
+  max-width: 780px;
+  margin: 0 auto 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .hero-command-top .signal-strip { justify-content: center; }
 .hero-command-top .hero-badge { display: inline-flex; }
-.hero-command-top .hero-buttons--landing { justify-content: center; }
+.hero-command-top h1 { text-align: center; }
+.hero-command-top .lead {
+  text-align: center;
+  max-width: 640px;
+}
+.hero-command-top .hero-buttons--landing {
+  max-width: 520px;
+  width: 100%;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.hero-command-top .hero-buttons--landing .btn {
+  min-height: 50px;
+  font-size: 0.92rem;
+  justify-content: center;
+}
 .hero-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -5252,11 +5270,21 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     min-height: 130px;
   }
   .hero-command-top {
-    margin-bottom: 32px;
-    text-align: left;
+    margin-bottom: 28px;
+    text-align: center;
+    align-items: center;
   }
-  .hero-command-top .signal-strip { justify-content: flex-start; }
-  .hero-command-top .hero-buttons--landing { justify-content: stretch; }
+  .hero-command-top .signal-strip { justify-content: center; }
+  .hero-command-top .hero-buttons--landing {
+    max-width: 100%;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .hero-command-top .hero-buttons--landing .btn {
+    min-height: 46px;
+    font-size: 0.84rem;
+    padding: 10px 8px;
+  }
   .hero-cards-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
