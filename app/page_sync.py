@@ -5,7 +5,6 @@ try:
     from .models import (
         AcpPageDocument,
         AcpPageRouteBinding,
-        WORKFLOW_DRAFT,
         WORKFLOW_PUBLISHED,
         db,
     )
@@ -14,7 +13,6 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     from models import (
         AcpPageDocument,
         AcpPageRouteBinding,
-        WORKFLOW_DRAFT,
         WORKFLOW_PUBLISHED,
         db,
     )
@@ -50,6 +48,7 @@ PAGE_RULE_TO_SLUG = {
     '/remote-support': 'remote-support',
     '/ticket-search': 'ticket-search',
     '/ticket-status': 'ticket-search',
+    '/ticket-verify': 'ticket-search',
     '/request-quote': 'request-quote',
     '/request-quote/personal': 'request-quote-personal',
     '/contact': 'contact',
@@ -62,6 +61,7 @@ PAGE_TEMPLATE_HINTS = {
     '/remote-support': 'remote-support',
     '/ticket-search': 'ticket-search',
     '/ticket-status': 'ticket-search',
+    '/ticket-verify': 'ticket-search',
 }
 
 
@@ -105,10 +105,11 @@ def _build_default_page_document(slug, route_rule, endpoint):
         title=title,
         template_id=template_id,
         locale='en-US',
-        status=WORKFLOW_DRAFT,
+        status=WORKFLOW_PUBLISHED,
         seo_json=_to_json(seo, {}),
         blocks_tree=_to_json(blocks_tree, {}),
         theme_override_json='{}',
+        published_at=utc_now_naive(),
     )
 
 
@@ -190,6 +191,16 @@ def run_page_route_sync(flask_app, *, auto_register=False, persist=False):
             db.session.flush()
             page_by_slug[expected_slug] = page_document
             auto_registered_pages.append(expected_slug)
+        elif (
+            auto_register
+            and persist
+            and page_document is not None
+            and page_document.status != WORKFLOW_PUBLISHED
+            and '"managedBy": "msc-mcp-sync"' in (page_document.blocks_tree or '')
+        ):
+            # Promote legacy auto-registered sync pages created as draft by older builds.
+            page_document.status = WORKFLOW_PUBLISHED
+            page_document.published_at = now
 
         sync_status, issue = _sync_state_for_route(expected_slug, page_document)
         row = {

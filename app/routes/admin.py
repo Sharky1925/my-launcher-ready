@@ -1754,7 +1754,7 @@ def service_add():
 @admin_bp.route('/services/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def service_edit(id):
-    item = Service.query.get_or_404(id)
+    item = db.get_or_404(Service, id)
     workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 200)
@@ -1822,7 +1822,7 @@ def service_edit(id):
 @admin_bp.route('/services/<int:id>/delete', methods=['POST'])
 @login_required
 def service_delete(id):
-    db.session.delete(Service.query.get_or_404(id))
+    db.session.delete(db.get_or_404(Service, id))
     db.session.commit()
     flash('Service deleted.', 'success')
     return redirect(url_for('admin.services'))
@@ -1869,7 +1869,7 @@ def team_add():
 @admin_bp.route('/team/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def team_edit(id):
-    item = TeamMember.query.get_or_404(id)
+    item = db.get_or_404(TeamMember, id)
     if request.method == 'POST':
         name = clean_text(request.form.get('name'), 200)
         position = clean_text(request.form.get('position'), 200)
@@ -1901,7 +1901,7 @@ def team_edit(id):
 @admin_bp.route('/team/<int:id>/delete', methods=['POST'])
 @login_required
 def team_delete(id):
-    db.session.delete(TeamMember.query.get_or_404(id))
+    db.session.delete(db.get_or_404(TeamMember, id))
     db.session.commit()
     flash('Team member deleted.', 'success')
     return redirect(url_for('admin.team'))
@@ -1945,7 +1945,7 @@ def testimonial_add():
 @admin_bp.route('/testimonials/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def testimonial_edit(id):
-    item = Testimonial.query.get_or_404(id)
+    item = db.get_or_404(Testimonial, id)
     if request.method == 'POST':
         client_name = clean_text(request.form.get('client_name'), 200)
         company = clean_text(request.form.get('company', ''), 200)
@@ -1970,7 +1970,7 @@ def testimonial_edit(id):
 @admin_bp.route('/testimonials/<int:id>/delete', methods=['POST'])
 @login_required
 def testimonial_delete(id):
-    db.session.delete(Testimonial.query.get_or_404(id))
+    db.session.delete(db.get_or_404(Testimonial, id))
     db.session.commit()
     flash('Testimonial deleted.', 'success')
     return redirect(url_for('admin.testimonials'))
@@ -2014,7 +2014,7 @@ def category_add():
 @admin_bp.route('/categories/<int:id>/delete', methods=['POST'])
 @login_required
 def category_delete(id):
-    cat = Category.query.get_or_404(id)
+    cat = db.get_or_404(Category, id)
     if cat.posts:
         flash('Cannot delete category with posts.', 'danger')
     else:
@@ -2102,7 +2102,7 @@ def post_add():
 @admin_bp.route('/posts/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def post_edit(id):
-    item = Post.query.get_or_404(id)
+    item = db.get_or_404(Post, id)
     workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 300)
@@ -2173,7 +2173,7 @@ def post_edit(id):
 @admin_bp.route('/posts/<int:id>/delete', methods=['POST'])
 @login_required
 def post_delete(id):
-    db.session.delete(Post.query.get_or_404(id))
+    db.session.delete(db.get_or_404(Post, id))
     db.session.commit()
     flash('Post deleted.', 'success')
     return redirect(url_for('admin.posts'))
@@ -2205,7 +2205,7 @@ def media_upload():
 @admin_bp.route('/media/<int:id>/delete', methods=['POST'])
 @login_required
 def media_delete(id):
-    item = Media.query.get_or_404(id)
+    item = db.get_or_404(Media, id)
     _, filepath = _safe_upload_path(item.file_path)
     if filepath and os.path.exists(filepath):
         os.remove(filepath)
@@ -2382,7 +2382,7 @@ def contacts():
 @admin_bp.route('/contacts/<int:id>')
 @login_required
 def contact_view(id):
-    item = ContactSubmission.query.get_or_404(id)
+    item = db.get_or_404(ContactSubmission, id)
     if not item.is_read:
         item.is_read = True
         db.session.commit()
@@ -2392,7 +2392,7 @@ def contact_view(id):
 @admin_bp.route('/contacts/<int:id>/delete', methods=['POST'])
 @login_required
 def contact_delete(id):
-    db.session.delete(ContactSubmission.query.get_or_404(id))
+    db.session.delete(db.get_or_404(ContactSubmission, id))
     db.session.commit()
     flash('Contact deleted.', 'success')
     return redirect(url_for('admin.contacts'))
@@ -2511,7 +2511,7 @@ def security_events():
 @admin_bp.route('/support-tickets/<int:id>', methods=['GET', 'POST'])
 @login_required
 def support_ticket_view(id):
-    item = SupportTicket.query.get_or_404(id)
+    item = db.get_or_404(SupportTicket, id)
     if request.method == 'POST':
         previous_status = item.status
         previous_priority = item.priority
@@ -2581,7 +2581,7 @@ def support_ticket_view(id):
 @admin_bp.route('/support-tickets/<int:id>/review', methods=['POST'])
 @login_required
 def support_ticket_review(id):
-    item = SupportTicket.query.get_or_404(id)
+    item = db.get_or_404(SupportTicket, id)
     previous_status = item.status
     review_action = clean_text(request.form.get('review_action', ''), 20)
     review_note = request.form.get('review_note', '')
@@ -2675,7 +2675,7 @@ def industry_add():
 @admin_bp.route('/industries/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def industry_edit(id):
-    item = Industry.query.get_or_404(id)
+    item = db.get_or_404(Industry, id)
     workflow_options = get_workflow_status_options(current_user)
     if request.method == 'POST':
         title = clean_text(request.form.get('title'), 200)
@@ -2732,7 +2732,7 @@ def industry_edit(id):
 @admin_bp.route('/industries/<int:id>/delete', methods=['POST'])
 @login_required
 def industry_delete(id):
-    db.session.delete(Industry.query.get_or_404(id))
+    db.session.delete(db.get_or_404(Industry, id))
     db.session.commit()
     flash('Industry deleted.', 'success')
     return redirect(url_for('admin.industries'))
@@ -2742,7 +2742,7 @@ def industry_delete(id):
 @admin_bp.route('/categories/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def category_edit(id):
-    cat = Category.query.get_or_404(id)
+    cat = db.get_or_404(Category, id)
     if request.method == 'POST':
         name = clean_text(request.form.get('name'), 100)
         if not name:
@@ -3046,7 +3046,7 @@ def acp_page_add():
 @admin_bp.route('/acp/pages/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_page_edit(id):
-    item = AcpPageDocument.query.get_or_404(id)
+    item = db.get_or_404(AcpPageDocument, id)
     component_registry = _build_component_registry_payload(enabled_only=True)
     if request.method == 'POST':
         before_state = _serialize_acp_page(item)
@@ -3115,7 +3115,7 @@ def acp_page_edit(id):
 @admin_bp.route('/acp/pages/<int:id>/snapshot', methods=['POST'])
 @login_required
 def acp_page_snapshot(id):
-    item = AcpPageDocument.query.get_or_404(id)
+    item = db.get_or_404(AcpPageDocument, id)
     note = clean_text(request.form.get('change_note'), 260) or 'Manual snapshot'
     _create_page_version(item, note=note)
     _create_acp_audit_event('pages', 'snapshot', 'acp_page_document', item.slug, _serialize_acp_page(item), _serialize_acp_page(item))
@@ -3127,7 +3127,7 @@ def acp_page_snapshot(id):
 @admin_bp.route('/acp/pages/<int:id>/publish', methods=['POST'])
 @login_required
 def acp_page_publish(id):
-    item = AcpPageDocument.query.get_or_404(id)
+    item = db.get_or_404(AcpPageDocument, id)
     before_state = _serialize_acp_page(item)
     requested_status = request.form.get('workflow_status') or WORKFLOW_PUBLISHED
     ok, workflow_error = _apply_acp_workflow(item, requested_status, request.form.get('scheduled_publish_at'))
@@ -3238,7 +3238,7 @@ def acp_dashboard_add():
 @admin_bp.route('/acp/dashboards/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_dashboard_edit(id):
-    item = AcpDashboardDocument.query.get_or_404(id)
+    item = db.get_or_404(AcpDashboardDocument, id)
     widget_registry = _build_widget_registry_payload(enabled_only=True)
     if request.method == 'POST':
         before_state = _serialize_acp_dashboard(item)
@@ -3320,7 +3320,7 @@ def acp_dashboard_edit(id):
 @admin_bp.route('/acp/dashboards/<int:id>/preview')
 @login_required
 def acp_dashboard_preview(id):
-    item = AcpDashboardDocument.query.get_or_404(id)
+    item = db.get_or_404(AcpDashboardDocument, id)
     requested_role = normalize_user_role(
         request.args.get('role', getattr(current_user, 'role_key', ROLE_EDITOR)),
         default=getattr(current_user, 'role_key', ROLE_EDITOR),
@@ -3347,7 +3347,7 @@ def acp_dashboard_preview(id):
 @admin_bp.route('/acp/dashboards/<int:id>/snapshot', methods=['POST'])
 @login_required
 def acp_dashboard_snapshot(id):
-    item = AcpDashboardDocument.query.get_or_404(id)
+    item = db.get_or_404(AcpDashboardDocument, id)
     note = clean_text(request.form.get('change_note'), 260) or 'Manual snapshot'
     _create_dashboard_version(item, note=note)
     _create_acp_audit_event('dashboards', 'snapshot', 'acp_dashboard_document', item.dashboard_id, _serialize_acp_dashboard(item), _serialize_acp_dashboard(item))
@@ -3359,7 +3359,7 @@ def acp_dashboard_snapshot(id):
 @admin_bp.route('/acp/dashboards/<int:id>/publish', methods=['POST'])
 @login_required
 def acp_dashboard_publish(id):
-    item = AcpDashboardDocument.query.get_or_404(id)
+    item = db.get_or_404(AcpDashboardDocument, id)
     before_state = _serialize_acp_dashboard(item)
     requested_status = request.form.get('workflow_status') or WORKFLOW_PUBLISHED
     ok, workflow_error = _apply_acp_workflow(item, requested_status, request.form.get('scheduled_publish_at'))
@@ -3440,7 +3440,7 @@ def acp_content_type_add():
 @admin_bp.route('/acp/content-types/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_content_type_edit(id):
-    item = AcpContentType.query.get_or_404(id)
+    item = db.get_or_404(AcpContentType, id)
     if request.method == 'POST':
         before_state = _serialize_acp_content_type(item)
         name = clean_text(request.form.get('name'), 180)
@@ -3525,7 +3525,7 @@ def acp_content_entry_add():
     content_types = AcpContentType.query.filter_by(is_enabled=True).order_by(AcpContentType.name.asc()).all()
     if request.method == 'POST':
         content_type_id = parse_positive_int(request.form.get('content_type_id'))
-        content_type = AcpContentType.query.get(content_type_id) if content_type_id else None
+        content_type = db.session.get(AcpContentType, content_type_id) if content_type_id else None
         title = clean_text(request.form.get('title'), 220)
         entry_key = clean_text(request.form.get('entry_key'), 140) or slugify(title)
         locale = clean_text(request.form.get('locale'), 20) or 'en-US'
@@ -3619,12 +3619,12 @@ def acp_content_entry_add():
 @admin_bp.route('/acp/content-entries/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_content_entry_edit(id):
-    item = AcpContentEntry.query.get_or_404(id)
+    item = db.get_or_404(AcpContentEntry, id)
     content_types = AcpContentType.query.filter_by(is_enabled=True).order_by(AcpContentType.name.asc()).all()
     if request.method == 'POST':
         before_state = _serialize_acp_content_entry(item)
         content_type_id = parse_positive_int(request.form.get('content_type_id'))
-        content_type = AcpContentType.query.get(content_type_id) if content_type_id else None
+        content_type = db.session.get(AcpContentType, content_type_id) if content_type_id else None
         title = clean_text(request.form.get('title'), 220)
         entry_key = clean_text(request.form.get('entry_key'), 140) or slugify(title)
         locale = clean_text(request.form.get('locale'), 20) or 'en-US'
@@ -3785,7 +3785,7 @@ def acp_theme_token_add():
 @admin_bp.route('/acp/theme/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_theme_token_edit(id):
-    item = AcpThemeTokenSet.query.get_or_404(id)
+    item = db.get_or_404(AcpThemeTokenSet, id)
     if request.method == 'POST':
         before_state = _serialize_acp_theme_token_set(item)
         key = clean_text(request.form.get('key'), 80) or slugify(clean_text(request.form.get('name'), 180))
@@ -3911,7 +3911,7 @@ def acp_mcp_server_add():
 @admin_bp.route('/acp/mcp/servers/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def acp_mcp_server_edit(id):
-    item = AcpMcpServer.query.get_or_404(id)
+    item = db.get_or_404(AcpMcpServer, id)
     if request.method == 'POST':
         before_state = _serialize_acp_mcp_server(item)
         name = clean_text(request.form.get('name'), 180)
@@ -4081,7 +4081,7 @@ def acp_admin_content_type_api(key):
 @admin_bp.route('/acp/api/content-entries/<int:id>')
 @login_required
 def acp_admin_content_entry_api(id):
-    item = AcpContentEntry.query.get_or_404(id)
+    item = db.get_or_404(AcpContentEntry, id)
     return jsonify(_serialize_acp_content_entry(item))
 
 

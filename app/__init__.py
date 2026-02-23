@@ -494,5 +494,22 @@ def create_app(config_overrides=None):
             seed_database()
         except Exception:
             app.logger.exception('seed_database() failed — seeding skipped.')
+        try:
+            try:
+                from .page_sync import run_page_route_sync
+            except ImportError:  # pragma: no cover - fallback for script-style execution
+                from page_sync import run_page_route_sync
+            sync_report = run_page_route_sync(app, auto_register=True, persist=True)
+            app.logger.info(
+                'Route sync startup scan complete.',
+                extra={
+                    'routes_scanned': sync_report.get('totals', {}).get('routes_scanned', 0),
+                    'synced': sync_report.get('totals', {}).get('synced', 0),
+                    'auto_registered': sync_report.get('totals', {}).get('auto_registered_pages', 0),
+                },
+            )
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Startup route sync failed.')
 
     return app

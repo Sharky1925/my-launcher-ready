@@ -236,10 +236,14 @@ def test_acp_sync_status_scan_and_autoregister(client, app):
         binding = AcpPageRouteBinding.query.filter_by(route_rule="/services").first()
         assert binding is not None
         assert binding.page_slug == "services"
-        assert binding.sync_status in {"synced", "unpublished_page_document"}
+        assert binding.sync_status == "synced"
 
         managed_page = AcpPageDocument.query.filter_by(slug="services").first()
         assert managed_page is not None
+        verify_binding = AcpPageRouteBinding.query.filter_by(route_rule="/ticket-verify").first()
+        assert verify_binding is not None
+        assert verify_binding.page_slug == "ticket-search"
+        assert verify_binding.sync_status == "synced"
 
 
 def test_acp_page_form_includes_visual_block_builder(client, app):
@@ -500,8 +504,8 @@ def test_backfill_repairs_legacy_draft_only_service_and_industry_states(app):
         backfill_phase2_defaults()
         db.session.expire_all()
 
-        refreshed_service = Service.query.get(service.id)
-        refreshed_industry = Industry.query.get(industry.id)
+        refreshed_service = db.session.get(Service, service.id)
+        refreshed_industry = db.session.get(Industry, industry.id)
         assert refreshed_service.workflow_status == WORKFLOW_PUBLISHED
         assert refreshed_industry.workflow_status == WORKFLOW_PUBLISHED
         assert refreshed_service.published_at is not None
@@ -815,7 +819,7 @@ def test_admin_ticket_notification_excludes_requester_email(app, monkeypatch):
         ticket_id = ticket.id
 
         app.config['TICKET_NOTIFICATION_EMAILS'] = f'{requester_email},ops@example.com'
-        current_ticket = SupportTicket.query.get(ticket_id)
+        current_ticket = db.session.get(SupportTicket, ticket_id)
         sent = notifications_module.send_ticket_notification(
             current_ticket,
             ticket_kind='support',
@@ -866,7 +870,7 @@ def test_client_verification_email_uses_single_secure_status_link(app, monkeypat
     with app.test_request_context('/'):
         app.config['APP_BASE_URL'] = 'https://mylauncher-ready-production.up.railway.app'
         with app.app_context():
-            current_ticket = SupportTicket.query.get(ticket_id)
+            current_ticket = db.session.get(SupportTicket, ticket_id)
             sent = notifications_module.send_ticket_verification_email(
                 current_ticket,
                 "client@example.com",
@@ -1242,7 +1246,7 @@ def test_admin_ticket_review_actions_sync_pending_done_closed(client, app):
     assert pending_resp.status_code in (302, 303)
 
     with app.app_context():
-        pending_ticket = SupportTicket.query.get(ticket_id)
+        pending_ticket = db.session.get(SupportTicket, ticket_id)
         assert pending_ticket.status == SUPPORT_TICKET_STATUS_IN_PROGRESS
 
     ticket_page = client.get(f"/admin/support-tickets/{ticket_id}")
@@ -1256,7 +1260,7 @@ def test_admin_ticket_review_actions_sync_pending_done_closed(client, app):
     assert done_resp.status_code in (302, 303)
 
     with app.app_context():
-        done_ticket = SupportTicket.query.get(ticket_id)
+        done_ticket = db.session.get(SupportTicket, ticket_id)
         assert done_ticket.status == SUPPORT_TICKET_STATUS_RESOLVED
         assert "Issue completed" in (done_ticket.internal_notes or "")
 
@@ -1271,7 +1275,7 @@ def test_admin_ticket_review_actions_sync_pending_done_closed(client, app):
     assert close_resp.status_code in (302, 303)
 
     with app.app_context():
-        closed_ticket = SupportTicket.query.get(ticket_id)
+        closed_ticket = db.session.get(SupportTicket, ticket_id)
         assert closed_ticket.status == SUPPORT_TICKET_STATUS_CLOSED
         ticket_events = (
             SupportTicketEvent.query
@@ -1340,7 +1344,7 @@ def test_admin_ticket_view_post_records_admin_update_timeline_event(client, app)
     assert update_resp.status_code in (302, 303)
 
     with app.app_context():
-        updated = SupportTicket.query.get(ticket_id)
+        updated = db.session.get(SupportTicket, ticket_id)
         assert updated.status == 'waiting_customer'
         assert updated.priority == 'high'
         events = (
