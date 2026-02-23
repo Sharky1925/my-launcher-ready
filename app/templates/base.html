@@ -51,21 +51,47 @@
   {% endif %}
   {% block head_extra %}{% endblock %}
   <!-- Structured Data -->
+  {% set _social_links = [] %}
+  {% if site_settings.get('facebook', '').strip() %}{% if _social_links.append(site_settings.get('facebook')) %}{% endif %}{% endif %}
+  {% if site_settings.get('twitter', '').strip() %}{% if _social_links.append(site_settings.get('twitter')) %}{% endif %}{% endif %}
+  {% if site_settings.get('linkedin', '').strip() %}{% if _social_links.append(site_settings.get('linkedin')) %}{% endif %}{% endif %}
   <script nonce="{{ csp_nonce }}" type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }},
     "description": {{ site_settings.get('meta_description', '') | tojson }},
+    "url": {{ request.url_root.rstrip('/') | tojson }},
+    "image": {{ (request.url_root.rstrip('/') ~ url_for('static', filename='icon.png')) | tojson }},
     "telephone": {{ site_settings.get('phone', '') | tojson }},
     "email": {{ site_settings.get('email', '') | tojson }},
-    "address": { "@type": "PostalAddress", "streetAddress": {{ site_settings.get('address', '') | tojson }}, "addressRegion": "CA", "addressCountry": "US" },
-    "areaServed": "Orange County, CA",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": {{ site_settings.get('address', '') | tojson }},
+      "addressLocality": "Orange County",
+      "addressRegion": "CA",
+      "postalCode": {{ site_settings.get('zip_code', '') | tojson }},
+      "addressCountry": "US"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 33.7175,
+      "longitude": -117.8311
+    },
+    "areaServed": {
+      "@type": "AdministrativeArea",
+      "name": "Orange County, CA"
+    },
+    "priceRange": "$$",
+    "openingHoursSpecification": [
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "08:00", "closes": "18:00" },
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "15:00" }
+    ]{% if _social_links %},
     "sameAs": [
-      {{ site_settings.get('facebook', '') | tojson }},
-      {{ site_settings.get('twitter', '') | tojson }},
-      {{ site_settings.get('linkedin', '') | tojson }}
-    ]
+      {% for link in _social_links %}
+      {{ link | tojson }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]{% endif %}
   }
   </script>
   {% block structured_data %}{% endblock %}

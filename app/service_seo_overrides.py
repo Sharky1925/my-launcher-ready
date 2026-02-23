@@ -95,6 +95,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "GitHub / Atlassian", "services": "CI/CD workflow automation, backlog governance, and release quality controls"},
             {"brand": "Cloudflare / Docker / Kubernetes", "services": "Edge security, containerized delivery, and production reliability engineering"},
         ],
+        "faqs": [
+            {"q": "How do custom software projects start?", "a": "Every engagement begins with a focused discovery workshop where we map your business requirements, user workflows, and integration needs. We then convert findings into a prioritized sprint plan with clear milestones and delivery dates."},
+            {"q": "Can you integrate with our existing tools and platforms?", "a": "Yes. We routinely build integrations with CRM platforms like Salesforce and HubSpot, accounting systems like QuickBooks, support tools like Zendesk, and payment gateways. Our API-first approach ensures clean, maintainable connections."},
+            {"q": "Do you provide ongoing support after launch?", "a": "Yes. Post-launch support includes proactive monitoring, performance optimization, security patching, and iterative feature releases. We treat every application as a living product, not a one-time project."},
+            {"q": "How long does a typical custom software project take?", "a": "Timeline depends on scope. A focused MVP takes 6 to 12 weeks, while full-scale enterprise applications run 3 to 6 months. We use agile sprints with biweekly deliverables so you see working software from the first iteration."},
+            {"q": "What technologies do you use for custom development?", "a": "We select the best stack for each project. Common choices include Python, Node.js, React, and cloud-native platforms on AWS or Azure. Every decision is documented so your team or future developers can maintain the codebase confidently."},
+            {"q": "Do you build mobile apps in addition to web applications?", "a": "Yes. We develop native iOS and Android apps as well as cross-platform solutions using React Native or Flutter. Many projects include both a web dashboard and mobile companion app sharing the same API backend."},
+        ],
     },
     "web-development": {
         "meta_title": "Web Development Company in Orange County | SEO and Conversion-Focused Builds",
@@ -185,6 +193,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Cloudflare", "services": "CDN caching, WAF hardening, and technical performance optimization"},
             {"brand": "WordPress / Webflow / Shopify", "services": "CMS implementation, landing-page systems, and structured content publishing"},
             {"brand": "HubSpot / Meta", "services": "Lead capture integration, attribution tracking, and conversion campaign alignment"},
+        ],
+        "faqs": [
+            {"q": "Do you handle technical SEO as part of web development?", "a": "Yes. Every website we build includes technical SEO foundations — structured metadata, XML sitemaps, canonical tags, Open Graph markup, and Schema.org structured data for rich search results."},
+            {"q": "Will the site be mobile-first and responsive?", "a": "Yes. All components are designed mobile-first and tested across devices and screen sizes. We optimize for Core Web Vitals to ensure fast load times and smooth interactivity on every platform."},
+            {"q": "Can you improve our existing website without a full redesign?", "a": "Yes. We offer performance audits, SEO optimization, and incremental upgrades to your existing stack. Many clients see measurable improvements in speed and search rankings without a complete rebuild."},
+            {"q": "How do you measure website performance after launch?", "a": "We set up Google Analytics 4, Search Console, and conversion event tracking before launch. Monthly reports cover organic traffic growth, page speed scores, keyword rankings, and lead form conversion rates so you can measure ROI."},
+            {"q": "Do you build ecommerce websites?", "a": "Yes. We develop ecommerce sites on Shopify, WooCommerce, and custom platforms with product catalog management, secure checkout, inventory integration, and conversion-optimized product pages designed to maximize average order value."},
+            {"q": "What is your website development process?", "a": "We follow a four-phase process: positioning and content strategy, responsive design and build, technical SEO implementation, and analytics setup. Each phase has defined deliverables and review checkpoints to keep timelines predictable."},
         ],
     },
     "managed-it-services": {
@@ -279,6 +295,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Cisco / Fortinet", "services": "Network monitoring, firewall management, and secure branch connectivity"},
             {"brand": "Veeam / SentinelOne", "services": "Backup continuity, ransomware resilience, and incident escalation support"},
         ],
+        "faqs": [
+            {"q": "Do you support co-managed IT alongside internal teams?", "a": "Yes. We offer both fully managed and co-managed IT models. In a co-managed setup, we handle monitoring, patching, and escalation while your internal team retains control of strategic decisions and day-to-day user support."},
+            {"q": "How are support tickets prioritized and escalated?", "a": "We use SLA-based prioritization with four severity tiers. Critical incidents like server outages or security breaches are escalated immediately with a 15-minute response target. Standard requests follow a structured queue with defined resolution windows."},
+            {"q": "What kind of reports do you provide?", "a": "We deliver monthly operational reports covering ticket volume, resolution times, patch compliance, and device health. Quarterly business reviews include risk assessments, capacity planning, and strategic technology roadmap recommendations."},
+            {"q": "How quickly can you onboard a new managed IT client?", "a": "Typical onboarding takes 2 to 4 weeks. We audit your environment, deploy monitoring agents, configure security baselines, and document all systems. A dedicated transition manager coordinates the process to avoid disruption to daily operations."},
+            {"q": "What size businesses do you support with managed IT?", "a": "We serve Orange County businesses from 10 to 500 employees across professional services, healthcare, legal, finance, and retail. Our service tiers scale with your headcount and infrastructure complexity so you only pay for what you need."},
+            {"q": "Is your help desk available outside business hours?", "a": "Yes. Our monitoring runs 24/7 with automated alerting for critical events. After-hours emergency support is available for severity-one incidents including outages, security breaches, and system failures that impact business continuity."},
+        ],
     },
     "cybersecurity": {
         "meta_title": "Managed Cybersecurity Services in Orange County | MDR, SIEM, Zero Trust",
@@ -369,6 +393,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Cisco / Fortinet / Palo Alto Networks", "services": "Identity-aware network controls, segmentation, and threat prevention"},
             {"brand": "Cloudflare", "services": "Zero trust access, DNS filtering, and secure remote connectivity"},
             {"brand": "Proofpoint / Microsoft", "services": "Email security hardening, anti-phishing policy, and incident response workflows"},
+        ],
+        "faqs": [
+            {"q": "Do you offer 24/7 managed security monitoring?", "a": "Yes. Our managed detection and response service provides continuous monitoring, alert triage, threat investigation, and guided remediation around the clock — giving your business SOC-level protection without the overhead of an in-house security team."},
+            {"q": "How do you strengthen identity and access security?", "a": "We deploy multi-factor authentication (MFA), conditional access policies, and least-privilege role assignments across your environment. This closes the most common attack vector — compromised credentials — and ensures only verified users reach sensitive resources."},
+            {"q": "Do you support compliance-driven security frameworks?", "a": "Yes. We align security controls to industry frameworks including NIST, CIS, HIPAA, and SOC 2. We help you document policies, implement required safeguards, and prepare for audits with evidence-ready reporting."},
+            {"q": "What happens if our business experiences a security breach?", "a": "Our incident response team activates immediately to contain the threat, preserve forensic evidence, and restore operations. We follow documented playbooks for ransomware, data exfiltration, and account compromise to minimize downtime and business impact."},
+            {"q": "How do you protect against phishing and email attacks?", "a": "We deploy advanced email security with AI-powered phishing detection, domain spoofing prevention, and user awareness training. Suspicious emails are quarantined automatically, and we review false positives to keep legitimate business communication flowing."},
+            {"q": "Do you offer security awareness training for employees?", "a": "Yes. We run simulated phishing campaigns and deliver targeted security training modules. Employees learn to identify social engineering, report suspicious activity, and follow secure practices — reducing human-factor risk across your organization."},
         ],
     },
     "cloud-solutions": {
@@ -461,6 +493,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Cloudflare / Datadog", "services": "Edge performance, observability, and incident-response signal coverage"},
             {"brand": "VMware / Veeam", "services": "Hybrid-cloud continuity, backup validation, and failover readiness"},
         ],
+        "faqs": [
+            {"q": "Can you support hybrid and multi-cloud environments?", "a": "Yes. We design and operate hybrid architectures that span on-premises infrastructure, private cloud, and public cloud providers. Whether you need AWS, Azure, Google Cloud, or a combination, we build a unified management layer for consistent governance and visibility."},
+            {"q": "How do you minimize risk during cloud migration?", "a": "We use a phased wave-based migration approach with validation checkpoints at every stage. Each workload is tested in a staging environment before cutover, and rollback procedures are documented and rehearsed so you can revert quickly if needed."},
+            {"q": "Do you provide ongoing cloud management after migration?", "a": "Yes. Post-migration services include 24/7 monitoring, automated patching, cost optimization reviews, and capacity planning. We treat cloud operations as a continuous improvement cycle — not a one-time migration event."},
+            {"q": "How much does cloud migration typically cost?", "a": "Cost depends on the number of workloads, data volume, and target architecture. We provide a detailed cost model during discovery that includes migration labor, monthly cloud spend estimates, and projected savings compared to your current on-premises infrastructure."},
+            {"q": "Can you help reduce our existing cloud costs?", "a": "Yes. We audit your current cloud environment for idle resources, oversized instances, and unused reservations. Clients typically achieve 20 to 40 percent savings through rightsizing, reserved capacity planning, and automated scaling policies."},
+            {"q": "Which cloud platform is best for our business?", "a": "The right platform depends on your workloads and existing tools. Microsoft Azure integrates well with M365 environments, AWS offers the broadest service catalog, and Google Cloud excels at analytics. We evaluate your needs and recommend the best fit."},
+        ],
     },
     "surveillance-camera-installation": {
         "meta_title": "Commercial Surveillance Camera Installation in Orange County",
@@ -551,6 +591,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Verkada / Cisco Meraki", "services": "Cloud-managed surveillance rollout with secure remote viewing and incident retrieval"},
             {"brand": "Ubiquiti UniFi", "services": "Cost-efficient commercial camera networking with centralized monitoring"},
             {"brand": "Hikvision / Dahua", "services": "NVR integration, hardening controls, and long-window recording management"},
+        ],
+        "faqs": [
+            {"q": "Do you support multi-site surveillance deployments?", "a": "Yes. We design and deploy centrally managed camera systems across multiple business locations. A single dashboard gives you unified access to all sites with role-based permissions for managers and security staff."},
+            {"q": "Can we view cameras remotely from a phone or browser?", "a": "Yes. We configure secure remote access through encrypted connections with multi-factor authentication. Authorized users can view live feeds, review recordings, and receive motion alerts from any device, anywhere."},
+            {"q": "Do you provide ongoing support after installation?", "a": "Yes. Post-install services include camera health monitoring, firmware updates, storage management, and incident response support. We proactively detect offline cameras and connectivity issues before they become blind spots."},
+            {"q": "How many cameras does a typical business need?", "a": "Camera count depends on your facility layout, entry points, and coverage goals. During the site survey we map blind spots and high-priority zones. Most small businesses need 8 to 16 cameras, while multi-floor facilities may require 30 or more."},
+            {"q": "How long are camera recordings stored?", "a": "Retention depends on your compliance requirements and storage capacity. We design systems supporting 30 to 90 day recording windows by default. For regulated industries we configure extended retention with automated archival to cloud or offsite storage."},
+            {"q": "Can your cameras detect motion and send alerts?", "a": "Yes. We configure AI-powered motion detection zones with customizable sensitivity. Alerts are sent via mobile push notifications and email to designated staff. Advanced analytics can distinguish people, vehicles, and animals to reduce false alarms."},
         ],
     },
     "data-recovery": {
@@ -652,6 +700,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Synology / QNAP / Dell EMC / HPE", "services": "RAID and NAS reconstruction for business-critical storage platforms"},
             {"brand": "Apple", "services": "Mac and portable media recovery with secure handoff and integrity reporting"},
         ],
+        "faqs": [
+            {"q": "Can you recover data from physically failed drives?", "a": "In many cases, yes. We perform sector-level imaging and use specialized tools to extract data from drives with mechanical failures, firmware corruption, or degraded flash storage. Recovery success depends on the extent of physical damage."},
+            {"q": "How do you protect sensitive data during recovery?", "a": "Every recovery follows a documented chain-of-custody process. Media is handled in isolated environments, transferred over encrypted channels, and stored on access-controlled systems. We can also sign NDAs and comply with data handling regulations."},
+            {"q": "Do you prioritize business-critical files during recovery?", "a": "Yes. We work with you to identify high-priority folders, databases, and application data first. Critical business files are extracted and validated before moving to secondary data, minimizing downtime for essential operations."},
+            {"q": "How long does data recovery typically take?", "a": "Simple recoveries from logical failures take 1 to 3 days. Complex mechanical or multi-drive RAID recoveries can take 3 to 10 business days. We provide status updates at each checkpoint and prioritize business-critical files for early handoff when possible."},
+            {"q": "Do you recover data from RAID arrays and NAS devices?", "a": "Yes. We support RAID 0, 1, 5, 6, and 10 configurations from Synology, QNAP, Dell EMC, and HPE platforms. Our process includes array reconstruction, volume reassembly, and file-level validation before returning recovered data."},
+            {"q": "What is the success rate for data recovery?", "a": "Success depends on failure type and damage severity. Logical failures like accidental deletion or corruption have recovery rates above 90 percent. Mechanical failures vary based on platter and head condition. We provide a diagnostic assessment and probability estimate before starting."},
+        ],
     },
     "computer-repair": {
         "meta_title": "Computer Repair Services in Orange County | Business Laptop and Desktop Repair",
@@ -748,6 +804,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Apple Mac", "services": "Mac component diagnostics, storage upgrades, and performance remediation"},
             {"brand": "ASUS / Acer / Samsung", "services": "Display, keyboard, charging, and thermal subsystem restoration"},
             {"brand": "Microsoft Surface", "services": "Power, boot, and device-stability troubleshooting for field and office use"},
+        ],
+        "faqs": [
+            {"q": "Do you repair business laptops and desktop workstations?", "a": "Yes. We service all major brands including Dell, Lenovo, HP, Apple, and custom-built desktops. Whether it is a failing hard drive, cracked screen, or motherboard issue, we diagnose and repair business devices with minimal downtime."},
+            {"q": "Can you fix slow computer performance?", "a": "Yes. Slow performance often stems from failing storage, insufficient RAM, thermal throttling, or software conflicts. We run comprehensive diagnostics to identify the root cause and apply targeted fixes — from SSD upgrades to malware removal and OS optimization."},
+            {"q": "Do you test devices after repair?", "a": "Yes. Every repaired device undergoes a full stress test — CPU load testing, memory validation, thermal monitoring, and application performance checks — before it is returned. This ensures the fix is stable and the device is ready for daily use."},
+            {"q": "How long does a typical computer repair take?", "a": "Most repairs are completed same day or within 48 hours. Simple fixes like SSD upgrades and malware removal take 2 to 4 hours. More complex board-level repairs or parts requiring special order may take 3 to 5 business days with status updates at each stage."},
+            {"q": "Do you offer onsite computer repair for businesses?", "a": "Yes. We provide onsite repair and diagnostics for Orange County businesses that need devices serviced without disrupting office operations. For complex repairs requiring bench work, we offer pickup and return service with clear turnaround commitments."},
+            {"q": "Can you upgrade hardware components to improve performance?", "a": "Yes. Common upgrades include SSD installation, RAM expansion, and thermal compound replacement. We benchmark before and after every upgrade so you can see measurable performance improvements in boot time, application speed, and multitasking capability."},
         ],
     },
     "mobile-phone-repair": {
@@ -846,6 +910,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Motorola / OnePlus / Xiaomi", "services": "Battery, port, camera, and firmware stability remediation"},
             {"brand": "Microsoft Surface Duo", "services": "Mobile productivity device diagnostics with charging and thermal coverage"},
         ],
+        "faqs": [
+            {"q": "Do you repair business tablets and iPads as well?", "a": "Yes. We service phones and tablets from all major manufacturers including Apple, Samsung, Google, and Microsoft Surface. Business tablets used in point-of-sale, field work, or office workflows are fully supported."},
+            {"q": "Can you fix charging port and battery issues?", "a": "Yes. Charging subsystem diagnostics are part of our standard intake. We test the port, cable, and battery independently to isolate the fault, then replace only the components that need repair — keeping costs predictable."},
+            {"q": "Will my data be preserved during repair?", "a": "We use a data-safe repair process and avoid factory resets whenever possible. Your photos, contacts, and apps remain intact. If a reset is required, we notify you in advance so you can back up your data before we proceed."},
+            {"q": "How long does a typical phone repair take?", "a": "Most screen replacements and battery swaps are completed in 1 to 3 hours. Charging port repairs take 2 to 4 hours. Board-level diagnostics or parts that require ordering may extend to 1 to 3 business days with regular status updates provided."},
+            {"q": "Do you use genuine or OEM-quality replacement parts?", "a": "We use high-quality OEM-equivalent parts that meet original manufacturer specifications. All replacement screens, batteries, and components are tested before installation and backed by our repair warranty to ensure reliable long-term performance."},
+            {"q": "Can you repair water-damaged phones?", "a": "In many cases, yes. We perform ultrasonic cleaning and board-level diagnostics to assess corrosion damage. Success depends on exposure duration and severity. We provide an honest assessment before proceeding so you can make an informed repair-or-replace decision."},
+        ],
     },
     "game-console-repair": {
         "meta_title": "Game Console Repair in Orange County | PS5, Xbox, Nintendo Switch",
@@ -930,6 +1002,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Microsoft Xbox", "services": "Board-level output repair, cooling remediation, and extended stability testing"},
             {"brand": "Nintendo Switch", "services": "Charging, display, Joy-Con pairing, and connectivity repair support"},
             {"brand": "Valve Steam Deck", "services": "Thermal, storage, and charging diagnostics for handheld gaming workflows"},
+        ],
+        "faqs": [
+            {"q": "Can you fix HDMI port and display output issues?", "a": "Yes. HDMI port failure is one of the most common console repairs we handle. We use precision micro-soldering to replace damaged connectors and test the full display pipeline — from the GPU output to the HDMI port — to ensure a reliable signal."},
+            {"q": "Can console overheating problems be resolved?", "a": "Yes. We disassemble the console, clean the fan and heatsink assembly, replace degraded thermal paste, and verify temperatures under sustained gaming load. This restores proper cooling and prevents thermal shutdowns or performance throttling."},
+            {"q": "Do you stress test consoles before returning them?", "a": "Yes. Every repaired console runs through an extended stress test — sustained gaming load, network connectivity checks, controller pairing, and thermal monitoring. We only return the device once it passes all validation benchmarks."},
+            {"q": "How much does game console repair cost?", "a": "Pricing depends on the repair type. HDMI port replacements typically cost less than board-level power repairs. We provide a free diagnostic assessment and fixed-price quote before starting any work so there are no surprise charges."},
+            {"q": "Do you repair Nintendo Switch and Steam Deck handhelds?", "a": "Yes. We service Nintendo Switch, Switch OLED, Steam Deck, and other portable gaming devices. Common repairs include Joy-Con drift fixes, charging port replacement, screen repair, and battery service with full functional testing."},
+            {"q": "Can you upgrade my console storage to a larger SSD?", "a": "Yes. We perform SSD upgrades for PlayStation 5, Xbox Series, and Steam Deck consoles. The upgrade includes drive installation, system restore, and performance validation to ensure faster load times and expanded storage capacity."},
         ],
     },
     "device-diagnostics": {
@@ -1022,6 +1102,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Samsung / ASUS / Acer", "services": "Workstation and mobile endpoint health checks with patch posture review"},
             {"brand": "Cross-platform estates", "services": "Unified diagnostics reporting for mixed-vendor device fleets"},
         ],
+        "faqs": [
+            {"q": "Is diagnostics only for devices that are already broken?", "a": "No. Diagnostics is equally valuable as a preventive measure. By running comprehensive health checks on devices that appear to work fine, we catch early warning signs — degrading storage, failing memory modules, or thermal issues — before they cause unexpected downtime."},
+            {"q": "Do we receive a written diagnostic report?", "a": "Yes. Every diagnostic session produces a clear, prioritized report. It includes hardware health scores, identified risks ranked by business impact, and actionable recommendations for repair, replacement, or upgrade — so you can make informed decisions."},
+            {"q": "Can proactive diagnostics actually reduce business downtime?", "a": "Yes. Businesses that schedule regular diagnostic cycles catch hardware failures weeks or months before they impact operations. Early detection allows you to plan replacements during maintenance windows instead of dealing with emergency outages."},
+            {"q": "How often should business devices be diagnosed?", "a": "We recommend quarterly diagnostics for mission-critical workstations and biannual checks for standard office devices. High-use environments like healthcare, manufacturing, or finance benefit from monthly cycles to maintain fleet reliability and prevent surprise failures."},
+            {"q": "Can you diagnose an entire fleet of devices at once?", "a": "Yes. We run batch diagnostics for device fleets of any size. Remote diagnostic agents collect health data from each endpoint, and we deliver a consolidated fleet report with device-by-device risk scores and prioritized action recommendations."},
+            {"q": "What types of devices can you diagnose?", "a": "We diagnose laptops, desktops, servers, tablets, and network infrastructure from all major manufacturers including Dell, HP, Lenovo, Apple, Microsoft, and Samsung. Both Windows and macOS devices are fully supported in our diagnostic workflow."},
+        ],
     },
     "enterprise-consultancy": {
         "meta_title": "Enterprise IT Consultancy in Orange County | Fractional CTO and IT Strategy",
@@ -1113,6 +1201,14 @@ SERVICE_RESEARCH_OVERRIDES = {
             {"brand": "Cisco / Dell / VMware", "services": "Infrastructure roadmap planning, vendor optimization, and modernization sequencing"},
             {"brand": "Salesforce / ServiceNow / Atlassian", "services": "Business-platform governance, integration strategy, and delivery oversight"},
             {"brand": "Executive procurement partners", "services": "Contract benchmarking, renewal strategy, and cost governance support"},
+        ],
+        "faqs": [
+            {"q": "Who is enterprise IT consultancy designed for?", "a": "Growing businesses that need strategic IT guidance without hiring a full-time CTO or IT director. We serve companies from 20 to 500 employees across industries including healthcare, legal, finance, manufacturing, and professional services in Orange County."},
+            {"q": "Do you replace our existing IT team or provider?", "a": "No. We complement your team by providing strategic oversight, vendor management, and technology roadmap planning. Think of us as your fractional CTO — we handle the big-picture strategy while your internal team or MSP manages daily operations."},
+            {"q": "What does a typical consulting engagement look like?", "a": "We start with a 1-2 week discovery audit of your infrastructure, contracts, and workflows. Within 2-3 weeks, you receive a prioritized technology roadmap with timelines and budget estimates. Ongoing advisory is available monthly or quarterly as needed."},
+            {"q": "Can you help negotiate vendor contracts and reduce IT costs?", "a": "Yes. We evaluate existing contracts, benchmark pricing against industry standards, and negotiate renewals on your behalf. Clients typically see 15-30% savings on licensing, hosting, and support agreements through our vendor optimization process."},
+            {"q": "How is enterprise consultancy different from managed IT services?", "a": "Managed IT handles day-to-day operations — help desk, patching, monitoring. Enterprise consultancy focuses on strategy, planning, and long-term technology alignment with your business goals. Many clients use both services together for complete coverage."},
+            {"q": "How do you measure the ROI of IT consulting?", "a": "We track measurable outcomes including cost savings from vendor optimization, reduced downtime from infrastructure improvements, and productivity gains from technology upgrades. Quarterly executive reviews include ROI dashboards that connect technology investments to business results."},
         ],
     },
 }
