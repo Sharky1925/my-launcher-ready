@@ -14,8 +14,40 @@
         </div>
         <div class="col-md-4">
           <label class="form-label">Icon Class</label>
-          <input type="text" name="icon_class" class="form-control" value="{{ item.icon_class if item else 'fa-solid fa-building' }}">
-          <small class="text-muted">Font Awesome class</small>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="icon-preview-box d-flex align-items-center justify-content-center" id="icon-preview" style="width:38px;height:38px;border-radius:8px;background:var(--surface-alt, #131d2d);font-size:1.1rem;"><i class="{{ item.icon_class if item else 'fa-solid fa-building' }}"></i></span>
+            <input type="text" name="icon_class" class="form-control" id="icon-class-input" value="{{ item.icon_class if item else 'fa-solid fa-building' }}" list="icon-suggestions" autocomplete="off">
+          </div>
+          <small class="text-muted">Font Awesome class — type to search</small>
+          <datalist id="icon-suggestions">
+            <option value="fa-solid fa-building">
+            <option value="fa-solid fa-hospital">
+            <option value="fa-solid fa-school">
+            <option value="fa-solid fa-store">
+            <option value="fa-solid fa-industry">
+            <option value="fa-solid fa-landmark">
+            <option value="fa-solid fa-truck">
+            <option value="fa-solid fa-plane">
+            <option value="fa-solid fa-utensils">
+            <option value="fa-solid fa-hotel">
+            <option value="fa-solid fa-gavel">
+            <option value="fa-solid fa-briefcase-medical">
+            <option value="fa-solid fa-graduation-cap">
+            <option value="fa-solid fa-building-columns">
+            <option value="fa-solid fa-chart-pie">
+            <option value="fa-solid fa-money-bill-wave">
+            <option value="fa-solid fa-warehouse">
+            <option value="fa-solid fa-oil-well">
+            <option value="fa-solid fa-solar-panel">
+            <option value="fa-solid fa-leaf">
+            <option value="fa-solid fa-tractor">
+            <option value="fa-solid fa-film">
+            <option value="fa-solid fa-gamepad">
+            <option value="fa-solid fa-shield-halved">
+            <option value="fa-solid fa-gear">
+            <option value="fa-solid fa-users">
+            <option value="fa-solid fa-city">
+          </datalist>
         </div>
         <div class="col-12">
           <label class="form-label">Description *</label>
@@ -71,4 +103,21 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+(function() {
+  var input = document.getElementById('icon-class-input');
+  var preview = document.getElementById('icon-preview');
+  if (input && preview) {
+    input.addEventListener('input', function() {
+      var val = input.value.trim();
+      if (val) {
+        preview.innerHTML = '<i class="' + val.replace(/[<>"']/g, '') + '"></i>';
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

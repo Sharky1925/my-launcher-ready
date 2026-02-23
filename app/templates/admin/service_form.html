@@ -14,8 +14,40 @@
         </div>
         <div class="col-md-4">
           <label class="form-label">Icon Class</label>
-          <input type="text" name="icon_class" class="form-control" value="{{ item.icon_class if item else 'fa-solid fa-gear' }}">
-          <small class="text-muted">Font Awesome class</small>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="icon-preview-box d-flex align-items-center justify-content-center" id="icon-preview" style="width:38px;height:38px;border-radius:8px;background:var(--surface-alt, #131d2d);font-size:1.1rem;"><i class="{{ item.icon_class if item else 'fa-solid fa-gear' }}"></i></span>
+            <input type="text" name="icon_class" class="form-control" id="icon-class-input" value="{{ item.icon_class if item else 'fa-solid fa-gear' }}" list="icon-suggestions" autocomplete="off">
+          </div>
+          <small class="text-muted">Font Awesome class — type to search</small>
+          <datalist id="icon-suggestions">
+            <option value="fa-solid fa-gear">
+            <option value="fa-solid fa-shield-halved">
+            <option value="fa-solid fa-cloud">
+            <option value="fa-solid fa-server">
+            <option value="fa-solid fa-network-wired">
+            <option value="fa-solid fa-laptop-code">
+            <option value="fa-solid fa-code">
+            <option value="fa-solid fa-database">
+            <option value="fa-solid fa-lock">
+            <option value="fa-solid fa-globe">
+            <option value="fa-solid fa-wrench">
+            <option value="fa-solid fa-screwdriver-wrench">
+            <option value="fa-solid fa-desktop">
+            <option value="fa-solid fa-mobile-screen">
+            <option value="fa-solid fa-wifi">
+            <option value="fa-solid fa-microchip">
+            <option value="fa-solid fa-hard-drive">
+            <option value="fa-solid fa-print">
+            <option value="fa-solid fa-camera">
+            <option value="fa-solid fa-video">
+            <option value="fa-solid fa-headset">
+            <option value="fa-solid fa-chart-line">
+            <option value="fa-solid fa-users">
+            <option value="fa-solid fa-building">
+            <option value="fa-solid fa-briefcase">
+            <option value="fa-solid fa-bolt">
+            <option value="fa-solid fa-rocket">
+          </datalist>
         </div>
         <div class="col-12">
           <label class="form-label">Description *</label>
@@ -74,4 +106,21 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+(function() {
+  var input = document.getElementById('icon-class-input');
+  var preview = document.getElementById('icon-preview');
+  if (input && preview) {
+    input.addEventListener('input', function() {
+      var val = input.value.trim();
+      if (val) {
+        preview.innerHTML = '<i class="' + val.replace(/[<>"']/g, '') + '"></i>';
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

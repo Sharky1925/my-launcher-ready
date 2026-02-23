@@ -335,6 +335,7 @@ ADMIN_PERMISSION_MAP = {
     'admin.support_ticket_view': 'support:manage',
     'admin.support_ticket_review': 'support:manage',
     'admin.security_events': 'security:view',
+    'admin.appearance': 'acp:theme:manage',
     'admin.settings': 'settings:manage',
     'admin.users': 'users:manage',
     'admin.user_add': 'users:manage',
@@ -2554,6 +2555,182 @@ def settings():
         return redirect(url_for('admin.settings'))
     settings_dict = {s.key: s.value for s in SiteSetting.query.all()}
     return render_template('admin/settings.html', settings=settings_dict)
+
+
+def _save_site_setting(key, value):
+    """Create or update a SiteSetting record."""
+    setting = SiteSetting.query.filter_by(key=key).first()
+    if setting:
+        setting.value = value
+    else:
+        db.session.add(SiteSetting(key=key, value=value))
+
+
+@admin_bp.route('/appearance', methods=['GET', 'POST'])
+@login_required
+def appearance():
+    from ..appearance_config import (
+        FONT_NAMES, APPEARANCE_COLOR_VARS, SHADOW_PRESETS, SPEED_PRESETS,
+        EASING_PRESETS, tokens_to_visual_config, visual_config_to_tokens,
+        build_google_fonts_url, APPEARANCE_DEFAULTS,
+    )
+
+    item = AcpThemeTokenSet.query.filter_by(key='default').first()
+    theme_mode_setting = SiteSetting.query.filter_by(key='theme_mode').first()
+    current_theme_mode = (theme_mode_setting.value if theme_mode_setting else 'dark') or 'dark'
+
+    if request.method == 'POST':
+        use_raw_json = request.form.get('use_raw_json') == '1'
+        change_note = clean_text(request.form.get('change_note'), 260)
+        new_theme_mode = request.form.get('theme_mode', 'dark').strip().lower()
+        if new_theme_mode not in ('dark', 'light'):
+            new_theme_mode = 'dark'
+
+        if use_raw_json:
+            raw_json = request.form.get('tokens_json', '{}')
+            tokens_payload = _safe_json_loads(raw_json, None)
+            if not isinstance(tokens_payload, dict):
+                flash('Tokens JSON must be a valid JSON object.', 'danger')
+                visual_config = tokens_to_visual_config(
+                    _safe_json_loads(item.tokens_json, {}) if item else APPEARANCE_DEFAULTS
+                )
+                versions = []
+                if item:
+                    versions = AcpThemeTokenVersion.query.filter_by(
+                        token_set_id=item.id
+                    ).order_by(AcpThemeTokenVersion.version_number.desc()).limit(12).all()
+                return render_template(
+                    'admin/appearance.html',
+                    item=item, visual_config=visual_config, theme_mode=new_theme_mode,
+                    font_names=FONT_NAMES, color_vars=APPEARANCE_COLOR_VARS,
+                    shadow_presets=list(SHADOW_PRESETS.keys()),
+                    speed_presets=list(SPEED_PRESETS.keys()),
+                    easing_presets=list(EASING_PRESETS.keys()),
+                    workflow_options=get_workflow_status_options(current_user),
+                    versions=versions,
+                    raw_json=raw_json,
+                )
+        else:
+            tokens_payload, errors = visual_config_to_tokens(request.form, new_theme_mode)
+            if errors:
+                for err in errors:
+                    flash(err, 'danger')
+                visual_config = tokens_to_visual_config(tokens_payload)
+                versions = []
+                if item:
+                    versions = AcpThemeTokenVersion.query.filter_by(
+                        token_set_id=item.id
+                    ).order_by(AcpThemeTokenVersion.version_number.desc()).limit(12).all()
+                return render_template(
+                    'admin/appearance.html',
+                    item=item, visual_config=visual_config, theme_mode=new_theme_mode,
+                    font_names=FONT_NAMES, color_vars=APPEARANCE_COLOR_VARS,
+                    shadow_presets=list(SHADOW_PRESETS.keys()),
+                    speed_presets=list(SPEED_PRESETS.keys()),
+                    easing_presets=list(EASING_PRESETS.keys()),
+                    workflow_options=get_workflow_status_options(current_user),
+                    versions=versions,
+                    raw_json=_safe_json_dumps(tokens_payload, {}),
+                )
+
+        # Save theme_mode and google_fonts_url to SiteSettings
+        _save_site_setting('theme_mode', new_theme_mode)
+
+        # Build Google Fonts URL from font selections
+        body_font = request.form.get('body_font', 'Manrope')
+        heading_font = request.form.get('heading_font', 'Sora')
+        slogan_font = request.form.get('slogan_font', 'Orbitron')
+        fonts_url = build_google_fonts_url(body_font, heading_font, slogan_font)
+        _save_site_setting('google_fonts_url', fonts_url)
+
+        tokens_json_str = _safe_json_dumps(tokens_payload, {})
+
+        if item:
+            before_state = _serialize_acp_theme_token_set(item)
+            item.tokens_json = tokens_json_str
+            item.updated_by_id = current_user.id
+            ok, workflow_error = _apply_acp_workflow(
+                item,
+                request.form.get('workflow_status') or item.status,
+                request.form.get('scheduled_publish_at'),
+            )
+            if not ok:
+                flash(workflow_error, 'danger')
+                visual_config = tokens_to_visual_config(tokens_payload)
+                versions = AcpThemeTokenVersion.query.filter_by(
+                    token_set_id=item.id
+                ).order_by(AcpThemeTokenVersion.version_number.desc()).limit(12).all()
+                return render_template(
+                    'admin/appearance.html',
+                    item=item, visual_config=visual_config, theme_mode=new_theme_mode,
+                    font_names=FONT_NAMES, color_vars=APPEARANCE_COLOR_VARS,
+                    shadow_presets=list(SHADOW_PRESETS.keys()),
+                    speed_presets=list(SPEED_PRESETS.keys()),
+                    easing_presets=list(EASING_PRESETS.keys()),
+                    workflow_options=get_workflow_status_options(current_user),
+                    versions=versions,
+                    raw_json=tokens_json_str,
+                )
+            _create_theme_token_version(item, note=change_note or 'Appearance updated')
+            _create_acp_audit_event('theme', 'update', 'acp_theme_token_set', item.key, before_state, _serialize_acp_theme_token_set(item))
+        else:
+            item = AcpThemeTokenSet(
+                key='default',
+                name='Default Theme',
+                tokens_json=tokens_json_str,
+                created_by_id=current_user.id,
+                updated_by_id=current_user.id,
+            )
+            ok, workflow_error = _apply_acp_workflow(
+                item,
+                request.form.get('workflow_status'),
+                request.form.get('scheduled_publish_at'),
+            )
+            if not ok:
+                flash(workflow_error, 'danger')
+                visual_config = tokens_to_visual_config(tokens_payload)
+                return render_template(
+                    'admin/appearance.html',
+                    item=None, visual_config=visual_config, theme_mode=new_theme_mode,
+                    font_names=FONT_NAMES, color_vars=APPEARANCE_COLOR_VARS,
+                    shadow_presets=list(SHADOW_PRESETS.keys()),
+                    speed_presets=list(SPEED_PRESETS.keys()),
+                    easing_presets=list(EASING_PRESETS.keys()),
+                    workflow_options=get_workflow_status_options(current_user),
+                    versions=[],
+                    raw_json=tokens_json_str,
+                )
+            db.session.add(item)
+            db.session.flush()
+            _create_theme_token_version(item, note=change_note or 'Initial appearance')
+            _create_acp_audit_event('theme', 'create', 'acp_theme_token_set', item.key, {}, _serialize_acp_theme_token_set(item))
+
+        db.session.commit()
+        flash('Site appearance saved.', 'success')
+        return redirect(url_for('admin.appearance'))
+
+    # GET
+    tokens_dict = _safe_json_loads(item.tokens_json, {}) if item else APPEARANCE_DEFAULTS
+    visual_config = tokens_to_visual_config(tokens_dict)
+    versions = []
+    if item:
+        versions = AcpThemeTokenVersion.query.filter_by(
+            token_set_id=item.id
+        ).order_by(AcpThemeTokenVersion.version_number.desc()).limit(12).all()
+    return render_template(
+        'admin/appearance.html',
+        item=item,
+        visual_config=visual_config,
+        theme_mode=current_theme_mode,
+        font_names=FONT_NAMES,
+        color_vars=APPEARANCE_COLOR_VARS,
+        shadow_presets=list(SHADOW_PRESETS.keys()),
+        speed_presets=list(SPEED_PRESETS.keys()),
+        easing_presets=list(EASING_PRESETS.keys()),
+        workflow_options=get_workflow_status_options(current_user),
+        versions=versions,
+        raw_json=_safe_json_dumps(tokens_dict, {}),
+    )
 
 
 # Admin Users

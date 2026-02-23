@@ -1,0 +1,539 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Site Appearance{% endblock %}
+
+{% block content %}
+<!-- Live Preview Strip -->
+<div class="card mb-3" id="preview-strip">
+  <div class="card-header"><strong><i class="fa-solid fa-eye me-1"></i>Live Preview</strong></div>
+  <div class="card-body" id="preview-container" style="border-radius: var(--radius-md); overflow: hidden;">
+    <div class="d-flex flex-wrap align-items-center gap-3">
+      <div style="width: 180px; padding: 16px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-soft);" id="preview-card">
+        <h6 style="font-family: var(--font-heading, 'Sora', sans-serif); color: var(--text); margin: 0 0 6px 0;">Card Heading</h6>
+        <p style="font-family: var(--font-body, 'Manrope', sans-serif); color: var(--text-muted); font-size: 0.85rem; margin: 0;">Sample text</p>
+      </div>
+      <div class="d-flex flex-column gap-2">
+        <span style="font-family: var(--font-slogan, 'Orbitron', sans-serif); background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 700; font-size: 1.1rem;">SLOGAN FONT</span>
+        <button type="button" style="background: var(--gradient-main); color: #fff; border: none; padding: 8px 20px; border-radius: var(--btn-radius, 999px); font-family: var(--font-body, 'Manrope', sans-serif); font-weight: 600; font-size: 0.85rem; box-shadow: var(--shadow);" class="align-self-start">Button</button>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <span style="display:inline-block;width:32px;height:32px;border-radius:var(--radius-sm);background:var(--accent-cyan);" title="Accent Primary"></span>
+        <span style="display:inline-block;width:32px;height:32px;border-radius:var(--radius-sm);background:var(--accent-electric);" title="Accent Electric"></span>
+        <span style="display:inline-block;width:32px;height:32px;border-radius:var(--radius-sm);background:var(--accent-sky);" title="Accent Sky"></span>
+        <span style="display:inline-block;width:32px;height:32px;border-radius:var(--radius-sm);background:var(--landing-accent-a);" title="Landing A"></span>
+        <span style="display:inline-block;width:32px;height:32px;border-radius:var(--radius-sm);background:var(--landing-accent-b);" title="Landing B"></span>
+        <span style="display:inline-block;width:32px;height:32px;border-radius:var(--radius-sm);background:var(--landing-accent-c);" title="Landing C"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="POST" id="appearance-form">
+{{ csrf_input() }}
+<input type="hidden" name="use_raw_json" id="use-raw-json-flag" value="0">
+
+<!-- Tab Navigation -->
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="tab-colors" data-bs-toggle="tab" data-bs-target="#panel-colors" type="button" role="tab" aria-controls="panel-colors" aria-selected="true"><i class="fa-solid fa-palette me-1"></i>Theme &amp; Colors</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-typography" data-bs-toggle="tab" data-bs-target="#panel-typography" type="button" role="tab" aria-controls="panel-typography" aria-selected="false"><i class="fa-solid fa-font me-1"></i>Typography</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-layout" data-bs-toggle="tab" data-bs-target="#panel-layout" type="button" role="tab" aria-controls="panel-layout" aria-selected="false"><i class="fa-solid fa-border-all me-1"></i>Layout &amp; Effects</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-animations" data-bs-toggle="tab" data-bs-target="#panel-animations" type="button" role="tab" aria-controls="panel-animations" aria-selected="false"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Animations</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-advanced" data-bs-toggle="tab" data-bs-target="#panel-advanced" type="button" role="tab" aria-controls="panel-advanced" aria-selected="false"><i class="fa-solid fa-code me-1"></i>Advanced (JSON)</button>
+  </li>
+</ul>
+
+<!-- Tab Panels -->
+<div class="tab-content">
+  <!-- ===== THEME & COLORS ===== -->
+  <div class="tab-pane fade show active" id="panel-colors" role="tabpanel" aria-labelledby="tab-colors">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Theme Mode</strong></div>
+      <div class="card-body">
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="theme_mode" id="theme-dark" value="dark" {% if theme_mode == 'dark' %}checked{% endif %}>
+            <label class="form-check-label" for="theme-dark"><i class="fa-solid fa-moon me-1"></i>Dark</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="theme_mode" id="theme-light" value="light" {% if theme_mode == 'light' %}checked{% endif %}>
+            <label class="form-check-label" for="theme-light"><i class="fa-solid fa-sun me-1"></i>Light</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><strong>Colors</strong></div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% set current_group = {'name': ''} %}
+          {% for cv in color_vars %}
+            {% if cv.group != current_group.name %}
+              {% if current_group.update({'name': cv.group}) %}{% endif %}
+              {% if not loop.first %}</div><div class="row g-3 mt-1">{% endif %}
+              <div class="col-12"><small class="text-muted fw-semibold text-uppercase">{{ cv.group }}</small></div>
+            {% endif %}
+            <div class="col-md-4 col-lg-3">
+              <label class="form-label small">{{ cv.label }}</label>
+              <div class="d-flex gap-2 align-items-center">
+                {% set cur_val = visual_config.get(cv.var, cv.default_dark) %}
+                {% set is_hex = cur_val.startswith('#') and cur_val|length <= 9 %}
+                <input type="color" class="form-control form-control-color appearance-color-picker" value="{{ cur_val if is_hex else cv.default_dark }}" data-target="{{ cv.var }}" style="width:42px;height:38px;">
+                <input type="text" class="form-control form-control-sm appearance-color-text" name="{{ cv.var }}" value="{{ cur_val }}" data-var="{{ cv.var }}" style="font-family:monospace; font-size:0.8rem;">
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><strong>Main Gradient</strong></div>
+      <div class="card-body">
+        <label class="form-label small">Gradient CSS Value</label>
+        <input type="text" class="form-control form-control-sm font-monospace" name="--gradient-main" id="gradient-main" value="{{ visual_config.get('--gradient-main', '') }}">
+        <div class="mt-2 rounded" id="gradient-preview" style="height:40px;border-radius:var(--radius-sm);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TYPOGRAPHY ===== -->
+  <div class="tab-pane fade" id="panel-typography" role="tabpanel" aria-labelledby="tab-typography">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Font Families</strong></div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Body Font</label>
+            <select class="form-select" name="body_font" id="body-font">
+              {% for font in font_names %}
+              <option value="{{ font }}" {% if visual_config.get('body_font') == font %}selected{% endif %}>{{ font }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Heading Font</label>
+            <select class="form-select" name="heading_font" id="heading-font">
+              {% for font in font_names %}
+              <option value="{{ font }}" {% if visual_config.get('heading_font') == font %}selected{% endif %}>{{ font }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Slogan Font</label>
+            <select class="form-select" name="slogan_font" id="slogan-font">
+              {% for font in font_names %}
+              <option value="{{ font }}" {% if visual_config.get('slogan_font') == font %}selected{% endif %}>{{ font }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><strong>Base Font Size</strong></div>
+      <div class="card-body">
+        <label class="form-label">Size: <span id="font-size-val">{{ visual_config.get('base_font_size', 16) }}</span>px</label>
+        <input type="range" class="form-range" name="base_font_size" id="base-font-size" min="14" max="18" step="1" value="{{ visual_config.get('base_font_size', 16) }}">
+        <div class="d-flex justify-content-between small text-muted"><span>14px</span><span>18px</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LAYOUT & EFFECTS ===== -->
+  <div class="tab-pane fade" id="panel-layout" role="tabpanel" aria-labelledby="tab-layout">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Border Radius</strong></div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">Large: <span id="radius-lg-val">{{ visual_config.get('--radius-lg', 24) }}</span>px</label>
+            <input type="range" class="form-range" name="--radius-lg" id="radius-lg" min="4" max="48" step="1" value="{{ visual_config.get('--radius-lg', 24) }}">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">Medium: <span id="radius-md-val">{{ visual_config.get('--radius-md', 18) }}</span>px</label>
+            <input type="range" class="form-range" name="--radius-md" id="radius-md" min="4" max="30" step="1" value="{{ visual_config.get('--radius-md', 18) }}">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">Small: <span id="radius-sm-val">{{ visual_config.get('--radius-sm', 14) }}</span>px</label>
+            <input type="range" class="form-range" name="--radius-sm" id="radius-sm" min="2" max="20" step="1" value="{{ visual_config.get('--radius-sm', 14) }}">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label">Button: <span id="btn-radius-val">{{ visual_config.get('--btn-radius', 999) }}</span>px</label>
+            <input type="range" class="form-range" name="--btn-radius" id="btn-radius" min="0" max="999" step="1" value="{{ visual_config.get('--btn-radius', 999) }}">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header"><strong>Shadow Intensity</strong></div>
+      <div class="card-body">
+        <div class="d-flex gap-3 flex-wrap">
+          {% for sp in shadow_presets %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="shadow_preset" id="shadow-{{ sp }}" value="{{ sp }}" {% if visual_config.get('shadow_preset') == sp %}checked{% endif %}>
+            <label class="form-check-label" for="shadow-{{ sp }}">{{ sp|capitalize }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ANIMATIONS ===== -->
+  <div class="tab-pane fade" id="panel-animations" role="tabpanel" aria-labelledby="tab-animations">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Motion Settings</strong></div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="motion_enabled" id="motion-enabled" value="1" {% if visual_config.get('motion_enabled', True) %}checked{% endif %}>
+              <label class="form-check-label" for="motion-enabled">Enable Animations</label>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Speed</label>
+            <div class="d-flex gap-3">
+              {% for sp in speed_presets %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="motion_speed" id="speed-{{ sp }}" value="{{ sp }}" {% if visual_config.get('motion_speed') == sp %}checked{% endif %}>
+                <label class="form-check-label" for="speed-{{ sp }}">{{ sp|capitalize }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Easing</label>
+            <div class="d-flex gap-3">
+              {% for ep in easing_presets %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="motion_easing" id="easing-{{ ep }}" value="{{ ep }}" {% if visual_config.get('motion_easing') == ep %}checked{% endif %}>
+                <label class="form-check-label" for="easing-{{ ep }}">{{ ep|capitalize }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADVANCED JSON ===== -->
+  <div class="tab-pane fade" id="panel-advanced" role="tabpanel" aria-labelledby="tab-advanced">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Raw JSON Editor</strong>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-sync-to-json"><i class="fa-solid fa-arrow-right me-1"></i>Visual → JSON</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-sync-from-json"><i class="fa-solid fa-arrow-left me-1"></i>JSON → Visual</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <textarea class="form-control font-monospace" name="tokens_json" id="tokens-json" rows="16" style="font-size: 0.8rem;">{{ raw_json }}</textarea>
+        <div class="small text-muted mt-2">Edit raw token JSON directly. Use the sync buttons to transfer between visual controls and JSON.</div>
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="submit-raw-json">
+          <label class="form-check-label small" for="submit-raw-json">Save using raw JSON (overrides visual controls)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Workflow Controls -->
+<div class="card mb-3">
+  <div class="card-header"><strong>Save &amp; Workflow</strong></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Workflow Status</label>
+        <select class="form-select" name="workflow_status">
+          {% set selected_status = item.status if item else 'draft' %}
+          {% for status in workflow_options %}
+          <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ workflow_status_label(status) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Scheduled Publish</label>
+        <input class="form-control" type="datetime-local" name="scheduled_publish_at" value="{{ format_datetime_local(item.scheduled_publish_at) if item and item.scheduled_publish_at else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Change Note</label>
+        <input class="form-control" name="change_note" placeholder="What changed?">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary w-100" type="submit"><i class="fa-solid fa-floppy-disk me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+</form>
+
+<!-- Version History -->
+{% if item and versions %}
+<div class="card">
+  <div class="card-header"><strong>Version History</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Note</th>
+            <th>Created</th>
+            <th>User</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for version in versions %}
+          <tr>
+            <td>#{{ version.version_number }}</td>
+            <td>{{ version.change_note or '—' }}</td>
+            <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else '—' }}</td>
+            <td>{{ version.created_by_id or 'system' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted">No versions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+(function() {
+  "use strict";
+
+  var previewContainer = document.getElementById('preview-container');
+
+  // Helper: set a CSS variable on the preview strip
+  function setPreviewVar(name, value) {
+    if (previewContainer) {
+      previewContainer.style.setProperty(name, value);
+    }
+  }
+
+  // --- Color pickers: sync color input <-> text input, update preview ---
+  var colorPickers = document.querySelectorAll('.appearance-color-picker');
+  var colorTexts = document.querySelectorAll('.appearance-color-text');
+
+  colorPickers.forEach(function(picker) {
+    picker.addEventListener('input', function() {
+      var varName = picker.getAttribute('data-target');
+      var textInput = document.querySelector('.appearance-color-text[data-var="' + varName + '"]');
+      if (textInput) textInput.value = picker.value;
+      setPreviewVar(varName, picker.value);
+    });
+  });
+
+  colorTexts.forEach(function(textInput) {
+    textInput.addEventListener('input', function() {
+      var varName = textInput.getAttribute('data-var');
+      var picker = document.querySelector('.appearance-color-picker[data-target="' + varName + '"]');
+      var val = textInput.value.trim();
+      if (picker && /^#[0-9a-fA-F]{3,8}$/.test(val)) {
+        picker.value = val.length <= 7 ? val : val.substring(0, 7);
+      }
+      setPreviewVar(varName, val);
+    });
+  });
+
+  // --- Gradient preview ---
+  var gradientInput = document.getElementById('gradient-main');
+  var gradientPreview = document.getElementById('gradient-preview');
+  function updateGradientPreview() {
+    if (gradientInput && gradientPreview) {
+      gradientPreview.style.background = gradientInput.value;
+      setPreviewVar('--gradient-main', gradientInput.value);
+    }
+  }
+  if (gradientInput) {
+    gradientInput.addEventListener('input', updateGradientPreview);
+    updateGradientPreview();
+  }
+
+  // --- Range sliders: update value display & preview ---
+  var rangeSliders = [
+    {id: 'radius-lg', varName: '--radius-lg', valId: 'radius-lg-val', unit: 'px'},
+    {id: 'radius-md', varName: '--radius-md', valId: 'radius-md-val', unit: 'px'},
+    {id: 'radius-sm', varName: '--radius-sm', valId: 'radius-sm-val', unit: 'px'},
+    {id: 'btn-radius', varName: '--btn-radius', valId: 'btn-radius-val', unit: 'px'},
+    {id: 'base-font-size', varName: null, valId: 'font-size-val', unit: 'px'}
+  ];
+  rangeSliders.forEach(function(cfg) {
+    var slider = document.getElementById(cfg.id);
+    var display = document.getElementById(cfg.valId);
+    if (slider) {
+      slider.addEventListener('input', function() {
+        if (display) display.textContent = slider.value;
+        if (cfg.varName) setPreviewVar(cfg.varName, slider.value + cfg.unit);
+      });
+    }
+  });
+
+  // --- Font selectors: update preview ---
+  var fontSelectors = [
+    {id: 'body-font', varName: '--font-body', fallback: '-apple-system, BlinkMacSystemFont, sans-serif'},
+    {id: 'heading-font', varName: '--font-heading', fallback: '-apple-system, sans-serif'},
+    {id: 'slogan-font', varName: '--font-slogan', fallback: '-apple-system, sans-serif'}
+  ];
+  fontSelectors.forEach(function(cfg) {
+    var sel = document.getElementById(cfg.id);
+    if (sel) {
+      sel.addEventListener('change', function() {
+        setPreviewVar(cfg.varName, "'" + sel.value + "', " + cfg.fallback);
+      });
+    }
+  });
+
+  // --- Submit raw JSON flag ---
+  var rawJsonCheckbox = document.getElementById('submit-raw-json');
+  var rawJsonFlag = document.getElementById('use-raw-json-flag');
+  if (rawJsonCheckbox && rawJsonFlag) {
+    rawJsonCheckbox.addEventListener('change', function() {
+      rawJsonFlag.value = rawJsonCheckbox.checked ? '1' : '0';
+    });
+  }
+
+  // --- Sync: Visual -> JSON ---
+  var btnSyncToJson = document.getElementById('btn-sync-to-json');
+  if (btnSyncToJson) {
+    btnSyncToJson.addEventListener('click', function() {
+      var cssVars = {};
+      colorTexts.forEach(function(input) {
+        cssVars[input.name] = input.value;
+      });
+      // Add radius values
+      ['--radius-lg', '--radius-md', '--radius-sm', '--btn-radius'].forEach(function(name) {
+        var el = document.querySelector('input[name="' + name + '"]');
+        if (el) cssVars[name] = el.value + 'px';
+      });
+      // Add gradient
+      if (gradientInput) cssVars['--gradient-main'] = gradientInput.value;
+      // Fonts
+      fontSelectors.forEach(function(cfg) {
+        var sel = document.getElementById(cfg.id);
+        if (sel) cssVars[cfg.varName] = "'" + sel.value + "', " + cfg.fallback;
+      });
+
+      var tokens = {
+        css_vars: cssVars,
+        typography: {
+          base_font_size: (document.getElementById('base-font-size') || {}).value + 'px'
+        },
+        motion: {
+          enabled: document.getElementById('motion-enabled') ? document.getElementById('motion-enabled').checked : true,
+          speed: (document.querySelector('input[name="motion_speed"]:checked') || {}).value || 'normal',
+          easing: (document.querySelector('input[name="motion_easing"]:checked') || {}).value || 'standard'
+        }
+      };
+      var textarea = document.getElementById('tokens-json');
+      if (textarea) textarea.value = JSON.stringify(tokens, null, 2);
+    });
+  }
+
+  // --- Sync: JSON -> Visual ---
+  var btnSyncFromJson = document.getElementById('btn-sync-from-json');
+  if (btnSyncFromJson) {
+    btnSyncFromJson.addEventListener('click', function() {
+      var textarea = document.getElementById('tokens-json');
+      if (!textarea) return;
+      var tokens;
+      try {
+        tokens = JSON.parse(textarea.value);
+      } catch(e) {
+        alert('Invalid JSON: ' + e.message);
+        return;
+      }
+      var cssVars = tokens.css_vars || {};
+
+      // Colors
+      colorTexts.forEach(function(input) {
+        var varName = input.getAttribute('data-var');
+        if (cssVars[varName] !== undefined) {
+          input.value = cssVars[varName];
+          var picker = document.querySelector('.appearance-color-picker[data-target="' + varName + '"]');
+          var val = cssVars[varName];
+          if (picker && /^#[0-9a-fA-F]{3,8}$/.test(val)) {
+            picker.value = val.length <= 7 ? val : val.substring(0, 7);
+          }
+          setPreviewVar(varName, val);
+        }
+      });
+
+      // Radius
+      ['--radius-lg', '--radius-md', '--radius-sm', '--btn-radius'].forEach(function(name) {
+        var raw = cssVars[name] || '';
+        var num = parseInt(String(raw).replace('px', ''), 10);
+        var slider = document.querySelector('input[name="' + name + '"]');
+        if (slider && !isNaN(num)) {
+          slider.value = num;
+          var display = document.getElementById(name.replace('--', '') + '-val');
+          if (display) display.textContent = num;
+          setPreviewVar(name, num + 'px');
+        }
+      });
+
+      // Gradient
+      if (gradientInput && cssVars['--gradient-main']) {
+        gradientInput.value = cssVars['--gradient-main'];
+        updateGradientPreview();
+      }
+
+      // Fonts
+      fontSelectors.forEach(function(cfg) {
+        var raw = cssVars[cfg.varName] || '';
+        var firstFont = raw.split(',')[0].trim().replace(/'/g, '');
+        var sel = document.getElementById(cfg.id);
+        if (sel) {
+          for (var i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === firstFont) {
+              sel.value = firstFont;
+              setPreviewVar(cfg.varName, raw);
+              break;
+            }
+          }
+        }
+      });
+
+      // Typography
+      var typo = tokens.typography || {};
+      var baseFontSize = parseInt(String(typo.base_font_size || '16px').replace('px', ''), 10);
+      var fontSizeSlider = document.getElementById('base-font-size');
+      if (fontSizeSlider && !isNaN(baseFontSize)) {
+        fontSizeSlider.value = baseFontSize;
+        var fontSizeVal = document.getElementById('font-size-val');
+        if (fontSizeVal) fontSizeVal.textContent = baseFontSize;
+      }
+
+      // Motion
+      var motion = tokens.motion || {};
+      var motionEnabled = document.getElementById('motion-enabled');
+      if (motionEnabled) motionEnabled.checked = motion.enabled !== false;
+      if (motion.speed) {
+        var speedRadio = document.getElementById('speed-' + motion.speed);
+        if (speedRadio) speedRadio.checked = true;
+      }
+      if (motion.easing) {
+        var easingRadio = document.getElementById('easing-' + motion.easing);
+        if (easingRadio) easingRadio.checked = true;
+      }
+    });
+  }
+
+})();
+</script>
+{% endblock %}

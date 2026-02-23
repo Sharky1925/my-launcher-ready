@@ -361,13 +361,24 @@ def create_app(config_overrides=None):
             theme_css_vars = _get_active_theme_css_vars()
         except Exception:
             theme_css_vars = {}
+        try:
+            _all_settings = get_site_settings()
+            theme_mode_val = (_all_settings.get('theme_mode') or '').strip().lower()
+            theme_mode = theme_mode_val if theme_mode_val in ('dark', 'light') else 'dark'
+            google_fonts_url = (_all_settings.get('google_fonts_url') or '').strip()
+        except Exception:
+            _all_settings = {}
+            theme_mode = 'dark'
+            google_fonts_url = ''
         return dict(
-            site_settings=get_site_settings(),
+            site_settings=_all_settings or get_site_settings(),
             nav_professional=nav_professional,
             nav_repair=nav_repair,
             nav_industries=nav_industries,
             footer_content=footer_content,
             theme_css_vars=theme_css_vars,
+            theme_mode=theme_mode,
+            google_fonts_url=google_fonts_url,
             csrf_token=get_csrf_token,
             csrf_input=csrf_input,
             csp_nonce=get_csp_nonce(),

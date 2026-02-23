@@ -65,6 +65,78 @@
   --font-slogan: 'Orbitron', 'Sora', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* ============================================================
+   Light Theme Overrides
+   ============================================================ */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-alt: #f1f5f9;
+  --surface-glass: linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(241, 245, 249, 0.8));
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: rgba(15, 23, 42, 0.12);
+  --header-bg: rgba(248, 250, 252, 0.92);
+  --topbar-bg: rgba(241, 245, 249, 0.9);
+  --topbar-text: #475569;
+  --white: #ffffff;
+
+  --blue-600: #2f52ff;
+  --blue-500: #4f7bff;
+  --blue-400: #7ba6ff;
+  --slate-950: #f8fafc;
+  --slate-900: #f1f5f9;
+  --slate-800: #e2e8f0;
+  --slate-700: #cbd5e1;
+  --slate-600: #94a3b8;
+
+  --shadow: 0 16px 36px -20px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 34px 88px -34px rgba(0, 0, 0, 0.12);
+  --shadow-soft: 0 10px 22px -14px rgba(0, 0, 0, 0.06);
+  --shadow-strong: 0 42px 96px -38px rgba(0, 0, 0, 0.16);
+
+  --accent-cyan: #3b6cf5;
+  --accent-electric: #5b8af5;
+  --accent-sky: #4a75e8;
+
+  --gradient-main: linear-gradient(132deg, #dbeafe 0%, #3b82f6 45%, #60a5fa 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.12), transparent 62%);
+  --gradient-vibrant: linear-gradient(135deg, #3b82f6 0%, #60a5fa 52%, #93c5fd 100%);
+  --gradient-vibrant-alt: linear-gradient(135deg, #14b8a6 0%, #3b82f6 52%, #a855f7 100%);
+  --gradient-hero: linear-gradient(180deg, rgba(248, 250, 252, 0) 0%, rgba(241, 245, 249, 0.9) 100%);
+  --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #eff6ff 48%, #e0f2fe 100%);
+  --landing-accent-a: #3b6cf5;
+  --landing-accent-b: #0ea5e9;
+  --landing-accent-c: #7c9cf5;
+  --landing-accent-a-rgb: 59 108 245;
+  --landing-accent-b-rgb: 14 165 233;
+  --landing-accent-c-rgb: 124 156 245;
+
+  --btn-border-soft: rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="light"] .ambient-orb {
+  opacity: 0.15;
+}
+[data-theme="light"] .ambient-orb--one {
+  background: radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0));
+}
+[data-theme="light"] .ambient-orb--two {
+  background: radial-gradient(circle at 50% 55%, rgba(168, 85, 247, 0.08), rgba(168, 85, 247, 0));
+}
+[data-theme="light"] .ambient-grid {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+  opacity: 0.25;
+}
+[data-theme="light"] .hero-glow,
+[data-theme="light"] .hero-glow-2 {
+  opacity: 0.08;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 html {

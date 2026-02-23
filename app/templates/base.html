@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark" data-theme="dark">
+<html lang="en" data-bs-theme="{{ theme_mode|default('dark') }}" data-theme="{{ theme_mode|default('dark') }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,7 +33,11 @@
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
   <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+  {% if google_fonts_url %}
+  <link href="{{ google_fonts_url }}" rel="stylesheet">
+  {% else %}
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  {% endif %}
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
   <link rel="alternate icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.svg') }}">
@@ -46,6 +50,9 @@
     {% for key, value in theme_css_vars.items() %}
     {{ key }}: {{ value }};
     {% endfor %}
+    {% if theme_mode|default('dark') == 'light' %}
+    color-scheme: light;
+    {% endif %}
   }
   </style>
   {% endif %}
