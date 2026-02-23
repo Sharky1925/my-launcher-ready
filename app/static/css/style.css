@@ -1168,6 +1168,42 @@ p { margin: 0 0 16px; }
   row-gap: 16px;
   align-content: start;
 }
+/* Hero — centered text + full-width card grid layout */
+.hero-command-top {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 48px;
+}
+.hero-command-top .signal-strip { justify-content: center; }
+.hero-command-top .hero-badge { display: inline-flex; }
+.hero-command-top .hero-buttons--landing { justify-content: center; }
+.hero-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+.hero-cards-grid .hero-icon-card {
+  min-height: 210px;
+  padding: 28px 22px;
+}
+.hero-cards-grid .hero-icon-card .hic-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  font-size: 1.6rem;
+  margin-bottom: 16px;
+}
+.hero-cards-grid .hero-icon-card h4 {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+.hero-cards-grid .hero-icon-card p {
+  font-size: 0.9rem;
+}
 .hero-icon-card {
   background: rgba(14, 22, 35, 0.92);
   backdrop-filter: blur(18px);
@@ -5214,6 +5250,26 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
   .hero--command .hero-icon-card {
     min-height: 130px;
+  }
+  .hero-command-top {
+    margin-bottom: 32px;
+    text-align: left;
+  }
+  .hero-command-top .signal-strip { justify-content: flex-start; }
+  .hero-command-top .hero-buttons--landing { justify-content: stretch; }
+  .hero-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .hero-cards-grid .hero-icon-card {
+    min-height: 150px;
+    padding: 20px 16px;
+  }
+  .hero-cards-grid .hero-icon-card .hic-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
   }
   .service-card .card-link {
     width: 100%;

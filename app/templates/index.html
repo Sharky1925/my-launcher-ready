@@ -24,36 +24,32 @@
     <div class="hero-slogan-landing reveal reveal-scale">
       {% include "_hero_slogan.html" %}
     </div>
-    <div class="row align-items-start g-4 hero-command-row">
-      <div class="col-12 col-lg-6 hero-content">
-        <div class="signal-strip" aria-hidden="true">
-          {% for pill in cb.get('signal_pills', {}).get('items', ['OC RESPONSE < 2H', '24/7 MONITORING', 'SECURITY-FIRST']) %}
-          <span class="signal-pill">{{ pill }}</span>
-          {% endfor %}
-        </div>
-        <div class="hero-badge"><span class="pulse-dot"></span> {{ cb.get('hero', {}).get('badge', 'Managed IT + Technical Repair for Orange County') }}</div>
-        <h1>{{ cb.get('hero', {}).get('title', 'Managed IT Services & Technical Repair Services in Orange County') }}</h1>
-        <p class="lead">{{ cb.get('hero', {}).get('lead', 'One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.') }}</p>
-        <div class="hero-buttons hero-buttons--landing">
-          <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Book Free Consultation</a>
-          <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
-          <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger" aria-label="Send a support message"><i class="fa-solid fa-envelope"></i> Send Message</a>
-          {% if site_settings.get('phone') %}
-          <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-call" aria-label="Call support at {{ site_settings.get('phone', 'our office') }}"><i class="fa-solid fa-phone"></i> Call Support</a>
-          {% endif %}
-        </div>
+    <div class="hero-command-top">
+      <div class="signal-strip" aria-hidden="true">
+        {% for pill in cb.get('signal_pills', {}).get('items', ['OC RESPONSE < 2H', '24/7 MONITORING', 'SECURITY-FIRST']) %}
+        <span class="signal-pill">{{ pill }}</span>
+        {% endfor %}
       </div>
-      <div class="col-12 col-lg-5 ms-lg-auto hero-visual hero-visual--command">
-        <div class="hero-visual-grid">
-          {% for card in hero_cards %}
-          <a class="hero-icon-card" href="{{ card.href }}" aria-label="{{ card.aria_label }}">
-            <div class="hic-icon {{ card.color }}"><i class="{{ card.icon }}"></i></div>
-            <h4>{{ card.title }}</h4>
-            <p>{{ card.subtitle }}</p>
-          </a>
-          {% endfor %}
-        </div>
+      <div class="hero-badge"><span class="pulse-dot"></span> {{ cb.get('hero', {}).get('badge', 'Managed IT + Technical Repair for Orange County') }}</div>
+      <h1>{{ cb.get('hero', {}).get('title', 'Managed IT Services & Technical Repair Services in Orange County') }}</h1>
+      <p class="lead">{{ cb.get('hero', {}).get('lead', 'One local team for proactive managed IT, cybersecurity, cloud, software, and fast device repair. Your all-in-one tech and repair shop for reliable business uptime.') }}</p>
+      <div class="hero-buttons hero-buttons--landing">
+        <a href="{{ url_for('main.contact') }}?subject=Free+Consultation" class="btn btn-primary"><i class="fa-solid fa-calendar-check"></i> Book Free Consultation</a>
+        <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+        <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger" aria-label="Send a support message"><i class="fa-solid fa-envelope"></i> Send Message</a>
+        {% if site_settings.get('phone') %}
+        <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-call" aria-label="Call support at {{ site_settings.get('phone', 'our office') }}"><i class="fa-solid fa-phone"></i> Call Support</a>
+        {% endif %}
       </div>
+    </div>
+    <div class="hero-cards-grid reveal">
+      {% for card in hero_cards %}
+      <a class="hero-icon-card" href="{{ card.href }}" aria-label="{{ card.aria_label }}">
+        <div class="hic-icon {{ card.color }}"><i class="{{ card.icon }}"></i></div>
+        <h4>{{ card.title }}</h4>
+        <p>{{ card.subtitle }}</p>
+      </a>
+      {% endfor %}
     </div>
 
     <!-- Trust Signal Ticker -->
