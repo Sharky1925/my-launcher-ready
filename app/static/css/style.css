@@ -6397,3 +6397,450 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   }
 }
+
+/* ============================================================
+   Light Theme — Service Detail Components
+   ============================================================ */
+
+/* --- Service Tool Pills --- */
+[data-theme="light"] .service-tool-pill {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(132deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.08));
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .service-tool-pill i {
+  color: var(--blue-600);
+}
+[data-theme="light"] .service-tool-pill:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .service-tool-pill:nth-child(3n+2) {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: linear-gradient(132deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.08));
+}
+[data-theme="light"] .service-tool-pill:nth-child(3n+2) i {
+  color: #059669;
+}
+[data-theme="light"] .service-tool-pill:nth-child(3n+3) {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(132deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.08));
+}
+[data-theme="light"] .service-tool-pill:nth-child(3n+3) i {
+  color: #d97706;
+}
+
+/* --- Service Outcome Card --- */
+[data-theme="light"] .service-outcome-card {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .service-outcome-card::before {
+  background: radial-gradient(circle at 20% 0%, rgba(59, 130, 246, 0.06), transparent 58%);
+}
+[data-theme="light"] .service-outcome-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .service-outcome-icon {
+  color: #fff;
+  border-color: rgba(59, 130, 246, 0.4);
+  background: linear-gradient(132deg, rgba(59, 130, 246, 0.8), rgba(96, 165, 250, 0.7));
+}
+[data-theme="light"] .service-outcome-label {
+  color: var(--text);
+}
+
+/* --- Service FAQ --- */
+[data-theme="light"] .service-faq-item {
+  border-color: var(--border);
+  background: var(--surface);
+}
+[data-theme="light"] .service-faq-item summary {
+  color: var(--text);
+}
+[data-theme="light"] .service-faq-item summary::after {
+  color: var(--blue-500);
+}
+
+/* --- Service Stack Items --- */
+[data-theme="light"] .service-stack-item {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+[data-theme="light"] .service-stack-item i {
+  color: var(--blue-500);
+}
+
+/* --- Service Value List --- */
+[data-theme="light"] .service-value-list li i {
+  color: #059669;
+}
+
+/* --- Lead Time Cards --- */
+[data-theme="light"] .lead-time-card {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .lead-time-card::after {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.4), rgba(59, 130, 246, 0));
+}
+[data-theme="light"] .lead-time-step {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--blue-600);
+}
+[data-theme="light"] .lead-time-icon {
+  color: #fff;
+  border-color: rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(96, 165, 250, 0.7));
+}
+[data-theme="light"] .lead-time-eta {
+  color: var(--blue-600);
+}
+
+/* --- Brand Pills --- */
+[data-theme="light"] .brand-pill {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(132deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.08));
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Brand Service Cards --- */
+[data-theme="light"] .brand-service-card {
+  border-color: var(--border);
+  background: var(--surface);
+}
+[data-theme="light"] .brand-service-card h3 {
+  color: var(--text);
+}
+
+/* --- Service Anchor Nav --- */
+[data-theme="light"] .service-anchor-nav a {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .service-anchor-nav a i {
+  color: var(--blue-500);
+}
+[data-theme="light"] .service-anchor-nav a:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: linear-gradient(132deg, rgba(59, 130, 246, 0.08), rgba(96, 165, 250, 0.06));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* --- Service Snapshot Cards --- */
+[data-theme="light"] .service-snapshot-card {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .service-snapshot-card::before {
+  background: radial-gradient(circle at 12% 0%, rgba(59, 130, 246, 0.06), transparent 56%);
+}
+[data-theme="light"] .service-snapshot-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .service-snapshot-card .snap-icon {
+  color: #fff;
+  border-color: rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(96, 165, 250, 0.7));
+}
+[data-theme="light"] .service-snapshot-card h3 {
+  color: var(--text);
+}
+
+/* --- Issue Map Cards --- */
+[data-theme="light"] .issue-map-card {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .issue-map-card::after {
+  background: linear-gradient(118deg, rgba(59, 130, 246, 0.04), transparent 60%);
+}
+[data-theme="light"] .issue-map-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .issue-map-card .issue-icon {
+  color: #fff;
+  border-color: rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(96, 165, 250, 0.7));
+}
+[data-theme="light"] .issue-map-card h3 {
+  color: var(--text);
+}
+
+/* ============================================================
+   Light Theme — Remote Support Components
+   ============================================================ */
+
+/* --- Remote Progress Strip --- */
+[data-theme="light"] .remote-progress-strip span {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+[data-theme="light"] .remote-progress-strip span strong {
+  color: var(--blue-600);
+}
+
+/* --- Remote Ticket Table --- */
+[data-theme="light"] .remote-ticket-table thead th {
+  color: var(--text-muted);
+  border-bottom-color: var(--border);
+}
+[data-theme="light"] .remote-ticket-table tbody td {
+  color: var(--text);
+  border-bottom-color: var(--border);
+}
+[data-theme="light"] .remote-ticket-table tbody tr:hover td {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+/* --- Remote Priority Badges --- */
+[data-theme="light"] .remote-priority-low {
+  color: #4b5563;
+  background: rgba(107, 114, 128, 0.1);
+  border-color: rgba(107, 114, 128, 0.25);
+}
+[data-theme="light"] .remote-priority-normal {
+  color: #1e40af;
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+[data-theme="light"] .remote-priority-high {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+[data-theme="light"] .remote-priority-critical {
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+/* --- Remote Metric Card Gradient Fix --- */
+[data-theme="light"] .remote-metric-card {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* ============================================================
+   Light Theme — Quote Components
+   ============================================================ */
+
+/* --- Quote Crosslink Banners --- */
+[data-theme="light"] .quote-crosslink-banner--personal {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.95), rgba(254, 243, 199, 0.9), rgba(255, 251, 235, 0.95));
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.08);
+}
+[data-theme="light"] .quote-crosslink-banner--personal::before {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.04), rgba(251, 191, 36, 0.03));
+}
+[data-theme="light"] .quote-crosslink-banner--personal:hover {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.12);
+}
+[data-theme="light"] .quote-crosslink-banner--personal .quote-crosslink-title {
+  color: var(--text);
+}
+
+[data-theme="light"] .quote-crosslink-banner--business {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(219, 234, 254, 0.9), rgba(239, 246, 255, 0.95));
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
+}
+[data-theme="light"] .quote-crosslink-banner--business::before {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.04), rgba(96, 165, 250, 0.03));
+}
+[data-theme="light"] .quote-crosslink-banner--business:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 8px 28px rgba(59, 130, 246, 0.12);
+}
+[data-theme="light"] .quote-crosslink-banner--business .quote-crosslink-title {
+  color: var(--text);
+}
+[data-theme="light"] .quote-crosslink-desc {
+  color: var(--text-muted);
+}
+
+/* --- Quote Toggle Switch --- */
+[data-theme="light"] .quote-toggle {
+  border-color: var(--border);
+  background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  animation: none;
+}
+[data-theme="light"] .quote-toggle-btn {
+  color: rgba(15, 23, 42, 0.5);
+}
+[data-theme="light"] .quote-toggle-btn:not(.is-active):hover {
+  color: rgba(15, 23, 42, 0.8);
+}
+[data-theme="light"] .quote-toggle-label {
+  color: var(--text-muted);
+}
+
+/* --- Quote Chooser Cards --- */
+[data-theme="light"] .quote-chooser-card--personal {
+  border-color: rgba(0, 180, 216, 0.3);
+  background: linear-gradient(135deg, rgba(236, 254, 255, 0.95), rgba(207, 250, 254, 0.9), rgba(236, 254, 255, 0.95));
+  box-shadow: 0 4px 16px rgba(0, 180, 216, 0.08);
+}
+[data-theme="light"] .quote-chooser-card--personal:hover {
+  border-color: rgba(0, 180, 216, 0.5);
+  box-shadow: 0 8px 28px rgba(0, 180, 216, 0.14);
+}
+[data-theme="light"] .quote-chooser-card--personal .quote-chooser-card-glow {
+  background: linear-gradient(135deg, rgba(0, 180, 216, 0.04), rgba(72, 232, 240, 0.03));
+}
+[data-theme="light"] .quote-chooser-card--personal .quote-chooser-badge {
+  color: #0e7490;
+}
+[data-theme="light"] .quote-chooser-card--personal .quote-chooser-title {
+  color: #155e75;
+}
+[data-theme="light"] .quote-chooser-card--personal .quote-chooser-features li i {
+  color: #0891b2;
+}
+
+[data-theme="light"] .quote-chooser-card--business {
+  border-color: rgba(107, 114, 128, 0.25);
+  background: linear-gradient(135deg, rgba(249, 250, 251, 0.95), rgba(243, 244, 246, 0.9), rgba(249, 250, 251, 0.95));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .quote-chooser-card--business:hover {
+  border-color: rgba(107, 114, 128, 0.4);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .quote-chooser-card--business .quote-chooser-card-glow {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.04), rgba(156, 163, 175, 0.03));
+}
+[data-theme="light"] .quote-chooser-card--business .quote-chooser-badge {
+  color: #4b5563;
+}
+[data-theme="light"] .quote-chooser-card--business .quote-chooser-title {
+  color: #374151;
+}
+[data-theme="light"] .quote-chooser-card--business .quote-chooser-features li i {
+  color: #6b7280;
+}
+
+/* Shared chooser light overrides */
+[data-theme="light"] .quote-chooser-desc {
+  color: var(--text-muted);
+}
+[data-theme="light"] .quote-chooser-features li {
+  color: var(--text);
+}
+
+/* ============================================================
+   Light Theme — Clean Page Variant Overrides (CRITICAL)
+   These override the hardcoded dark backgrounds in .services-page-clean,
+   .industries-page-clean, .service-detail-clean, .industry-detail-clean
+   ============================================================ */
+
+/* --- Section alt backgrounds --- */
+[data-theme="light"] .services-page-clean .section--alt,
+[data-theme="light"] .industries-page-clean .section--alt,
+[data-theme="light"] .service-detail-clean .section--alt,
+[data-theme="light"] .industry-detail-clean .section--alt {
+  background: linear-gradient(140deg, rgba(59, 130, 246, 0.04), rgba(248, 250, 252, 0.8));
+}
+[data-theme="light"] .services-page-clean .section--alt::before,
+[data-theme="light"] .industries-page-clean .section--alt::before,
+[data-theme="light"] .service-detail-clean .section--alt::before,
+[data-theme="light"] .industry-detail-clean .section--alt::before {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.04), rgba(248, 250, 252, 0.02));
+}
+
+/* --- Layout Panels (clean variant) --- */
+[data-theme="light"] .services-page-clean .services-layout-panel,
+[data-theme="light"] .industries-page-clean .industries-layout-panel {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* --- Layout Stats (clean variant) --- */
+[data-theme="light"] .services-page-clean .services-layout-stat,
+[data-theme="light"] .industries-page-clean .industries-layout-stat {
+  background: var(--surface-alt);
+  border-color: var(--border);
+}
+
+/* --- Layout Links (clean variant) --- */
+[data-theme="light"] .services-page-clean .services-layout-link,
+[data-theme="light"] .industries-page-clean .industries-layout-link {
+  background: var(--surface-alt);
+  border-color: var(--border);
+}
+[data-theme="light"] .services-page-clean .services-layout-link:hover,
+[data-theme="light"] .industries-page-clean .industries-layout-link:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+[data-theme="light"] .services-page-clean .services-layout-link--cta,
+[data-theme="light"] .industries-page-clean .industries-layout-link--cta {
+  background: linear-gradient(132deg, rgba(59, 130, 246, 0.08), rgba(96, 165, 250, 0.06));
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* --- All card types in clean variants --- */
+[data-theme="light"] .services-page-clean .service-card--services-page,
+[data-theme="light"] .industries-page-clean .industry-card--industries-page,
+[data-theme="light"] .industry-detail-clean .service-card,
+[data-theme="light"] .industry-detail-clean .challenge-card,
+[data-theme="light"] .industry-detail-clean .feature-item,
+[data-theme="light"] .service-detail-clean .challenge-card,
+[data-theme="light"] .service-detail-clean .issue-map-card,
+[data-theme="light"] .service-detail-clean .lead-time-card,
+[data-theme="light"] .service-detail-clean .feature-item,
+[data-theme="light"] .service-detail-clean .service-visual-panel,
+[data-theme="light"] .service-detail-clean .service-snapshot-card,
+[data-theme="light"] .service-detail-clean .service-faq-item,
+[data-theme="light"] .service-detail-clean .brand-service-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* --- Card hover states in clean variants --- */
+[data-theme="light"] .services-page-clean .service-card--services-page:hover,
+[data-theme="light"] .industries-page-clean .industry-card--industries-page:hover,
+[data-theme="light"] .industry-detail-clean .service-card:hover,
+[data-theme="light"] .industry-detail-clean .challenge-card:hover,
+[data-theme="light"] .industry-detail-clean .feature-item:hover,
+[data-theme="light"] .service-detail-clean .challenge-card:hover,
+[data-theme="light"] .service-detail-clean .issue-map-card:hover,
+[data-theme="light"] .service-detail-clean .lead-time-card:hover,
+[data-theme="light"] .service-detail-clean .feature-item:hover,
+[data-theme="light"] .service-detail-clean .service-visual-panel:hover,
+[data-theme="light"] .service-detail-clean .service-snapshot-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* --- Bootstrap dark override fix --- */
+[data-theme="light"] .btn-close {
+  filter: none;
+}
+[data-theme="light"] .pagination .page-link {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+[data-theme="light"] .pagination .page-link:hover {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--blue-600);
+}
