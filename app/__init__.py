@@ -364,11 +364,11 @@ def create_app(config_overrides=None):
         try:
             _all_settings = get_site_settings()
             theme_mode_val = (_all_settings.get('theme_mode') or '').strip().lower()
-            theme_mode = theme_mode_val if theme_mode_val in ('dark', 'light') else 'dark'
+            theme_mode = theme_mode_val if theme_mode_val in ('dark', 'light') else 'light'
             google_fonts_url = (_all_settings.get('google_fonts_url') or '').strip()
         except Exception:
             _all_settings = {}
-            theme_mode = 'dark'
+            theme_mode = 'light'
             google_fonts_url = ''
         return dict(
             site_settings=_all_settings or get_site_settings(),
