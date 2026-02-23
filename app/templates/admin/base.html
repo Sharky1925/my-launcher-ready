@@ -538,6 +538,7 @@
       {% endif %}
       {% if current_user.has_permission('acp:mcp:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.acp_mcp_servers', 'admin.acp_mcp_server_add', 'admin.acp_mcp_server_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_mcp_servers') }}"><i class="fa-solid fa-plug-circle-bolt"></i>MCP Servers</a>
+      <a class="nav-link {% if request.endpoint in ['admin.acp_mcp_operations'] %}active{% endif %}" href="{{ url_for('admin.acp_mcp_operations') }}"><i class="fa-solid fa-bolt"></i>MCP Operations</a>
       {% endif %}
       {% if current_user.has_permission('acp:mcp:audit:view') %}
       <a class="nav-link {% if request.endpoint == 'admin.acp_mcp_audit' %}active{% endif %}" href="{{ url_for('admin.acp_mcp_audit') }}"><i class="fa-solid fa-clipboard-list"></i>MCP Audit</a>
@@ -619,6 +620,7 @@
           {% endif %}
           {% if current_user.has_permission('acp:mcp:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_mcp_servers', 'admin.acp_mcp_server_add', 'admin.acp_mcp_server_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_mcp_servers') }}">MCP Servers</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_mcp_operations'] %}active{% endif %}" href="{{ url_for('admin.acp_mcp_operations') }}">MCP Operations</a></li>
           {% endif %}
           {% if current_user.has_permission('acp:mcp:audit:view') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.acp_mcp_audit' %}active{% endif %}" href="{{ url_for('admin.acp_mcp_audit') }}">MCP Audit</a></li>

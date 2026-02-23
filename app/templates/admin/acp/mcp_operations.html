@@ -1,0 +1,195 @@
+{% extends "admin/base.html" %}
+{% block page_title %}MCP Operations{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-2">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Pending Approval</div><h4 class="mb-0">{{ summary.pending_approval }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-2">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Queued</div><h4 class="mb-0">{{ summary.queued }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-2">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Running</div><h4 class="mb-0">{{ summary.running }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-2">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Failed</div><h4 class="mb-0">{{ summary.failed }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-2">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Succeeded (24h)</div><h4 class="mb-0">{{ summary.succeeded_24h }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-2 d-flex">
+    <form method="POST" action="{{ url_for('admin.acp_mcp_process_queue') }}" class="w-100">
+      {{ csrf_input() }}
+      <input type="hidden" name="limit" value="20">
+      <button class="btn btn-primary w-100 h-100" type="submit"><i class="fa-solid fa-play me-1"></i>Process Queue</button>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><strong>Create MCP Operation</strong></div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('admin.acp_mcp_operation_create') }}" class="row g-2">
+      {{ csrf_input() }}
+      <div class="col-md-3">
+        <label class="form-label">Server</label>
+        <select class="form-select" name="server_id" required>
+          <option value="">Select server...</option>
+          {% for server in servers %}
+          <option value="{{ server.id }}" {% if selected_server_id == server.id %}selected{% endif %}>
+            {{ server.name }} ({{ server.key }}){% if not server.is_enabled %} [disabled]{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Tool Name</label>
+        <input class="form-control" name="tool_name" value="{{ tool_name }}" placeholder="tickets.search" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Max Attempts</label>
+        <input class="form-control" type="number" name="max_attempts" min="1" max="6" value="3" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Arguments JSON</label>
+        <textarea class="form-control form-control-mono-sm" name="arguments_json" rows="2" placeholder='{"ticket_number":"RS-260223-2B1D2E"}' required>{}</textarea>
+      </div>
+      <div class="col-12 d-flex gap-2 align-items-center flex-wrap">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="executeNow" name="execute_now" checked>
+          <label class="form-check-label" for="executeNow">Execute immediately when allowed</label>
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Create Operation</button>
+        <a href="{{ url_for('admin.acp_mcp_servers') }}" class="btn btn-outline-secondary">MCP Servers</a>
+        <a href="{{ url_for('admin.acp_mcp_audit') }}" class="btn btn-outline-secondary">MCP Audit</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Server</label>
+        <select class="form-select" name="server_id">
+          <option value="">All servers</option>
+          {% for server in servers %}
+          <option value="{{ server.id }}" {% if selected_server_id == server.id %}selected{% endif %}>{{ server.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" name="status">
+          <option value="">All statuses</option>
+          {% for item in status_options %}
+          <option value="{{ item }}" {% if status == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Tool Name</label>
+        <input class="form-control" name="tool_name" value="{{ tool_name }}" placeholder="tickets.search">
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-outline-primary" type="submit"><i class="fa-solid fa-filter me-1"></i>Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong>MCP Operations (live status)</strong>
+    <small class="text-muted">Refreshes every 15s</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle" id="mcpOpsTable">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Server</th>
+            <th>Tool</th>
+            <th>Status</th>
+            <th>Attempts</th>
+            <th>Error</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in items %}
+          <tr>
+            <td>{{ op.created_at.strftime('%Y-%m-%d %H:%M') if op.created_at else '—' }}</td>
+            <td>{{ op.server.name if op.server else '—' }}</td>
+            <td>
+              <code>{{ op.tool_name }}</code>
+              {% if op.requires_approval %}
+              <span class="badge bg-warning text-dark ms-1">approval</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if op.status == 'succeeded' %}
+              <span class="badge bg-success">{{ op.status }}</span>
+              {% elif op.status in ['pending_approval', 'queued', 'running'] %}
+              <span class="badge bg-info text-dark">{{ op.status }}</span>
+              {% elif op.status in ['blocked', 'rejected'] %}
+              <span class="badge bg-warning text-dark">{{ op.status }}</span>
+              {% else %}
+              <span class="badge bg-danger">{{ op.status }}</span>
+              {% endif %}
+            </td>
+            <td>{{ op.attempt_count }} / {{ op.max_attempts }}</td>
+            <td class="small text-muted">{{ op.error_message or '—' }}</td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-1 flex-wrap">
+                {% if op.status == 'pending_approval' %}
+                <form method="POST" action="{{ url_for('admin.acp_mcp_operation_approve', id=op.id) }}" class="d-inline">
+                  {{ csrf_input() }}
+                  <input type="hidden" name="execute_now" value="1">
+                  <button class="btn btn-sm btn-success" type="submit">Approve</button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.acp_mcp_operation_reject', id=op.id) }}" class="d-inline">
+                  {{ csrf_input() }}
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                </form>
+                {% endif %}
+                {% if op.status in ['queued', 'failed', 'blocked', 'rejected'] %}
+                <form method="POST" action="{{ url_for('admin.acp_mcp_operation_retry', id=op.id) }}" class="d-inline">
+                  {{ csrf_input() }}
+                  <input type="hidden" name="execute_now" value="1">
+                  <button class="btn btn-sm btn-outline-primary" type="submit">Retry</button>
+                </form>
+                {% endif %}
+                {% if op.status in ['queued', 'running'] %}
+                <form method="POST" action="{{ url_for('admin.acp_mcp_operation_run', id=op.id) }}" class="d-inline">
+                  {{ csrf_input() }}
+                  <button class="btn btn-sm btn-primary" type="submit">Run Now</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-muted">No MCP operations yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script nonce="{{ csp_nonce }}">
+(() => {
+  const refreshEveryMs = 15000;
+  setInterval(() => {
+    window.location.reload();
+  }, refreshEveryMs);
+})();
+</script>
+{% endblock %}

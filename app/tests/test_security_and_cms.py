@@ -30,6 +30,7 @@ try:
         AcpContentEntry,
         AcpThemeTokenSet,
         AcpMcpServer,
+        AcpMcpOperation,
         Industry,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
@@ -67,6 +68,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         AcpContentEntry,
         AcpThemeTokenSet,
         AcpMcpServer,
+        AcpMcpOperation,
         Industry,
         WORKFLOW_APPROVED,
         WORKFLOW_PUBLISHED,
@@ -387,6 +389,7 @@ def test_acp_phase1_admin_sections_render(client):
     assert client.get("/admin/acp/theme").status_code == 200
     assert client.get("/admin/acp/theme/new").status_code == 200
     assert client.get("/admin/acp/mcp/servers").status_code == 200
+    assert client.get("/admin/acp/mcp/operations").status_code == 200
     assert client.get("/admin/acp/mcp/audit").status_code == 200
 
     with client.application.app_context():
@@ -425,6 +428,107 @@ def test_acp_mcp_server_rejects_invalid_url_scheme(client, app):
     with app.app_context():
         created = AcpMcpServer.query.filter_by(name="Invalid MCP URL").first()
         assert created is None
+
+
+def test_acp_mcp_operations_create_pending_approval(client, app):
+    admin_login(client)
+    with app.app_context():
+        server = AcpMcpServer(
+            key=f"ops-{uuid.uuid4().hex[:8]}",
+            name="Ops MCP",
+            server_url="https://example.com/mcp",
+            transport="http",
+            auth_mode="oauth",
+            environment="test",
+            allowed_tools_json='["tickets.search"]',
+            require_approval="always",
+            is_enabled=True,
+        )
+        db.session.add(server)
+        db.session.commit()
+        server_id = server.id
+
+    page = client.get("/admin/acp/mcp/operations")
+    assert page.status_code == 200
+    csrf_token = extract_csrf_token(page.get_data(as_text=True))
+    assert csrf_token
+
+    response = client.post(
+        "/admin/acp/mcp/operations/create",
+        data={
+            "_csrf_token": csrf_token,
+            "server_id": str(server_id),
+            "tool_name": "tickets.search",
+            "arguments_json": '{"ticket_number":"RS-TEST-001"}',
+            "max_attempts": "3",
+            "execute_now": "1",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code in (302, 303)
+
+    with app.app_context():
+        op = AcpMcpOperation.query.filter_by(server_id=server_id).order_by(AcpMcpOperation.id.desc()).first()
+        assert op is not None
+        assert op.status == "pending_approval"
+        assert op.approval_status == "pending"
+
+
+def test_acp_mcp_operations_approve_and_execute_success(client, app, monkeypatch):
+    admin_login(client)
+    with app.app_context():
+        server = AcpMcpServer(
+            key=f"ops-{uuid.uuid4().hex[:8]}",
+            name="Ops MCP Execute",
+            server_url="https://example.com/mcp",
+            transport="http",
+            auth_mode="oauth",
+            environment="test",
+            allowed_tools_json='["tickets.search"]',
+            require_approval="always",
+            is_enabled=True,
+        )
+        db.session.add(server)
+        db.session.flush()
+        op = AcpMcpOperation(
+            server_id=server.id,
+            request_id=str(uuid.uuid4()),
+            tool_name="tickets.search",
+            arguments_json='{"ticket_number":"RS-TEST-002"}',
+            status="pending_approval",
+            approval_status="pending",
+            requires_approval=True,
+            max_attempts=3,
+        )
+        db.session.add(op)
+        db.session.commit()
+        op_id = op.id
+
+    def fake_invoke(server, tool_name, arguments, request_id):
+        return {
+            "http_status": 200,
+            "result": {"ticket_number": arguments.get("ticket_number"), "status": "open"},
+            "raw": {"ok": True},
+        }
+
+    monkeypatch.setattr(admin_routes, "_invoke_mcp_http", fake_invoke)
+
+    page = client.get("/admin/acp/mcp/operations")
+    csrf_token = extract_csrf_token(page.get_data(as_text=True))
+    assert csrf_token
+    approve = client.post(
+        f"/admin/acp/mcp/operations/{op_id}/approve",
+        data={"_csrf_token": csrf_token, "execute_now": "1"},
+        follow_redirects=False,
+    )
+    assert approve.status_code in (302, 303)
+
+    with app.app_context():
+        refreshed = db.session.get(AcpMcpOperation, op_id)
+        assert refreshed is not None
+        assert refreshed.status == "succeeded"
+        assert refreshed.approval_status == "approved"
+        assert refreshed.response_json
 
 
 def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):

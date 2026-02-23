@@ -4,6 +4,8 @@ import os
 import re
 import uuid
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 import bleach
 from sqlalchemy import func, or_
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, session, abort, jsonify
@@ -48,6 +50,7 @@ try:
         AcpThemeTokenVersion,
         AcpMcpServer,
         AcpMcpAuditEvent,
+        AcpMcpOperation,
         AcpEnvironment,
         AcpPromotionEvent,
         AcpAuditEvent,
@@ -86,6 +89,17 @@ try:
         create_support_ticket_event,
         normalize_workflow_status,
         normalize_user_role,
+        MCP_OPERATION_STATUS_PENDING_APPROVAL,
+        MCP_OPERATION_STATUS_QUEUED,
+        MCP_OPERATION_STATUS_RUNNING,
+        MCP_OPERATION_STATUS_SUCCEEDED,
+        MCP_OPERATION_STATUS_FAILED,
+        MCP_OPERATION_STATUS_BLOCKED,
+        MCP_OPERATION_STATUS_REJECTED,
+        MCP_APPROVAL_STATUS_PENDING,
+        MCP_APPROVAL_STATUS_APPROVED,
+        MCP_APPROVAL_STATUS_REJECTED,
+        MCP_APPROVAL_STATUS_NOT_REQUIRED,
     )
     from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from ..content_schemas import CONTENT_SCHEMAS
@@ -127,6 +141,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         AcpThemeTokenVersion,
         AcpMcpServer,
         AcpMcpAuditEvent,
+        AcpMcpOperation,
         AcpEnvironment,
         AcpPromotionEvent,
         AcpAuditEvent,
@@ -165,6 +180,17 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         create_support_ticket_event,
         normalize_workflow_status,
         normalize_user_role,
+        MCP_OPERATION_STATUS_PENDING_APPROVAL,
+        MCP_OPERATION_STATUS_QUEUED,
+        MCP_OPERATION_STATUS_RUNNING,
+        MCP_OPERATION_STATUS_SUCCEEDED,
+        MCP_OPERATION_STATUS_FAILED,
+        MCP_OPERATION_STATUS_BLOCKED,
+        MCP_OPERATION_STATUS_REJECTED,
+        MCP_APPROVAL_STATUS_PENDING,
+        MCP_APPROVAL_STATUS_APPROVED,
+        MCP_APPROVAL_STATUS_REJECTED,
+        MCP_APPROVAL_STATUS_NOT_REQUIRED,
     )
     from utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from content_schemas import CONTENT_SCHEMAS
@@ -220,6 +246,11 @@ SERVICE_PROFILE_FALLBACK_SLUGS = {
     for slug in (set(SERVICE_RESEARCH_OVERRIDES.keys()) | set(SERVICE_PROFILES.keys()))
     if str(slug).strip()
 }
+MCP_REQUEST_TIMEOUT_SECONDS = 12
+MCP_MAX_ATTEMPTS_DEFAULT = 3
+MCP_MAX_ATTEMPTS_LIMIT = 6
+MCP_RETRY_BACKOFF_SECONDS = (10, 30, 120, 300, 900)
+MCP_MUTATING_TOOL_MARKERS = ('create', 'update', 'delete', 'write', 'publish', 'approve', 'set', 'run', 'execute')
 ADMIN_PERMISSION_MAP = {
     'admin.control_center': 'dashboard:view',
     'admin.dashboard': 'dashboard:view',
@@ -278,7 +309,15 @@ ADMIN_PERMISSION_MAP = {
     'admin.acp_mcp_servers': 'acp:mcp:manage',
     'admin.acp_mcp_server_add': 'acp:mcp:manage',
     'admin.acp_mcp_server_edit': 'acp:mcp:manage',
+    'admin.acp_mcp_operations': 'acp:mcp:manage',
+    'admin.acp_mcp_operation_create': 'acp:mcp:manage',
+    'admin.acp_mcp_operation_run': 'acp:mcp:manage',
+    'admin.acp_mcp_operation_retry': 'acp:mcp:manage',
+    'admin.acp_mcp_operation_approve': 'acp:mcp:manage',
+    'admin.acp_mcp_operation_reject': 'acp:mcp:manage',
+    'admin.acp_mcp_process_queue': 'acp:mcp:manage',
     'admin.acp_mcp_audit': 'acp:mcp:audit:view',
+    'admin.acp_admin_mcp_operations_api': 'acp:mcp:audit:view',
     'admin.acp_registry': 'acp:registry:manage',
     'admin.acp_metrics': 'acp:metrics:manage',
     'admin.acp_audit': 'acp:audit:view',
@@ -685,6 +724,233 @@ def _serialize_acp_mcp_server(item):
         'notes': item.notes,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
     }
+
+
+def _serialize_acp_mcp_operation(item):
+    if not item:
+        return {}
+    return {
+        'id': item.id,
+        'request_id': item.request_id,
+        'server_id': item.server_id,
+        'server_key': item.server.key if item.server else None,
+        'server_name': item.server.name if item.server else None,
+        'tool_name': item.tool_name,
+        'arguments': _safe_json_loads(item.arguments_json, {}),
+        'response': _safe_json_loads(item.response_json, {}),
+        'status': item.status,
+        'approval_status': item.approval_status,
+        'requires_approval': bool(item.requires_approval),
+        'attempt_count': item.attempt_count,
+        'max_attempts': item.max_attempts,
+        'error_message': item.error_message,
+        'requested_by_id': item.requested_by_id,
+        'approved_by_id': item.approved_by_id,
+        'approved_at': item.approved_at.isoformat() if item.approved_at else None,
+        'last_attempt_at': item.last_attempt_at.isoformat() if item.last_attempt_at else None,
+        'next_attempt_at': item.next_attempt_at.isoformat() if item.next_attempt_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+    }
+
+
+def _normalize_mcp_tool_name(value):
+    cleaned = clean_text(value, 160).lower()
+    if not cleaned:
+        return ''
+    return re.sub(r'[^a-z0-9._:-]+', '', cleaned)
+
+
+def _safe_mcp_arguments(raw_value):
+    parsed = _safe_json_loads(raw_value, None)
+    if isinstance(parsed, dict):
+        return parsed
+    return None
+
+
+def _mcp_allowed_tools(server):
+    tools = _safe_json_loads(getattr(server, 'allowed_tools_json', '[]'), [])
+    if not isinstance(tools, list):
+        return []
+    normalized = []
+    for tool in tools:
+        cleaned = _normalize_mcp_tool_name(tool)
+        if cleaned and cleaned not in normalized:
+            normalized.append(cleaned)
+    return normalized
+
+
+def _is_mcp_tool_mutating(tool_name):
+    normalized = _normalize_mcp_tool_name(tool_name)
+    return any(marker in normalized for marker in MCP_MUTATING_TOOL_MARKERS)
+
+
+def _mcp_requires_approval(server, tool_name):
+    mode = clean_text(getattr(server, 'require_approval', ''), 24).lower() or 'always'
+    if mode == 'always':
+        return True
+    if mode == 'never':
+        return False
+    # Selective mode: require manual review for potentially mutating tool calls.
+    return _is_mcp_tool_mutating(tool_name)
+
+
+def _mcp_next_backoff_delay_seconds(attempt_count):
+    idx = max(0, min(int(attempt_count or 1) - 1, len(MCP_RETRY_BACKOFF_SECONDS) - 1))
+    return MCP_RETRY_BACKOFF_SECONDS[idx]
+
+
+def _create_mcp_audit_event(server, action, tool_name, status, request_payload, response_payload):
+    event = AcpMcpAuditEvent(
+        server_id=getattr(server, 'id', None),
+        action=clean_text(action, 40) or 'tool_call',
+        tool_name=_normalize_mcp_tool_name(tool_name) or None,
+        status=clean_text(status, 30) or 'ok',
+        request_json=_safe_json_dumps(request_payload, {}),
+        response_json=_safe_json_dumps(response_payload, {}),
+        actor_user_id=getattr(current_user, 'id', None),
+    )
+    db.session.add(event)
+
+
+def _invoke_mcp_http(server, tool_name, arguments, request_id):
+    payload = {
+        'jsonrpc': '2.0',
+        'id': request_id,
+        'method': 'tools/call',
+        'params': {
+            'name': _normalize_mcp_tool_name(tool_name),
+            'arguments': arguments,
+        },
+    }
+    body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+    req = Request(
+        url=server.server_url,
+        method='POST',
+        headers={
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'RightOnRepair-MCP/1.0',
+        },
+        data=body,
+    )
+    with urlopen(req, timeout=MCP_REQUEST_TIMEOUT_SECONDS) as resp:
+        raw = resp.read().decode('utf-8', errors='replace')
+        status_code = getattr(resp, 'status', 200)
+    parsed = _safe_json_loads(raw, None)
+    if isinstance(parsed, dict):
+        if parsed.get('error'):
+            raise RuntimeError(clean_text(parsed['error'].get('message'), 300) or 'MCP error response')
+        return {
+            'http_status': status_code,
+            'result': parsed.get('result'),
+            'raw': parsed,
+        }
+    return {
+        'http_status': status_code,
+        'result': raw,
+        'raw': {'raw': raw},
+    }
+
+
+def _execute_mcp_operation(operation):
+    now = utc_now_naive()
+    server = operation.server
+    if not server or not server.is_enabled:
+        operation.status = MCP_OPERATION_STATUS_BLOCKED
+        operation.error_message = 'Server is disabled or missing.'
+        operation.updated_at = now
+        _create_mcp_audit_event(server, 'tool_call', operation.tool_name, 'blocked', _serialize_acp_mcp_operation(operation), {'error': operation.error_message})
+        return False
+    if operation.status == MCP_OPERATION_STATUS_PENDING_APPROVAL:
+        operation.error_message = 'Waiting for approval.'
+        operation.updated_at = now
+        return False
+    if operation.approval_status == MCP_APPROVAL_STATUS_REJECTED:
+        operation.status = MCP_OPERATION_STATUS_REJECTED
+        operation.error_message = 'Operation was rejected.'
+        operation.updated_at = now
+        return False
+    if operation.requires_approval and operation.approval_status != MCP_APPROVAL_STATUS_APPROVED:
+        operation.status = MCP_OPERATION_STATUS_PENDING_APPROVAL
+        operation.error_message = 'Approval required before execution.'
+        operation.updated_at = now
+        return False
+    if operation.attempt_count >= max(1, int(operation.max_attempts or MCP_MAX_ATTEMPTS_DEFAULT)):
+        operation.status = MCP_OPERATION_STATUS_FAILED
+        operation.error_message = operation.error_message or 'Maximum attempts reached.'
+        operation.updated_at = now
+        return False
+
+    operation.status = MCP_OPERATION_STATUS_RUNNING
+    operation.attempt_count = int(operation.attempt_count or 0) + 1
+    operation.last_attempt_at = now
+    operation.updated_at = now
+    db.session.flush()
+
+    args_payload = _safe_json_loads(operation.arguments_json, {})
+    try:
+        response_payload = _invoke_mcp_http(server, operation.tool_name, args_payload, operation.request_id)
+        operation.status = MCP_OPERATION_STATUS_SUCCEEDED
+        operation.response_json = _safe_json_dumps(response_payload, {})
+        operation.error_message = None
+        operation.next_attempt_at = None
+        operation.updated_at = utc_now_naive()
+        _create_mcp_audit_event(
+            server,
+            'tool_call',
+            operation.tool_name,
+            'ok',
+            {'request_id': operation.request_id, 'arguments': args_payload},
+            response_payload,
+        )
+        return True
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
+        remaining = max(0, int(operation.max_attempts or MCP_MAX_ATTEMPTS_DEFAULT) - int(operation.attempt_count or 0))
+        message = clean_text(str(exc), 700) or 'MCP request failed.'
+        if remaining > 0:
+            operation.status = MCP_OPERATION_STATUS_QUEUED
+            operation.next_attempt_at = utc_now_naive() + timedelta(seconds=_mcp_next_backoff_delay_seconds(operation.attempt_count))
+        else:
+            operation.status = MCP_OPERATION_STATUS_FAILED
+            operation.next_attempt_at = None
+        operation.error_message = message
+        operation.updated_at = utc_now_naive()
+        _create_mcp_audit_event(
+            server,
+            'tool_call',
+            operation.tool_name,
+            'error',
+            {'request_id': operation.request_id, 'attempt': operation.attempt_count, 'arguments': args_payload},
+            {'error': message, 'remaining_attempts': remaining},
+        )
+        return False
+
+
+def _process_due_mcp_operations(limit=10):
+    now = utc_now_naive()
+    items = (
+        AcpMcpOperation.query
+        .filter(
+            AcpMcpOperation.status == MCP_OPERATION_STATUS_QUEUED,
+            or_(
+                AcpMcpOperation.next_attempt_at.is_(None),
+                AcpMcpOperation.next_attempt_at <= now,
+            ),
+        )
+        .order_by(AcpMcpOperation.next_attempt_at.asc(), AcpMcpOperation.created_at.asc())
+        .limit(max(1, min(int(limit or 10), 50)))
+        .all()
+    )
+    results = {'processed': 0, 'succeeded': 0, 'failed': 0}
+    for item in items:
+        ok = _execute_mcp_operation(item)
+        results['processed'] += 1
+        if ok:
+            results['succeeded'] += 1
+        elif item.status in {MCP_OPERATION_STATUS_FAILED, MCP_OPERATION_STATUS_BLOCKED, MCP_OPERATION_STATUS_REJECTED}:
+            results['failed'] += 1
+    return results
 
 
 def _create_acp_audit_event(domain, action, entity_type, entity_id, before_state, after_state):
@@ -1200,6 +1466,13 @@ def control_center():
     registry_widget_count = AcpWidgetDefinition.query.filter_by(is_enabled=True).count()
     metric_count = AcpMetricDefinition.query.filter_by(is_enabled=True).count()
     mcp_server_count = AcpMcpServer.query.count()
+    mcp_operation_queue_count = AcpMcpOperation.query.filter(
+        AcpMcpOperation.status.in_([
+            MCP_OPERATION_STATUS_PENDING_APPROVAL,
+            MCP_OPERATION_STATUS_QUEUED,
+            MCP_OPERATION_STATUS_RUNNING,
+        ])
+    ).count()
     services_count = Service.query.count()
     industries_count = Industry.query.count()
     media_count = Media.query.count()
@@ -1287,6 +1560,14 @@ def control_center():
             'metric': f'{ticket_open_count} open',
         },
         {
+            'title': 'MCP Operations',
+            'description': 'Approve, execute, retry, and monitor MCP tool calls across connected servers.',
+            'icon': 'fa-solid fa-bolt',
+            'href': url_for('admin.acp_mcp_operations'),
+            'permission': 'acp:mcp:manage',
+            'metric': f'{mcp_operation_queue_count} active in queue',
+        },
+        {
             'title': 'Contact Inbox',
             'description': 'Manage contact submissions, quote leads, and inbound requests from the website.',
             'icon': 'fa-solid fa-envelope',
@@ -1326,6 +1607,7 @@ def control_center():
         quick_actions.append({'label': 'Open Ticket Queue', 'href': url_for('admin.support_tickets'), 'icon': 'fa-solid fa-ticket'})
     if has_permission(current_user, 'acp:mcp:manage'):
         quick_actions.append({'label': 'MCP Servers', 'href': url_for('admin.acp_mcp_servers'), 'icon': 'fa-solid fa-plug-circle-bolt'})
+        quick_actions.append({'label': 'MCP Operations', 'href': url_for('admin.acp_mcp_operations'), 'icon': 'fa-solid fa-bolt'})
 
     return render_template(
         'admin/control_center.html',
@@ -1339,6 +1621,7 @@ def control_center():
             'published_dashboards': published_dashboard_count,
             'metrics': metric_count,
             'mcp_servers': mcp_server_count,
+            'mcp_operations': mcp_operation_queue_count,
             'content_blocks': content_block_count,
         },
     )
@@ -2849,6 +3132,9 @@ def acp_studio():
     content_entry_count = AcpContentEntry.query.count()
     theme_token_count = AcpThemeTokenSet.query.count()
     mcp_server_count = AcpMcpServer.query.count()
+    mcp_operation_count = AcpMcpOperation.query.count()
+    mcp_pending_approval_count = AcpMcpOperation.query.filter_by(status=MCP_OPERATION_STATUS_PENDING_APPROVAL).count()
+    mcp_queue_count = AcpMcpOperation.query.filter_by(status=MCP_OPERATION_STATUS_QUEUED).count()
     component_count = AcpComponentDefinition.query.filter_by(is_enabled=True).count()
     widget_count = AcpWidgetDefinition.query.filter_by(is_enabled=True).count()
     metric_count = AcpMetricDefinition.query.filter_by(is_enabled=True).count()
@@ -2872,6 +3158,9 @@ def acp_studio():
             'content_entries': content_entry_count,
             'theme_tokens': theme_token_count,
             'mcp_servers': mcp_server_count,
+            'mcp_operations': mcp_operation_count,
+            'mcp_pending_approval': mcp_pending_approval_count,
+            'mcp_queue': mcp_queue_count,
             'components': component_count,
             'widgets': widget_count,
             'metrics': metric_count,
@@ -3979,6 +4268,223 @@ def acp_mcp_server_edit(id):
     return render_template('admin/acp/mcp_server_form.html', item=item)
 
 
+@admin_bp.route('/acp/mcp/operations')
+@login_required
+def acp_mcp_operations():
+    server_id = parse_positive_int(request.args.get('server_id'))
+    status = clean_text(request.args.get('status', ''), 40).lower()
+    tool_query = _normalize_mcp_tool_name(request.args.get('tool_name'))
+    query = AcpMcpOperation.query
+    if server_id:
+        query = query.filter(AcpMcpOperation.server_id == server_id)
+    if status:
+        query = query.filter(AcpMcpOperation.status == status)
+    if tool_query:
+        like = f"%{escape_like(tool_query)}%"
+        query = query.filter(func.lower(AcpMcpOperation.tool_name).like(like))
+    items = query.order_by(AcpMcpOperation.created_at.desc(), AcpMcpOperation.id.desc()).limit(250).all()
+    servers = AcpMcpServer.query.order_by(AcpMcpServer.name.asc()).all()
+    summary = {
+        'pending_approval': AcpMcpOperation.query.filter_by(status=MCP_OPERATION_STATUS_PENDING_APPROVAL).count(),
+        'queued': AcpMcpOperation.query.filter_by(status=MCP_OPERATION_STATUS_QUEUED).count(),
+        'running': AcpMcpOperation.query.filter_by(status=MCP_OPERATION_STATUS_RUNNING).count(),
+        'failed': AcpMcpOperation.query.filter_by(status=MCP_OPERATION_STATUS_FAILED).count(),
+        'succeeded_24h': AcpMcpOperation.query.filter(
+            AcpMcpOperation.status == MCP_OPERATION_STATUS_SUCCEEDED,
+            AcpMcpOperation.updated_at >= (utc_now_naive() - timedelta(hours=24)),
+        ).count(),
+    }
+    return render_template(
+        'admin/acp/mcp_operations.html',
+        items=items,
+        servers=servers,
+        selected_server_id=server_id,
+        status=status,
+        tool_name=tool_query,
+        summary=summary,
+        status_options=[
+            MCP_OPERATION_STATUS_PENDING_APPROVAL,
+            MCP_OPERATION_STATUS_QUEUED,
+            MCP_OPERATION_STATUS_RUNNING,
+            MCP_OPERATION_STATUS_SUCCEEDED,
+            MCP_OPERATION_STATUS_FAILED,
+            MCP_OPERATION_STATUS_BLOCKED,
+            MCP_OPERATION_STATUS_REJECTED,
+        ],
+    )
+
+
+@admin_bp.route('/acp/mcp/operations/create', methods=['POST'])
+@login_required
+def acp_mcp_operation_create():
+    server_id = parse_positive_int(request.form.get('server_id'))
+    tool_name = _normalize_mcp_tool_name(request.form.get('tool_name'))
+    arguments_raw = request.form.get('arguments_json', '{}')
+    arguments = _safe_mcp_arguments(arguments_raw)
+    max_attempts = parse_int(request.form.get('max_attempts'), default=MCP_MAX_ATTEMPTS_DEFAULT, min_value=1, max_value=MCP_MAX_ATTEMPTS_LIMIT)
+    execute_now = bool(request.form.get('execute_now'))
+
+    server = db.session.get(AcpMcpServer, server_id) if server_id else None
+    if not server:
+        flash('Select a valid MCP server.', 'danger')
+        return redirect(url_for('admin.acp_mcp_operations'))
+    if not tool_name:
+        flash('Tool name is required.', 'danger')
+        return redirect(url_for('admin.acp_mcp_operations', server_id=server.id))
+    if arguments is None:
+        flash('Arguments JSON must be a valid JSON object.', 'danger')
+        return redirect(url_for('admin.acp_mcp_operations', server_id=server.id))
+
+    allowed_tools = _mcp_allowed_tools(server)
+    allowed = (not allowed_tools) or (tool_name in allowed_tools)
+    requires_approval = _mcp_requires_approval(server, tool_name)
+    if not allowed:
+        status = MCP_OPERATION_STATUS_BLOCKED
+        approval_status = MCP_APPROVAL_STATUS_NOT_REQUIRED
+        error_message = 'Tool not allowed by server policy.'
+    elif requires_approval:
+        status = MCP_OPERATION_STATUS_PENDING_APPROVAL
+        approval_status = MCP_APPROVAL_STATUS_PENDING
+        error_message = 'Approval required before execution.'
+    else:
+        status = MCP_OPERATION_STATUS_QUEUED
+        approval_status = MCP_APPROVAL_STATUS_NOT_REQUIRED
+        error_message = None
+
+    item = AcpMcpOperation(
+        server_id=server.id,
+        request_id=str(uuid.uuid4()),
+        tool_name=tool_name,
+        arguments_json=_safe_json_dumps(arguments, {}),
+        status=status,
+        approval_status=approval_status,
+        requires_approval=requires_approval,
+        attempt_count=0,
+        max_attempts=max_attempts,
+        error_message=error_message,
+        requested_by_id=current_user.id,
+        next_attempt_at=utc_now_naive() if status == MCP_OPERATION_STATUS_QUEUED else None,
+    )
+    db.session.add(item)
+    db.session.flush()
+
+    if not allowed:
+        _create_mcp_audit_event(server, 'policy_block', tool_name, 'blocked', _serialize_acp_mcp_operation(item), {'reason': error_message})
+    elif requires_approval:
+        _create_mcp_audit_event(server, 'approval_requested', tool_name, 'blocked', _serialize_acp_mcp_operation(item), {'reason': 'Manual approval required'})
+    else:
+        _create_mcp_audit_event(server, 'queued', tool_name, 'ok', _serialize_acp_mcp_operation(item), {'queued': True})
+        if execute_now:
+            _execute_mcp_operation(item)
+
+    db.session.commit()
+    if item.status == MCP_OPERATION_STATUS_PENDING_APPROVAL:
+        flash('MCP operation queued for approval.', 'warning')
+    elif item.status == MCP_OPERATION_STATUS_BLOCKED:
+        flash('MCP operation blocked by policy. Review allowed tools.', 'danger')
+    elif item.status == MCP_OPERATION_STATUS_SUCCEEDED:
+        flash('MCP operation executed successfully.', 'success')
+    elif item.status == MCP_OPERATION_STATUS_QUEUED:
+        flash('MCP operation queued.', 'success')
+    else:
+        flash(f'MCP operation status: {item.status}.', 'info')
+    return redirect(url_for('admin.acp_mcp_operations', server_id=server.id))
+
+
+@admin_bp.route('/acp/mcp/operations/process', methods=['POST'])
+@login_required
+def acp_mcp_process_queue():
+    limit = parse_int(request.form.get('limit'), default=10, min_value=1, max_value=50)
+    results = _process_due_mcp_operations(limit=limit)
+    db.session.commit()
+    flash(
+        f"Processed {results['processed']} queued operations ({results['succeeded']} succeeded, {results['failed']} failed).",
+        'info',
+    )
+    return redirect(url_for('admin.acp_mcp_operations'))
+
+
+@admin_bp.route('/acp/mcp/operations/<int:id>/approve', methods=['POST'])
+@login_required
+def acp_mcp_operation_approve(id):
+    item = db.get_or_404(AcpMcpOperation, id)
+    if not item.requires_approval:
+        flash('This operation does not require approval.', 'info')
+        return redirect(url_for('admin.acp_mcp_operations'))
+    item.approval_status = MCP_APPROVAL_STATUS_APPROVED
+    item.approved_by_id = current_user.id
+    item.approved_at = utc_now_naive()
+    item.status = MCP_OPERATION_STATUS_QUEUED
+    item.next_attempt_at = utc_now_naive()
+    item.error_message = None
+    _create_mcp_audit_event(item.server, 'approved', item.tool_name, 'ok', _serialize_acp_mcp_operation(item), {'approved': True})
+    if bool(request.form.get('execute_now')):
+        _execute_mcp_operation(item)
+    db.session.commit()
+    flash('MCP operation approved.', 'success')
+    return redirect(url_for('admin.acp_mcp_operations', server_id=item.server_id))
+
+
+@admin_bp.route('/acp/mcp/operations/<int:id>/reject', methods=['POST'])
+@login_required
+def acp_mcp_operation_reject(id):
+    item = db.get_or_404(AcpMcpOperation, id)
+    item.approval_status = MCP_APPROVAL_STATUS_REJECTED
+    item.status = MCP_OPERATION_STATUS_REJECTED
+    item.next_attempt_at = None
+    item.error_message = 'Rejected by admin.'
+    item.approved_by_id = current_user.id
+    item.approved_at = utc_now_naive()
+    _create_mcp_audit_event(item.server, 'rejected', item.tool_name, 'blocked', _serialize_acp_mcp_operation(item), {'approved': False})
+    db.session.commit()
+    flash('MCP operation rejected.', 'warning')
+    return redirect(url_for('admin.acp_mcp_operations', server_id=item.server_id))
+
+
+@admin_bp.route('/acp/mcp/operations/<int:id>/run', methods=['POST'])
+@login_required
+def acp_mcp_operation_run(id):
+    item = db.get_or_404(AcpMcpOperation, id)
+    if item.status == MCP_OPERATION_STATUS_REJECTED:
+        flash('Rejected operations cannot run until retried.', 'danger')
+        return redirect(url_for('admin.acp_mcp_operations', server_id=item.server_id))
+    if item.requires_approval and item.approval_status != MCP_APPROVAL_STATUS_APPROVED:
+        flash('Approve this operation before running.', 'danger')
+        return redirect(url_for('admin.acp_mcp_operations', server_id=item.server_id))
+    item.status = MCP_OPERATION_STATUS_QUEUED
+    item.next_attempt_at = utc_now_naive()
+    _execute_mcp_operation(item)
+    db.session.commit()
+    if item.status == MCP_OPERATION_STATUS_SUCCEEDED:
+        flash('Operation executed successfully.', 'success')
+    elif item.status == MCP_OPERATION_STATUS_QUEUED:
+        flash('Operation failed and was re-queued for retry.', 'warning')
+    else:
+        flash(f'Operation status: {item.status}.', 'warning')
+    return redirect(url_for('admin.acp_mcp_operations', server_id=item.server_id))
+
+
+@admin_bp.route('/acp/mcp/operations/<int:id>/retry', methods=['POST'])
+@login_required
+def acp_mcp_operation_retry(id):
+    item = db.get_or_404(AcpMcpOperation, id)
+    if item.status == MCP_OPERATION_STATUS_REJECTED:
+        item.approval_status = MCP_APPROVAL_STATUS_PENDING if item.requires_approval else MCP_APPROVAL_STATUS_NOT_REQUIRED
+        item.status = MCP_OPERATION_STATUS_PENDING_APPROVAL if item.requires_approval else MCP_OPERATION_STATUS_QUEUED
+    else:
+        item.status = MCP_OPERATION_STATUS_QUEUED
+    item.error_message = None
+    item.next_attempt_at = utc_now_naive()
+    if item.attempt_count >= item.max_attempts:
+        item.attempt_count = 0
+    _create_mcp_audit_event(item.server, 'retry', item.tool_name, 'ok', _serialize_acp_mcp_operation(item), {'retry': True})
+    if bool(request.form.get('execute_now')) and item.status == MCP_OPERATION_STATUS_QUEUED:
+        _execute_mcp_operation(item)
+    db.session.commit()
+    flash('Operation reset for retry.', 'success')
+    return redirect(url_for('admin.acp_mcp_operations', server_id=item.server_id))
+
+
 @admin_bp.route('/acp/mcp/audit')
 @login_required
 def acp_mcp_audit():
@@ -4110,3 +4616,21 @@ def acp_admin_theme_token_api(key):
 def acp_admin_mcp_server_api(key):
     item = AcpMcpServer.query.filter_by(key=clean_text(key, 120)).first_or_404()
     return jsonify(_serialize_acp_mcp_server(item))
+
+
+@admin_bp.route('/acp/api/mcp/operations')
+@login_required
+def acp_admin_mcp_operations_api():
+    limit = parse_int(request.args.get('limit'), default=30, min_value=1, max_value=100)
+    server_id = parse_positive_int(request.args.get('server_id'))
+    status = clean_text(request.args.get('status', ''), 40).lower()
+    query = AcpMcpOperation.query
+    if server_id:
+        query = query.filter(AcpMcpOperation.server_id == server_id)
+    if status:
+        query = query.filter(AcpMcpOperation.status == status)
+    items = query.order_by(AcpMcpOperation.created_at.desc(), AcpMcpOperation.id.desc()).limit(limit).all()
+    return jsonify({
+        'items': [_serialize_acp_mcp_operation(item) for item in items],
+        'count': len(items),
+    })

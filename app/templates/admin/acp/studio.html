@@ -14,6 +14,7 @@
         <a href="{{ url_for('admin.acp_sync_status') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-arrows-rotate me-1"></i>Route Sync Status</a>
         <a href="{{ url_for('admin.acp_dashboard_add') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-chart-line me-1"></i>New Dashboard</a>
         <a href="{{ url_for('admin.acp_content_type_add') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-table-list me-1"></i>New Content Type</a>
+        <a href="{{ url_for('admin.acp_mcp_operations') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-bolt me-1"></i>MCP Operations</a>
       </div>
     </div>
   </div>
@@ -36,7 +37,7 @@
     <div class="card stat-card h-100"><div class="card-body"><div class="text-muted small">Design System</div><h3 class="mb-0">{{ stats.theme_tokens }} token sets</h3><small class="text-muted">Theme + runtime styles</small></div></div>
   </div>
   <div class="col-sm-6 col-lg-3">
-    <div class="card stat-card h-100"><div class="card-body"><div class="text-muted small">MCP Integrations</div><h3 class="mb-0">{{ stats.mcp_servers }}</h3><small class="text-muted">Servers with tool policies</small></div></div>
+    <div class="card stat-card h-100"><div class="card-body"><div class="text-muted small">MCP Integrations</div><h3 class="mb-0">{{ stats.mcp_servers }} servers</h3><small class="text-muted">{{ stats.mcp_operations }} ops • queue {{ stats.mcp_queue }} • approvals {{ stats.mcp_pending_approval }}</small></div></div>
   </div>
   <div class="col-sm-6 col-lg-3">
     <div class="card stat-card h-100"><div class="card-body"><div class="text-muted small">Registry</div><h3 class="mb-0">{{ stats.components }} comps</h3><small class="text-muted">{{ stats.widgets }} widgets • {{ stats.metrics }} metrics</small></div></div>

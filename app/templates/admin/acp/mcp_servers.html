@@ -21,6 +21,7 @@
   <div class="card-header d-flex justify-content-between align-items-center">
     <strong>MCP Server Registry</strong>
     <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.acp_mcp_operations') }}" class="btn btn-sm btn-outline-primary">MCP Operations</a>
       <a href="{{ url_for('admin.acp_mcp_audit') }}" class="btn btn-sm btn-outline-primary">MCP Audit</a>
       <a href="{{ url_for('admin.acp_studio') }}" class="btn btn-sm btn-outline-secondary">Back to ACP Studio</a>
     </div>
@@ -55,7 +56,10 @@
             </td>
             <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else '—' }}</td>
             <td class="text-end">
-              <a href="{{ url_for('admin.acp_mcp_server_edit', id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+              <div class="d-flex justify-content-end gap-1 flex-wrap">
+                <a href="{{ url_for('admin.acp_mcp_server_edit', id=item.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('admin.acp_mcp_operations', server_id=item.id) }}" class="btn btn-sm btn-outline-secondary">Operations</a>
+              </div>
             </td>
           </tr>
           {% else %}

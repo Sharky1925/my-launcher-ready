@@ -631,24 +631,116 @@ def seed_acp_defaults(owner_user=None):
             )
         )
 
-    mcp_server_key = 'righton-ops-mcp'
-    mcp_server = AcpMcpServer.query.filter_by(key=mcp_server_key).first()
-    if not mcp_server:
+    mcp_templates = [
+        {
+            'key': 'righton-ops-mcp',
+            'name': 'Right On Operations MCP',
+            'server_url': 'https://mcp.example.internal/mcp',
+            'transport': 'http',
+            'auth_mode': 'oauth',
+            'environment': 'stage',
+            'allowed_tools': ['tickets.search', 'tickets.update', 'cms.read', 'dashboard.read'],
+            'require_approval': 'always',
+            'is_enabled': False,
+            'notes': 'Primary MCP gateway placeholder. Update URL and credentials before enabling.',
+        },
+        {
+            'key': 'mcp-template-filesystem',
+            'name': 'Filesystem MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem',
+            'environment': 'template',
+            'allowed_tools': ['filesystem.read_file', 'filesystem.write_file', 'filesystem.list_directory'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-fetch',
+            'name': 'Fetch MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/fetch',
+            'environment': 'template',
+            'allowed_tools': ['fetch.get', 'fetch.post'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-git',
+            'name': 'Git MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/git',
+            'environment': 'template',
+            'allowed_tools': ['git.status', 'git.diff', 'git.log'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-github',
+            'name': 'GitHub MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/github',
+            'environment': 'template',
+            'allowed_tools': ['github.issues.list', 'github.pulls.list', 'github.repos.read'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-gitlab',
+            'name': 'GitLab MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/gitlab',
+            'environment': 'template',
+            'allowed_tools': ['gitlab.projects.list', 'gitlab.issues.list'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-google-drive',
+            'name': 'Google Drive MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/gdrive',
+            'environment': 'template',
+            'allowed_tools': ['gdrive.search', 'gdrive.read_file'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-postgres',
+            'name': 'PostgreSQL MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/postgres',
+            'environment': 'template',
+            'allowed_tools': ['postgres.query', 'postgres.describe'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-puppeteer',
+            'name': 'Puppeteer MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/puppeteer',
+            'environment': 'template',
+            'allowed_tools': ['puppeteer.navigate', 'puppeteer.screenshot'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-slack',
+            'name': 'Slack MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/slack',
+            'environment': 'template',
+            'allowed_tools': ['slack.channels.list', 'slack.messages.send'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+        {
+            'key': 'mcp-template-sqlite',
+            'name': 'SQLite MCP (Template)',
+            'server_url': 'https://github.com/modelcontextprotocol/servers/tree/main/src/sqlite',
+            'environment': 'template',
+            'allowed_tools': ['sqlite.query', 'sqlite.schema'],
+            'notes': 'Reference server from official MCP repository. Self-host and replace URL with your deployed endpoint.',
+        },
+    ]
+    for template in mcp_templates:
+        key = template['key']
+        if AcpMcpServer.query.filter_by(key=key).first():
+            continue
         db.session.add(
             AcpMcpServer(
-                key=mcp_server_key,
-                name='Right On Operations MCP',
-                server_url='https://mcp.example.internal/mcp',
-                transport='http',
-                auth_mode='oauth',
-                environment='stage',
-                allowed_tools_json=json.dumps(
-                    ['tickets.search', 'tickets.update', 'cms.read', 'dashboard.read'],
-                    ensure_ascii=False,
-                ),
-                require_approval='always',
-                is_enabled=False,
-                notes='Seeded placeholder MCP server. Update URL and credentials before enabling.',
+                key=key,
+                name=template['name'],
+                server_url=template['server_url'],
+                transport=template.get('transport', 'http'),
+                auth_mode=template.get('auth_mode', 'oauth'),
+                environment=template.get('environment', 'template'),
+                allowed_tools_json=json.dumps(template.get('allowed_tools', []), ensure_ascii=False),
+                require_approval=template.get('require_approval', 'always'),
+                is_enabled=bool(template.get('is_enabled', False)),
+                notes=template.get('notes'),
                 created_by_id=owner_id,
                 updated_by_id=owner_id,
             )

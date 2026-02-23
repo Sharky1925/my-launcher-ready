@@ -864,6 +864,57 @@ class AcpMcpAuditEvent(db.Model):
     )
 
 
+MCP_OPERATION_STATUS_PENDING_APPROVAL = 'pending_approval'
+MCP_OPERATION_STATUS_QUEUED = 'queued'
+MCP_OPERATION_STATUS_RUNNING = 'running'
+MCP_OPERATION_STATUS_SUCCEEDED = 'succeeded'
+MCP_OPERATION_STATUS_FAILED = 'failed'
+MCP_OPERATION_STATUS_BLOCKED = 'blocked'
+MCP_OPERATION_STATUS_REJECTED = 'rejected'
+MCP_OPERATION_STATUSES = (
+    MCP_OPERATION_STATUS_PENDING_APPROVAL,
+    MCP_OPERATION_STATUS_QUEUED,
+    MCP_OPERATION_STATUS_RUNNING,
+    MCP_OPERATION_STATUS_SUCCEEDED,
+    MCP_OPERATION_STATUS_FAILED,
+    MCP_OPERATION_STATUS_BLOCKED,
+    MCP_OPERATION_STATUS_REJECTED,
+)
+MCP_APPROVAL_STATUS_PENDING = 'pending'
+MCP_APPROVAL_STATUS_APPROVED = 'approved'
+MCP_APPROVAL_STATUS_REJECTED = 'rejected'
+MCP_APPROVAL_STATUS_NOT_REQUIRED = 'not_required'
+
+
+class AcpMcpOperation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    server_id = db.Column(db.Integer, db.ForeignKey('acp_mcp_server.id'), nullable=False, index=True)
+    request_id = db.Column(db.String(36), nullable=False, unique=True, index=True)
+    tool_name = db.Column(db.String(160), nullable=False, index=True)
+    arguments_json = db.Column(db.Text, nullable=False, default='{}')
+    response_json = db.Column(db.Text)
+    status = db.Column(db.String(32), nullable=False, default=MCP_OPERATION_STATUS_QUEUED, index=True)
+    approval_status = db.Column(db.String(24), nullable=False, default=MCP_APPROVAL_STATUS_NOT_REQUIRED, index=True)
+    requires_approval = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    attempt_count = db.Column(db.Integer, nullable=False, default=0)
+    max_attempts = db.Column(db.Integer, nullable=False, default=3)
+    error_message = db.Column(db.String(800))
+    requested_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    approved_at = db.Column(db.DateTime, index=True)
+    last_attempt_at = db.Column(db.DateTime, index=True)
+    next_attempt_at = db.Column(db.DateTime, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+    server = db.relationship('AcpMcpServer', backref=db.backref('operations', lazy=True))
+
+    __table_args__ = (
+        db.Index('ix_acp_mcp_operation_status_next', 'status', 'next_attempt_at'),
+        db.Index('ix_acp_mcp_operation_server_created', 'server_id', 'created_at'),
+    )
+
+
 class AcpEnvironment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     key = db.Column(db.String(40), unique=True, nullable=False, index=True)
