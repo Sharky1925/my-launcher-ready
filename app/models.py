@@ -569,6 +569,29 @@ class AcpPageVersion(db.Model):
     )
 
 
+class AcpPageRouteBinding(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    route_rule = db.Column(db.String(240), unique=True, nullable=False, index=True)
+    endpoint = db.Column(db.String(180), nullable=False, index=True)
+    methods_json = db.Column(db.Text, nullable=False, default='[]')
+    page_slug = db.Column(db.String(200), index=True)
+    page_id = db.Column(db.Integer, db.ForeignKey('acp_page_document.id'), index=True)
+    sync_status = db.Column(db.String(40), nullable=False, default='missing_page_document', index=True)
+    issue_detail = db.Column(db.String(320))
+    is_dynamic = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    last_seen_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+    page = db.relationship('AcpPageDocument', backref=db.backref('route_bindings', lazy=True))
+
+    __table_args__ = (
+        db.Index('ix_acp_page_route_binding_status_seen', 'sync_status', 'last_seen_at'),
+        db.Index('ix_acp_page_route_binding_page', 'page_slug', 'page_id'),
+    )
+
+
 class AcpDashboardDocument(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     dashboard_id = db.Column(db.String(120), unique=True, nullable=False, index=True)

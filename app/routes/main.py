@@ -1823,7 +1823,7 @@ def remote_support_login():
 
 @main_bp.route('/remote-support/logout', methods=['POST'])
 def remote_support_logout():
-    session.pop('support_client_id', None)
+    session.clear()
     flash('You have been signed out.', 'success')
     return redirect(url_for('main.remote_support'))
 

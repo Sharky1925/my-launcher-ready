@@ -485,6 +485,7 @@
       {% endif %}
       {% if current_user.has_permission('acp:pages:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.acp_pages', 'admin.acp_page_add', 'admin.acp_page_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_pages') }}"><i class="fa-solid fa-layer-group"></i>Visual Pages</a>
+      <a class="nav-link {% if request.endpoint in ['admin.acp_sync_status'] %}active{% endif %}" href="{{ url_for('admin.acp_sync_status') }}"><i class="fa-solid fa-arrows-rotate"></i>Page Sync Status</a>
       {% endif %}
       {% if current_user.has_permission('acp:dashboards:manage') %}
       <a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}"><i class="fa-solid fa-chart-line"></i>Dashboard Studio</a>
@@ -559,6 +560,7 @@
           {% endif %}
           {% if current_user.has_permission('acp:pages:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_pages', 'admin.acp_page_add', 'admin.acp_page_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_pages') }}">Visual Pages</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_sync_status'] %}active{% endif %}" href="{{ url_for('admin.acp_sync_status') }}">Page Sync Status</a></li>
           {% endif %}
           {% if current_user.has_permission('acp:dashboards:manage') %}
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.acp_dashboards', 'admin.acp_dashboard_add', 'admin.acp_dashboard_edit'] %}active{% endif %}" href="{{ url_for('admin.acp_dashboards') }}">Dashboard Studio</a></li>

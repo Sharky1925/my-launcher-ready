@@ -21,6 +21,7 @@ try:
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
+        AcpPageRouteBinding,
         AcpDashboardDocument,
         AcpContentType,
         AcpContentEntry,
@@ -55,6 +56,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
+        AcpPageRouteBinding,
         AcpDashboardDocument,
         AcpContentType,
         AcpContentEntry,
@@ -196,6 +198,33 @@ def test_acp_studio_pages_and_dashboards_render_for_admin(client):
     assert "Dashboard Documents" in dashboards.get_data(as_text=True)
 
 
+def test_acp_sync_status_scan_and_autoregister(client, app):
+    admin_login(client)
+
+    sync_page = client.get("/admin/acp/sync-status")
+    assert sync_page.status_code == 200
+    sync_html = sync_page.get_data(as_text=True)
+    assert "Route ↔ MSC Page Registry Sync" in sync_html
+    csrf_token = extract_csrf_token(sync_html)
+    assert csrf_token
+
+    sync_action = client.post(
+        "/admin/acp/sync-status/resync",
+        data={"_csrf_token": csrf_token, "action": "autoregister"},
+        follow_redirects=False,
+    )
+    assert sync_action.status_code in (302, 303)
+
+    with app.app_context():
+        binding = AcpPageRouteBinding.query.filter_by(route_rule="/services").first()
+        assert binding is not None
+        assert binding.page_slug == "services"
+        assert binding.sync_status in {"synced", "unpublished_page_document"}
+
+        managed_page = AcpPageDocument.query.filter_by(slug="services").first()
+        assert managed_page is not None
+
+
 def test_acp_page_form_includes_visual_block_builder(client, app):
     admin_login(client)
     with app.app_context():
@@ -320,6 +349,37 @@ def test_acp_phase1_admin_sections_render(client):
         assert token_set is not None
         token_id = token_set.id
     assert client.get(f"/admin/acp/theme/{token_id}/edit").status_code == 200
+
+
+def test_acp_mcp_server_rejects_invalid_url_scheme(client, app):
+    admin_login(client)
+    page = client.get("/admin/acp/mcp/servers/new")
+    assert page.status_code == 200
+    csrf_token = extract_csrf_token(page.get_data(as_text=True))
+    assert csrf_token
+
+    response = client.post(
+        "/admin/acp/mcp/servers/new",
+        data={
+            "_csrf_token": csrf_token,
+            "name": "Invalid MCP URL",
+            "key": f"invalid-url-{uuid.uuid4().hex[:8]}",
+            "server_url": "javascript:alert(1)",
+            "transport": "http",
+            "auth_mode": "oauth",
+            "environment": "production",
+            "allowed_tools_json": "[]",
+            "require_approval": "always",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Server URL must be a valid http(s) URL." in html
+
+    with app.app_context():
+        created = AcpMcpServer.query.filter_by(name="Invalid MCP URL").first()
+        assert created is None
 
 
 def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):
@@ -463,6 +523,16 @@ def test_health_endpoint_reports_ok(client):
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["status"] == "ok"
+
+
+def test_readiness_endpoint_reports_ready(client):
+    response = client.get("/readyz")
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "ready"
+    assert payload["checks"]["database"] is True
+    assert payload["checks"]["site_settings_seeded"] is True
+    assert payload["checks"]["admin_user_seeded"] is True
 
 
 def test_contact_page_form_has_accessibility_autocomplete(client):

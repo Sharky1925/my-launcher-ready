@@ -1,0 +1,178 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Page Sync Status{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h5 class="mb-1">Route ↔ MSC Page Registry Sync</h5>
+      <p class="text-muted mb-0">
+        Generated at {{ report.generated_at.strftime('%Y-%m-%d %H:%M:%S') if report.generated_at else '—' }} UTC.
+      </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <form method="POST" action="{{ url_for('admin.acp_sync_resync') }}" class="d-inline">
+        {{ csrf_input() }}
+        <input type="hidden" name="action" value="scan">
+        <button class="btn btn-outline-primary btn-sm" type="submit">
+          <i class="fa-solid fa-rotate me-1"></i>Run Sync Scan
+        </button>
+      </form>
+      <form method="POST" action="{{ url_for('admin.acp_sync_resync') }}" class="d-inline">
+        {{ csrf_input() }}
+        <input type="hidden" name="action" value="autoregister">
+        <button class="btn btn-primary btn-sm" type="submit">
+          <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Auto-Register Missing Pages
+        </button>
+      </form>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin.acp_studio') }}">Back to ACP Studio</a>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Routes Scanned</div><h4 class="mb-0">{{ report.totals.routes_scanned }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Synced</div><h4 class="mb-0 text-success">{{ report.totals.synced }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Missing Page Docs</div><h4 class="mb-0 text-warning">{{ report.totals.missing_page_document }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Unpublished Page Docs</div><h4 class="mb-0 text-info">{{ report.totals.unpublished_page_document }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Unmapped Routes</div><h4 class="mb-0">{{ report.totals.unmapped_route }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Orphan Pages</div><h4 class="mb-0">{{ report.totals.orphan_pages }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Orphan Bindings</div><h4 class="mb-0">{{ report.totals.orphan_bindings }}</h4></div></div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100"><div class="card-body"><div class="small text-muted">Auto-Registered</div><h4 class="mb-0">{{ report.totals.auto_registered_pages }}</h4></div></div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><strong>Live Route Scan</strong></div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Endpoint</th>
+            <th>Expected Slug</th>
+            <th>Status</th>
+            <th>Issue</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report.routes %}
+          <tr>
+            <td><code>{{ row.rule }}</code>{% if row.is_dynamic %}<span class="badge bg-secondary ms-2">Dynamic</span>{% endif %}</td>
+            <td>{{ row.endpoint }}</td>
+            <td>{% if row.expected_slug %}<code>{{ row.expected_slug }}</code>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>
+              {% if row.sync_status == 'synced' %}
+                <span class="badge bg-success">Synced</span>
+              {% elif row.sync_status == 'missing_page_document' %}
+                <span class="badge bg-warning text-dark">Missing Page</span>
+              {% elif row.sync_status == 'unpublished_page_document' %}
+                <span class="badge bg-info text-dark">Unpublished</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ row.sync_status }}</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ row.issue or '—' }}</td>
+            <td class="text-end">
+              {% if row.page_id %}
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.acp_page_edit', id=row.page_id) }}">Edit Page</a>
+              {% else %}
+              <span class="text-muted small">Use auto-register</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-muted">No route data.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><strong>Orphan Page Documents</strong></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Slug</th>
+                <th>Status</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in report.orphan_pages %}
+              <tr>
+                <td><code>{{ row.slug }}</code><div class="small text-muted">{{ row.title }}</div></td>
+                <td><span class="badge {{ workflow_status_badge(row.status) }}">{{ workflow_status_label(row.status) }}</span></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.acp_page_edit', id=row.id) }}">Review</a></td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted">No orphan page documents.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><strong>Stored Route Bindings</strong></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Route</th>
+                <th>Page Slug</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for binding in stored_bindings %}
+              <tr>
+                <td><code>{{ binding.route_rule }}</code></td>
+                <td>{% if binding.page_slug %}<code>{{ binding.page_slug }}</code>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                <td>
+                  {% if binding.sync_status == 'synced' %}
+                  <span class="badge bg-success">Synced</span>
+                  {% elif binding.sync_status == 'orphan_route_binding' %}
+                  <span class="badge bg-secondary">Orphan Binding</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark">{{ binding.sync_status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted">No route binding records yet. Run sync scan.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

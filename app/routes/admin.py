@@ -3,6 +3,7 @@ import json
 import os
 import re
 import uuid
+from urllib.parse import urlparse
 import bleach
 from sqlalchemy import func, or_
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, session, abort, jsonify
@@ -33,6 +34,7 @@ try:
         ContentBlock,
         AcpPageDocument,
         AcpPageVersion,
+        AcpPageRouteBinding,
         AcpDashboardDocument,
         AcpDashboardVersion,
         AcpComponentDefinition,
@@ -87,6 +89,7 @@ try:
     )
     from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from ..content_schemas import CONTENT_SCHEMAS
+    from ..page_sync import run_page_route_sync
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     from models import (
         db,
@@ -108,6 +111,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         ContentBlock,
         AcpPageDocument,
         AcpPageVersion,
+        AcpPageRouteBinding,
         AcpDashboardDocument,
         AcpDashboardVersion,
         AcpComponentDefinition,
@@ -162,6 +166,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     )
     from utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from content_schemas import CONTENT_SCHEMAS
+    from page_sync import run_page_route_sync
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates/admin')
 ADMIN_LOGIN_LIMIT = 5
@@ -243,6 +248,8 @@ ADMIN_PERMISSION_MAP = {
     'admin.acp_page_edit': 'acp:pages:manage',
     'admin.acp_page_snapshot': 'acp:pages:manage',
     'admin.acp_page_publish': 'acp:publish',
+    'admin.acp_sync_status': 'acp:pages:manage',
+    'admin.acp_sync_resync': 'acp:pages:manage',
     'admin.acp_dashboards': 'acp:dashboards:manage',
     'admin.acp_dashboard_add': 'acp:dashboards:manage',
     'admin.acp_dashboard_edit': 'acp:dashboards:manage',
@@ -338,6 +345,18 @@ def parse_datetime_local(value):
         except ValueError:
             continue
     return None
+
+
+def is_valid_https_url(value):
+    raw = (value or '').strip()
+    if not raw:
+        return False
+    parsed = urlparse(raw)
+    if parsed.scheme not in {'http', 'https'}:
+        return False
+    if not parsed.netloc:
+        return False
+    return True
 
 
 def format_datetime_local(value):
@@ -1145,6 +1164,7 @@ def login():
 @login_required
 def logout():
     logout_user()
+    session.clear()
     return redirect(url_for('admin.login'))
 
 
@@ -2652,6 +2672,11 @@ def acp_studio():
     component_count = AcpComponentDefinition.query.filter_by(is_enabled=True).count()
     widget_count = AcpWidgetDefinition.query.filter_by(is_enabled=True).count()
     metric_count = AcpMetricDefinition.query.filter_by(is_enabled=True).count()
+    route_binding_count = AcpPageRouteBinding.query.count()
+    out_of_sync_routes = AcpPageRouteBinding.query.filter(
+        AcpPageRouteBinding.is_active.is_(True),
+        AcpPageRouteBinding.sync_status != 'synced',
+    ).count()
     audit_count = AcpAuditEvent.query.count()
     version_count = AcpPageVersion.query.count() + AcpDashboardVersion.query.count()
     environments = AcpEnvironment.query.order_by(AcpEnvironment.id.asc()).all()
@@ -2670,6 +2695,8 @@ def acp_studio():
             'components': component_count,
             'widgets': widget_count,
             'metrics': metric_count,
+            'route_bindings': route_binding_count,
+            'out_of_sync_routes': out_of_sync_routes,
             'audit_events': audit_count,
             'versions': version_count,
             'published_pages': published_pages,
@@ -2702,6 +2729,83 @@ def acp_pages():
         q=q,
         workflow_options=get_workflow_status_options(current_user),
     )
+
+
+@admin_bp.route('/acp/sync-status')
+@login_required
+def acp_sync_status():
+    report = run_page_route_sync(
+        current_app._get_current_object(),
+        auto_register=False,
+        persist=False,
+    )
+    stored_bindings = (
+        AcpPageRouteBinding.query
+        .order_by(
+            AcpPageRouteBinding.is_active.desc(),
+            AcpPageRouteBinding.updated_at.desc(),
+            AcpPageRouteBinding.route_rule.asc(),
+        )
+        .limit(120)
+        .all()
+    )
+    return render_template(
+        'admin/acp/sync_status.html',
+        report=report,
+        stored_bindings=stored_bindings,
+    )
+
+
+@admin_bp.route('/acp/sync-status/resync', methods=['POST'])
+@login_required
+def acp_sync_resync():
+    action = clean_text(request.form.get('action', 'scan'), 30).lower()
+    auto_register = action == 'autoregister'
+    if action not in {'scan', 'autoregister'}:
+        action = 'scan'
+        auto_register = False
+    try:
+        report = run_page_route_sync(
+            current_app._get_current_object(),
+            auto_register=auto_register,
+            persist=True,
+        )
+        _create_acp_audit_event(
+            'pages',
+            'sync',
+            'acp_page_route_binding',
+            'route-sync',
+            {'action': action},
+            {
+                'totals': report.get('totals', {}),
+                'auto_registered_pages': report.get('auto_registered_pages', []),
+            },
+        )
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('ACP route sync failed.')
+        flash('Route sync failed. Check logs and retry.', 'danger')
+        return redirect(url_for('admin.acp_sync_status'))
+
+    totals = report.get('totals', {})
+    if auto_register:
+        flash(
+            (
+                f"Route sync completed. Synced {totals.get('synced', 0)} route(s), "
+                f"auto-registered {totals.get('auto_registered_pages', 0)} page document(s)."
+            ),
+            'success',
+        )
+    else:
+        flash(
+            (
+                f"Route sync completed. Synced {totals.get('synced', 0)} route(s), "
+                f"missing {totals.get('missing_page_document', 0)} page document(s)."
+            ),
+            'success',
+        )
+    return redirect(url_for('admin.acp_sync_status'))
 
 
 @admin_bp.route('/acp/pages/new', methods=['GET', 'POST'])
@@ -3600,6 +3704,9 @@ def acp_mcp_server_add():
         if not name or not key or not server_url:
             flash('Name, key, and server URL are required.', 'danger')
             return render_template('admin/acp/mcp_server_form.html', item=None)
+        if not is_valid_https_url(server_url):
+            flash('Server URL must be a valid http(s) URL.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=None)
         if AcpMcpServer.query.filter_by(key=key).first():
             flash('An MCP server with this key already exists.', 'danger')
             return render_template('admin/acp/mcp_server_form.html', item=None)
@@ -3653,6 +3760,9 @@ def acp_mcp_server_edit(id):
 
         if not name or not key or not server_url:
             flash('Name, key, and server URL are required.', 'danger')
+            return render_template('admin/acp/mcp_server_form.html', item=item)
+        if not is_valid_https_url(server_url):
+            flash('Server URL must be a valid http(s) URL.', 'danger')
             return render_template('admin/acp/mcp_server_form.html', item=item)
         duplicate = AcpMcpServer.query.filter(
             AcpMcpServer.key == key,

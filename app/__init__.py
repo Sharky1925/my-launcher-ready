@@ -2,8 +2,9 @@ import os
 import re
 import secrets
 import json
+import logging
 from urllib.parse import urlparse
-from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, has_request_context, redirect, render_template, request, session, url_for
 from flask_login import LoginManager
 from markupsafe import Markup, escape
 from sqlalchemy import text
@@ -50,8 +51,40 @@ _ICON_CLASS_ALIASES = {
 }
 _ICON_STYLES = {'fa-solid', 'fa-regular', 'fa-brands'}
 _CSS_VAR_NAME_RE = re.compile(r"^--[a-zA-Z0-9_-]{1,64}$")
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{8,80}$")
 _sentry_initialized = False
 WORKFLOW_SCHEDULE_POLL_SECONDS = 30
+
+
+class JsonLogFormatter(logging.Formatter):
+    def format(self, record):
+        payload = {
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'time': self.formatTime(record, self.datefmt),
+        }
+        if has_request_context():
+            payload.update(
+                {
+                    'request_id': getattr(g, 'request_id', ''),
+                    'method': request.method,
+                    'path': request.path,
+                    'remote_ip': request.remote_addr,
+                }
+            )
+        if record.exc_info:
+            payload['exc_info'] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False)
+
+
+def configure_logging(app):
+    if not app.config.get('LOG_JSON', True):
+        return
+    formatter = JsonLogFormatter()
+    for handler in app.logger.handlers:
+        handler.setFormatter(formatter)
+    app.logger.setLevel(getattr(logging, str(app.config.get('LOG_LEVEL', 'INFO')).upper(), logging.INFO))
 
 
 @login_manager.user_loader
@@ -225,6 +258,7 @@ def create_app(config_overrides=None):
     app.config.from_object(Config)
     if config_overrides:
         app.config.update(config_overrides)
+    configure_logging(app)
 
     asset_version = (app.config.get('ASSET_VERSION') or '').strip()
     if not asset_version:
@@ -263,6 +297,14 @@ def create_app(config_overrides=None):
 
     db.init_app(app)
     login_manager.init_app(app)
+
+    @app.before_request
+    def assign_request_id():
+        incoming = (request.headers.get('X-Request-ID') or '').strip()
+        if _REQUEST_ID_RE.match(incoming):
+            g.request_id = incoming
+        else:
+            g.request_id = secrets.token_hex(16)
 
     @app.before_request
     def enforce_csrf():
@@ -334,6 +376,7 @@ def create_app(config_overrides=None):
 
     @app.after_request
     def add_security_headers(response):
+        response.headers['X-Request-ID'] = getattr(g, 'request_id', '')
         response.headers.setdefault('X-Content-Type-Options', 'nosniff')
         response.headers.setdefault('X-Frame-Options', 'DENY')
         response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
@@ -409,6 +452,25 @@ def create_app(config_overrides=None):
             db.session.rollback()
             app.logger.exception('Health check DB probe failed.')
             return {'status': 'degraded'}, 503
+
+    @app.get('/readyz')
+    def readyz():
+        checks = {
+            'database': False,
+            'site_settings_seeded': False,
+            'admin_user_seeded': False,
+        }
+        try:
+            db.session.execute(text('SELECT 1'))
+            checks['database'] = True
+            checks['site_settings_seeded'] = db.session.query(SiteSetting.id).first() is not None
+            checks['admin_user_seeded'] = db.session.query(User.id).first() is not None
+            all_ready = all(checks.values())
+            return {'status': 'ready' if all_ready else 'warming', 'checks': checks}, (200 if all_ready else 503)
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Readiness check failed.')
+            return {'status': 'degraded', 'checks': checks}, 503
 
     try:
         from .routes.main import main_bp

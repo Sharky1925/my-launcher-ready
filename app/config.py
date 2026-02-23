@@ -125,3 +125,5 @@ class Config:
     SENTRY_DSN = (os.environ.get('SENTRY_DSN') or '').strip()
     SENTRY_ENVIRONMENT = (os.environ.get('SENTRY_ENVIRONMENT') or '').strip()
     SENTRY_TRACES_SAMPLE_RATE = _as_float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE'), 0.0)
+    LOG_JSON = _as_bool(os.environ.get('LOG_JSON'), True)
+    LOG_LEVEL = (os.environ.get('LOG_LEVEL') or 'INFO').strip().upper()
