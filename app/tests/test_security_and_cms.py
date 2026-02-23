@@ -1,4 +1,5 @@
 import re
+import hashlib
 import uuid
 from datetime import timedelta
 
@@ -18,6 +19,7 @@ try:
         SupportClient,
         SupportTicket,
         SupportTicketEvent,
+        SupportTicketEmailVerification,
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
@@ -53,6 +55,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         SupportClient,
         SupportTicket,
         SupportTicketEvent,
+        SupportTicketEmailVerification,
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
@@ -601,6 +604,19 @@ def test_contact_post_with_csrf_succeeds(client, app):
         saved = ContactSubmission.query.filter_by(email=email).first()
         assert saved is not None
         assert saved.message == "Contact smoke test"
+        ticket = (
+            SupportTicket.query
+            .filter(SupportTicket.details.contains(email))
+            .order_by(SupportTicket.created_at.desc(), SupportTicket.id.desc())
+            .first()
+        )
+        assert ticket is not None
+        assert ticket.ticket_number.startswith("RS-")
+        verification = SupportTicketEmailVerification.query.filter_by(
+            ticket_id=ticket.id,
+            requester_email=email,
+        ).first()
+        assert verification is not None
 
 
 def test_contact_turnstile_requires_token_when_enabled(client, app):
@@ -739,6 +755,11 @@ def test_request_quote_creates_cms_ticket(client, app):
         assert ticket.priority == "high"
         assert requester_email in ticket.details
         assert "Quote Corp" in ticket.details
+        verification = SupportTicketEmailVerification.query.filter_by(
+            ticket_id=ticket.id,
+            requester_email=requester_email,
+        ).first()
+        assert verification is not None
 
 
 def test_request_quote_form_rate_limit_blocks_second_submission(client, app):
@@ -1242,18 +1263,118 @@ def test_public_ticket_search_page_lookup(client, app):
         db.session.add(ticket)
         db.session.commit()
         ticket_number = ticket.ticket_number
+        ticket_id = ticket.id
+        portal_email = portal_client.email
 
     search_page = client.get("/ticket-search", query_string={"ticket_number": ticket_number.lower()})
     assert search_page.status_code == 200
     html = search_page.get_data(as_text=True)
-    assert "Ticket Found" in html
-    assert ticket_number in html
-    assert "Waiting on Client" in html
+    assert "Verify Email to View Status" in html
+    assert "Ticket Found" not in html
+    csrf_token = extract_csrf_token(html)
+    assert csrf_token
+
+    request_access_response = client.post(
+        "/ticket-search/request-access",
+        data={
+            "_csrf_token": csrf_token,
+            "ticket_number": ticket_number,
+            "email": portal_email,
+        },
+        follow_redirects=False,
+    )
+    assert request_access_response.status_code in (302, 303)
+
+    verification_token = f"verify-{uuid.uuid4().hex}"
+    with app.app_context():
+        verification = SupportTicketEmailVerification.query.filter_by(
+            ticket_id=ticket_id,
+            requester_email=portal_email,
+        ).first()
+        assert verification is not None
+        verification.token_hash = hashlib.sha256(verification_token.encode("utf-8")).hexdigest()
+        verification.is_verified = False
+        verification.verified_at = None
+        verification.expires_at = utc_now_naive() + timedelta(hours=4)
+        db.session.commit()
+
+    verify_response = client.get(
+        "/ticket-verify",
+        query_string={"ticket_number": ticket_number, "token": verification_token},
+        follow_redirects=False,
+    )
+    assert verify_response.status_code in (302, 303)
+
+    verified_search_page = client.get("/ticket-search", query_string={"ticket_number": ticket_number.lower()})
+    assert verified_search_page.status_code == 200
+    verified_html = verified_search_page.get_data(as_text=True)
+    assert "Ticket Found" in verified_html
+    assert ticket_number in verified_html
+    assert "Waiting on Client" in verified_html
 
     index_page = client.get("/")
     index_html = index_page.get_data(as_text=True)
     assert 'action="/ticket-search"' in index_html or 'action="/ticket-status"' in index_html
     assert "Track Ticket #" in index_html
+
+
+def test_remote_support_ticket_creation_creates_email_verification(client, app):
+    email = f"ticket-owner-{uuid.uuid4().hex[:8]}@example.com"
+    with app.app_context():
+        portal_client = SupportClient(
+            full_name="Portal Ticket Owner",
+            email=email,
+            company="Portal Ticket Co",
+            phone="+1 (555) 123-4567",
+        )
+        portal_client.set_password("PortalTicket123!")
+        db.session.add(portal_client)
+        db.session.commit()
+
+    login_page = client.get("/remote-support")
+    login_csrf = extract_csrf_token(login_page.get_data(as_text=True))
+    assert login_csrf
+
+    login_response = client.post(
+        "/remote-support/login",
+        data={
+            "_csrf_token": login_csrf,
+            "email": email,
+            "password": "PortalTicket123!",
+        },
+        follow_redirects=False,
+    )
+    assert login_response.status_code in (302, 303)
+
+    ticket_page = client.get("/remote-support")
+    ticket_csrf = extract_csrf_token(ticket_page.get_data(as_text=True))
+    assert ticket_csrf
+
+    create_response = client.post(
+        "/remote-support/tickets",
+        data={
+            "_csrf_token": ticket_csrf,
+            "subject": "Portal verification ticket",
+            "priority": "normal",
+            "details": "Need status updates from public ticket search.",
+        },
+        follow_redirects=False,
+    )
+    assert create_response.status_code in (302, 303)
+
+    with app.app_context():
+        ticket = (
+            SupportTicket.query
+            .filter_by(subject="Portal verification ticket")
+            .order_by(SupportTicket.created_at.desc(), SupportTicket.id.desc())
+            .first()
+        )
+        assert ticket is not None
+        verification = SupportTicketEmailVerification.query.filter_by(
+            ticket_id=ticket.id,
+            requester_email=email,
+        ).first()
+        assert verification is not None
 
 
 def test_remote_support_uses_stage_labels_for_ticket_sync(client, app):

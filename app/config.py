@@ -121,6 +121,7 @@ class Config:
     CONTACT_FORM_WINDOW_SECONDS = _as_int(os.environ.get('CONTACT_FORM_WINDOW_SECONDS'), 3600)
     QUOTE_FORM_LIMIT = _as_int(os.environ.get('QUOTE_FORM_LIMIT'), 8)
     QUOTE_FORM_WINDOW_SECONDS = _as_int(os.environ.get('QUOTE_FORM_WINDOW_SECONDS'), 3600)
+    TICKET_VERIFICATION_TOKEN_TTL_SECONDS = _as_int(os.environ.get('TICKET_VERIFICATION_TOKEN_TTL_SECONDS'), 604800)
 
     SENTRY_DSN = (os.environ.get('SENTRY_DSN') or '').strip()
     SENTRY_ENVIRONMENT = (os.environ.get('SENTRY_ENVIRONMENT') or '').strip()

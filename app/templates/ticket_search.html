@@ -12,7 +12,7 @@
       </ol>
     </nav>
     <h1>Track Your Ticket</h1>
-    <p>Enter your ticket number to see the latest status and stage.</p>
+    <p>Enter your ticket number, then verify your email to securely view status updates.</p>
   </div>
 </section>
 
@@ -39,8 +39,42 @@
       </form>
     </div>
 
+    {% if normalized_ticket_number and not ticket_verified %}
+    <div class="service-visual-panel mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+        <div>
+          <h3 class="mb-1">Verify Email to View Status</h3>
+          <p class="text-muted mb-0">For privacy, ticket details appear only after email verification.</p>
+        </div>
+        <code>{{ normalized_ticket_number }}</code>
+      </div>
+      <form method="POST" action="{{ url_for('main.ticket_search_request_access') }}" class="row g-2 align-items-end">
+        {{ csrf_input() }}
+        <input type="hidden" name="ticket_number" value="{{ normalized_ticket_number }}">
+        <div class="col-lg-8">
+          <label for="ticketSearchEmail" class="form-label">Requester Email</label>
+          <input
+            id="ticketSearchEmail"
+            name="email"
+            type="email"
+            class="form-control"
+            value="{{ requester_email_input }}"
+            placeholder="name@company.com"
+            maxlength="200"
+            autocomplete="email"
+            required
+          >
+        </div>
+        <div class="col-lg-4">
+          <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-envelope-circle-check me-2"></i>Send Verification Link</button>
+        </div>
+      </form>
+      <p class="small text-muted mt-3 mb-0">If the ticket number and email match our records, you'll receive a secure verification link.</p>
+    </div>
+    {% endif %}
+
     {% if normalized_ticket_number %}
-      {% if ticket %}
+      {% if ticket and ticket_verified %}
       {% set stage_badge = 'bg-warning text-dark' if ticket_stage == 'pending' else ('bg-success' if ticket_stage == 'done' else 'bg-secondary') %}
       <div class="service-visual-panel">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
@@ -89,10 +123,6 @@
           </div>
         </div>
         <p class="text-muted small mb-0 mt-3">Need full ticket details or to add updates? Use the <a href="{{ url_for('main.remote_support') }}">Remote Support Portal</a>.</p>
-      </div>
-      {% else %}
-      <div class="alert alert-warning">
-        No ticket found for <code>{{ normalized_ticket_number }}</code>. Please verify the number and try again.
       </div>
       {% endif %}
     {% endif %}

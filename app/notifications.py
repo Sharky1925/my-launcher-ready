@@ -30,6 +30,31 @@ def _ticket_admin_url(ticket_id):
     return f"{base}/admin/support-tickets/{ticket_id}"
 
 
+def _ticket_status_url(ticket_number):
+    base = (current_app.config.get('APP_BASE_URL') or '').rstrip('/')
+    query = urllib.parse.urlencode({'ticket_number': ticket_number})
+    if not base:
+        return f"/ticket-search?{query}"
+    return f"{base}/ticket-search?{query}"
+
+
+def _ticket_verify_url(ticket_number, token):
+    base = (current_app.config.get('APP_BASE_URL') or '').rstrip('/')
+    query = urllib.parse.urlencode({'ticket_number': ticket_number, 'token': token})
+    if not base:
+        return f"/ticket-verify?{query}"
+    return f"{base}/ticket-verify?{query}"
+
+
+def _ticket_kind_label(ticket_kind):
+    normalized = (ticket_kind or '').strip().lower()
+    if normalized == 'quote':
+        return 'Quote'
+    if normalized == 'contact':
+        return 'Contact'
+    return 'Support'
+
+
 def _send_via_mailgun(subject, body, recipients, mail_from):
     """Send email via Mailgun HTTP API (no SMTP needed)."""
     api_key = (current_app.config.get('MAILGUN_API_KEY') or '').strip()
@@ -147,7 +172,7 @@ def send_ticket_notification(ticket, ticket_kind='support'):
         return False
 
     client = getattr(ticket, 'client', None)
-    kind = 'Quote' if ticket_kind == 'quote' else 'Support'
+    kind = _ticket_kind_label(ticket_kind)
     subject = f"[Website] New {kind} ticket: {ticket.ticket_number}"
     body = "\n".join([
         f"A new {kind.lower()} ticket has been created.",
@@ -166,3 +191,29 @@ def send_ticket_notification(ticket, ticket_kind='support'):
         f"Admin URL: {_ticket_admin_url(ticket.id)}",
     ])
     return _send_email(subject, body, recipients)
+
+
+def send_ticket_verification_email(ticket, recipient_email, token, ticket_kind='support'):
+    safe_email = _safe_header_value(recipient_email, max_length=320)
+    if not safe_email or not token:
+        return False
+
+    kind = _ticket_kind_label(ticket_kind)
+    verify_url = _ticket_verify_url(ticket.ticket_number, token)
+    status_url = _ticket_status_url(ticket.ticket_number)
+    subject = f"[Right On Repair] Verify ticket access: {ticket.ticket_number}"
+    body = "\n".join([
+        f"Your {kind.lower()} request has been received.",
+        "",
+        f"Ticket Number: {ticket.ticket_number}",
+        f"Subject: {ticket.subject}",
+        "",
+        "To securely view status updates, verify your email using this link:",
+        verify_url,
+        "",
+        "After verification, you can track updates from:",
+        status_url,
+        "",
+        "If you did not submit this request, you can ignore this email.",
+    ])
+    return _send_email(subject, body, [safe_email])

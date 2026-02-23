@@ -1,5 +1,6 @@
 from datetime import timedelta
 from html import escape as xml_escape
+import hashlib
 import json
 import re
 import secrets
@@ -20,6 +21,7 @@ try:
         Industry,
         SupportClient,
         SupportTicket,
+        SupportTicketEmailVerification,
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
@@ -36,7 +38,7 @@ try:
         normalize_ticket_number,
         create_support_ticket_event,
     )
-    from ..notifications import send_contact_notification, send_ticket_notification
+    from ..notifications import send_contact_notification, send_ticket_notification, send_ticket_verification_email
     from ..service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
     from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, normalized_ip, get_request_ip, get_page_content
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
@@ -51,6 +53,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         Industry,
         SupportClient,
         SupportTicket,
+        SupportTicketEmailVerification,
         AuthRateLimitBucket,
         SecurityEvent,
         AcpPageDocument,
@@ -67,7 +70,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         normalize_ticket_number,
         create_support_ticket_event,
     )
-    from notifications import send_contact_notification, send_ticket_notification
+    from notifications import send_contact_notification, send_ticket_notification, send_ticket_verification_email
     from service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
     from utils import utc_now_naive, clean_text, escape_like, is_valid_email, normalized_ip, get_request_ip, get_page_content
 
@@ -115,6 +118,7 @@ ICON_CLASS_ALIASES = {
 }
 VALID_ICON_STYLES = {'fa-solid', 'fa-regular', 'fa-brands'}
 QUOTE_INTAKE_EMAIL = 'quote-intake@rightonrepair.local'
+CONTACT_INTAKE_EMAIL = 'contact-intake@rightonrepair.local'
 QUOTE_BUDGET_OPTIONS = {
     'under_5k': 'Under $5,000',
     '5k_15k': '$5,000 - $15,000',
@@ -149,6 +153,9 @@ QUOTE_URGENCY_OPTIONS = {
 CONTACT_FORM_SCOPE = 'contact_form'
 QUOTE_FORM_SCOPE = 'quote_form'
 PERSONAL_QUOTE_FORM_SCOPE = 'personal_quote_form'
+TICKET_LOOKUP_SCOPE = 'ticket_lookup'
+TICKET_LOOKUP_LIMIT = 12
+TICKET_LOOKUP_WINDOW_SECONDS = 3600
 AUTH_DUMMY_HASH = generate_password_hash('RightOnRepair::dummy-auth-check')
 
 
@@ -886,6 +893,118 @@ def get_logged_support_client():
     return db.session.get(SupportClient, parsed_id)
 
 
+def _ticket_lookup_limit():
+    return max(1, int(current_app.config.get('TICKET_LOOKUP_LIMIT', TICKET_LOOKUP_LIMIT)))
+
+
+def _ticket_lookup_window_seconds():
+    return max(60, int(current_app.config.get('TICKET_LOOKUP_WINDOW_SECONDS', TICKET_LOOKUP_WINDOW_SECONDS)))
+
+
+def _ticket_verification_ttl_seconds():
+    return max(300, int(current_app.config.get('TICKET_VERIFICATION_TOKEN_TTL_SECONDS', 604800)))
+
+
+def _hash_ticket_verification_token(raw_token):
+    return hashlib.sha256((raw_token or '').encode('utf-8')).hexdigest()
+
+
+def _session_verified_ticket_numbers():
+    raw = session.get('verified_ticket_numbers')
+    if not isinstance(raw, list):
+        return []
+    normalized = []
+    for item in raw:
+        ticket_number = normalize_ticket_number(item)
+        if ticket_number and ticket_number not in normalized:
+            normalized.append(ticket_number)
+    return normalized[-50:]
+
+
+def is_ticket_verified_in_session(ticket_number):
+    normalized = normalize_ticket_number(ticket_number)
+    if not normalized:
+        return False
+    return normalized in _session_verified_ticket_numbers()
+
+
+def mark_ticket_verified_in_session(ticket_number):
+    normalized = normalize_ticket_number(ticket_number)
+    if not normalized:
+        return
+    verified = _session_verified_ticket_numbers()
+    if normalized in verified:
+        verified.remove(normalized)
+    verified.append(normalized)
+    session['verified_ticket_numbers'] = verified[-50:]
+
+
+def issue_ticket_email_verification(ticket, requester_email):
+    normalized_email = clean_text(requester_email, 200).lower()
+    if not ticket or not ticket.id or not is_valid_email(normalized_email):
+        return None, ''
+
+    now = utc_now_naive()
+    expires_at = now + timedelta(seconds=_ticket_verification_ttl_seconds())
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = _hash_ticket_verification_token(raw_token)
+
+    verification = SupportTicketEmailVerification.query.filter_by(
+        ticket_id=ticket.id,
+        requester_email=normalized_email,
+    ).first()
+
+    if verification:
+        verification.token_hash = token_hash
+        verification.is_verified = False
+        verification.verified_at = None
+        verification.expires_at = expires_at
+        verification.last_sent_at = now
+        verification.send_count = max(0, int(verification.send_count or 0)) + 1
+    else:
+        verification = SupportTicketEmailVerification(
+            ticket_id=ticket.id,
+            requester_email=normalized_email,
+            token_hash=token_hash,
+            is_verified=False,
+            expires_at=expires_at,
+            last_sent_at=now,
+            send_count=1,
+        )
+        db.session.add(verification)
+
+    return verification, raw_token
+
+
+def _can_request_ticket_verification(ticket, requester_email):
+    normalized_email = clean_text(requester_email, 200).lower()
+    if not ticket or not is_valid_email(normalized_email):
+        return False
+
+    existing = SupportTicketEmailVerification.query.filter_by(
+        ticket_id=ticket.id,
+        requester_email=normalized_email,
+    ).first()
+    if existing:
+        return True
+
+    client_email = clean_text(getattr(getattr(ticket, 'client', None), 'email', ''), 200).lower()
+    if not client_email:
+        return False
+    if client_email in {QUOTE_INTAKE_EMAIL, CONTACT_INTAKE_EMAIL}:
+        return False
+    return client_email == normalized_email
+
+
+def infer_ticket_kind(ticket):
+    details = (getattr(ticket, 'details', '') or '').strip()
+    if details.startswith('Quote Intake Submission') or details.startswith('Personal Quote Request'):
+        return 'quote'
+    if details.startswith('Contact Form Submission'):
+        return 'contact'
+    return 'support'
+
+
 def generate_ticket_number():
     while True:
         token = secrets.token_hex(3).upper()
@@ -908,7 +1027,24 @@ def get_or_create_quote_intake_client():
     )
     client.set_password(secrets.token_urlsafe(32))
     db.session.add(client)
-    db.session.commit()
+    db.session.flush()
+    return client
+
+
+def get_or_create_contact_intake_client():
+    client = SupportClient.query.filter_by(email=CONTACT_INTAKE_EMAIL).first()
+    if client:
+        return client
+
+    client = SupportClient(
+        full_name='Contact Intake',
+        email=CONTACT_INTAKE_EMAIL,
+        company='Right On Repair',
+        phone='',
+    )
+    client.set_password(secrets.token_urlsafe(32))
+    db.session.add(client)
+    db.session.flush()
     return client
 
 
@@ -973,6 +1109,25 @@ def build_personal_quote_ticket_details(payload):
         '',
         'Additional Notes',
         payload.get('additional_notes') or 'Not provided',
+    ]
+    return '\n'.join(lines)
+
+
+def build_contact_ticket_details(payload):
+    lines = [
+        'Contact Form Submission',
+        f"Submitted (UTC): {utc_now_naive().strftime('%Y-%m-%d %H:%M:%S')}",
+        '',
+        'Requester',
+        f"- Name: {payload.get('name') or 'Not provided'}",
+        f"- Email: {payload.get('email') or 'Not provided'}",
+        f"- Phone: {payload.get('phone') or 'Not provided'}",
+        '',
+        'Subject',
+        payload.get('subject') or 'General inquiry',
+        '',
+        'Message',
+        payload.get('message') or 'Not provided',
     ]
     return '\n'.join(lines)
 
@@ -1832,22 +1987,119 @@ def remote_support_logout():
 @main_bp.route('/ticket-search')
 def ticket_search():
     ticket_number_input = clean_text(request.args.get('ticket_number', ''), 40)
+    requester_email_input = clean_text(request.args.get('email', ''), 200).lower()
     normalized_ticket_number = normalize_ticket_number(ticket_number_input)
     ticket = None
     ticket_stage = ''
+    ticket_verified = False
     if normalized_ticket_number:
-        ticket = SupportTicket.query.filter_by(ticket_number=normalized_ticket_number).first()
-        if ticket:
-            ticket_stage = support_ticket_stage_for_status(ticket.status)
+        candidate = SupportTicket.query.filter_by(ticket_number=normalized_ticket_number).first()
+        if candidate and is_ticket_verified_in_session(normalized_ticket_number):
+            active_verification = (
+                SupportTicketEmailVerification.query
+                .filter(
+                    SupportTicketEmailVerification.ticket_id == candidate.id,
+                    SupportTicketEmailVerification.is_verified.is_(True),
+                    SupportTicketEmailVerification.expires_at >= utc_now_naive(),
+                )
+                .first()
+            )
+            if active_verification:
+                ticket = candidate
+                ticket_stage = support_ticket_stage_for_status(ticket.status)
+                ticket_verified = True
     return render_template(
         'ticket_search.html',
         ticket_number_input=ticket_number_input,
+        requester_email_input=requester_email_input,
         normalized_ticket_number=normalized_ticket_number,
         ticket=ticket,
         ticket_stage=ticket_stage,
+        ticket_verified=ticket_verified,
         ticket_status_labels=SUPPORT_TICKET_STATUS_LABELS,
         ticket_stage_labels=SUPPORT_TICKET_STAGE_LABELS,
     )
+
+
+@main_bp.route('/ticket-search/request-access', methods=['POST'])
+def ticket_search_request_access():
+    ticket_number_input = clean_text(request.form.get('ticket_number', ''), 40)
+    requester_email = clean_text(request.form.get('email', ''), 200).lower()
+    normalized_ticket_number = normalize_ticket_number(ticket_number_input)
+
+    limited, seconds = is_form_rate_limited(
+        TICKET_LOOKUP_SCOPE,
+        _ticket_lookup_limit(),
+        _ticket_lookup_window_seconds(),
+    )
+    if limited:
+        flash(f'Too many verification requests. Please wait {seconds} seconds and try again.', 'danger')
+        return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
+
+    register_form_submission_attempt(TICKET_LOOKUP_SCOPE, _ticket_lookup_window_seconds())
+
+    if not normalized_ticket_number or not is_valid_email(requester_email):
+        flash('Enter a valid ticket number and requester email to receive a verification link.', 'danger')
+        return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
+
+    sent = False
+    try:
+        ticket = SupportTicket.query.filter_by(ticket_number=normalized_ticket_number).first()
+        if ticket and _can_request_ticket_verification(ticket, requester_email):
+            _, token = issue_ticket_email_verification(ticket, requester_email)
+            if token:
+                db.session.commit()
+                sent = send_ticket_verification_email(
+                    ticket,
+                    requester_email,
+                    token,
+                    ticket_kind=infer_ticket_kind(ticket),
+                )
+            else:
+                db.session.rollback()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Failed to issue ticket verification link.')
+
+    if sent:
+        flash('Verification email sent. Open the link in your inbox to view ticket status.', 'success')
+    else:
+        flash('If the ticket number and email match our records, a verification link has been sent.', 'info')
+    return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number, email=requester_email))
+
+
+@main_bp.route('/ticket-verify')
+def ticket_verify():
+    ticket_number_input = clean_text(request.args.get('ticket_number', ''), 40)
+    token = clean_text(request.args.get('token', ''), 500)
+    normalized_ticket_number = normalize_ticket_number(ticket_number_input)
+
+    if not normalized_ticket_number or not token:
+        flash('Verification link is invalid or incomplete.', 'danger')
+        return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
+
+    ticket = SupportTicket.query.filter_by(ticket_number=normalized_ticket_number).first()
+    if not ticket:
+        flash('Verification link is invalid or expired.', 'danger')
+        return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
+
+    now = utc_now_naive()
+    token_hash = _hash_ticket_verification_token(token)
+    verification = (
+        SupportTicketEmailVerification.query
+        .filter_by(ticket_id=ticket.id, token_hash=token_hash)
+        .first()
+    )
+    if not verification or verification.expires_at < now:
+        flash('Verification link is invalid or expired. Request a new link to continue.', 'danger')
+        return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
+
+    verification.is_verified = True
+    verification.verified_at = now
+    db.session.commit()
+    mark_ticket_verified_in_session(normalized_ticket_number)
+    flash(f'Email verified. You can now view status for ticket {normalized_ticket_number}.', 'success')
+    return redirect(url_for('main.ticket_search', ticket_number=normalized_ticket_number))
 
 
 @main_bp.route('/remote-support/tickets', methods=['POST'])
@@ -1905,8 +2157,11 @@ def remote_support_create_ticket():
             'ticket_kind': 'support',
         },
     )
+    _, verification_token = issue_ticket_email_verification(ticket, portal_client.email)
     db.session.commit()
     send_ticket_notification(ticket, ticket_kind='support')
+    if verification_token:
+        send_ticket_verification_email(ticket, portal_client.email, verification_token, ticket_kind='support')
 
     flash(f'Ticket {ticket.ticket_number} created successfully.', 'success')
     return redirect(url_for('main.remote_support'))
@@ -2087,8 +2342,11 @@ def request_quote():
                 'company': company or '',
             },
         )
+        _, verification_token = issue_ticket_email_verification(ticket, email)
         db.session.commit()
         send_ticket_notification(ticket, ticket_kind='quote')
+        if verification_token:
+            send_ticket_verification_email(ticket, email, verification_token, ticket_kind='quote')
 
         flash(f"Quote request received. Ticket {ticket.ticket_number} has been created for our CMS team.", 'success')
         return redirect(url_for('main.request_quote'))
@@ -2211,8 +2469,11 @@ def request_quote_personal():
                 'ticket_kind': 'quote',
             },
         )
+        _, verification_token = issue_ticket_email_verification(ticket, email)
         db.session.commit()
         send_ticket_notification(ticket, ticket_kind='quote')
+        if verification_token:
+            send_ticket_verification_email(ticket, email, verification_token, ticket_kind='quote')
 
         flash(f"Quote request received. Ticket {ticket.ticket_number} has been created. We'll be in touch soon!", 'success')
         return redirect(url_for('main.request_quote_personal'))
@@ -2267,11 +2528,61 @@ def contact():
             message=message
         )
         db.session.add(submission)
+
+        intake_client = get_or_create_contact_intake_client()
+        contact_payload = {
+            'name': name,
+            'email': email,
+            'phone': phone,
+            'subject': subject or 'General inquiry',
+            'message': message,
+        }
+        ticket_subject_seed = subject or f'Message from {name}'
+        ticket = SupportTicket(
+            ticket_number=generate_ticket_number(),
+            client_id=intake_client.id,
+            subject=clean_text(f'Contact: {ticket_subject_seed}', 300),
+            service_slug=None,
+            priority='normal',
+            status=SUPPORT_TICKET_STATUS_OPEN,
+            details=build_contact_ticket_details(contact_payload),
+        )
+        db.session.add(ticket)
+        db.session.flush()
+        create_support_ticket_event(
+            ticket,
+            SUPPORT_TICKET_EVENT_CREATED,
+            'Contact form submission converted to internal support ticket.',
+            actor_type='contact_form',
+            actor_name=name or email or 'Contact Intake',
+            actor_client_id=intake_client.id,
+            status_to=ticket.status,
+            stage_to=support_ticket_stage_for_status(ticket.status),
+            metadata={
+                'source': 'contact',
+                'ticket_kind': 'contact',
+            },
+        )
+        _, verification_token = issue_ticket_email_verification(ticket, email)
+
         db.session.commit()
         current_app.logger.info(f'Contact submission saved (id={submission.id})')
-        result = send_contact_notification(submission)
-        current_app.logger.info(f'Email notification result: {result}')
-        flash('Thank you for your message! We will get back to you soon.', 'success')
+        contact_email_result = send_contact_notification(submission)
+        ticket_email_result = send_ticket_notification(ticket, ticket_kind='contact')
+        verification_email_result = False
+        if verification_token:
+            verification_email_result = send_ticket_verification_email(ticket, email, verification_token, ticket_kind='contact')
+        current_app.logger.info(
+            'Contact workflow email results: contact=%s ticket=%s verification=%s',
+            contact_email_result,
+            ticket_email_result,
+            verification_email_result,
+        )
+        flash(
+            f'Thank you for your message. Ticket {ticket.ticket_number} has been created. '
+            'Please check your email to verify access and track status updates.',
+            'success',
+        )
         return redirect(url_for('main.contact'))
     cb = get_page_content('contact')
     return render_template('contact.html', cb=cb)

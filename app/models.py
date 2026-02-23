@@ -388,6 +388,13 @@ class SupportTicket(db.Model):
         cascade='all, delete-orphan',
         order_by='SupportTicketEvent.created_at.desc()',
     )
+    email_verifications = db.relationship(
+        'SupportTicketEmailVerification',
+        backref='ticket',
+        lazy=True,
+        cascade='all, delete-orphan',
+        order_by='SupportTicketEmailVerification.created_at.desc()',
+    )
 
 
 class SupportTicketEvent(db.Model):
@@ -408,6 +415,25 @@ class SupportTicketEvent(db.Model):
 
     __table_args__ = (
         db.Index('ix_support_ticket_event_ticket_created', 'ticket_id', 'created_at'),
+    )
+
+
+class SupportTicketEmailVerification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('support_ticket.id'), nullable=False, index=True)
+    requester_email = db.Column(db.String(200), nullable=False, index=True)
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    is_verified = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    verified_at = db.Column(db.DateTime)
+    last_sent_at = db.Column(db.DateTime, default=utc_now_naive, nullable=False)
+    send_count = db.Column(db.Integer, nullable=False, default=1)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, nullable=False)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('ticket_id', 'requester_email', name='uq_support_ticket_email_verification_ticket_email'),
+        db.Index('ix_support_ticket_email_verification_ticket_expires', 'ticket_id', 'expires_at'),
     )
 
 
