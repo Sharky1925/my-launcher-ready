@@ -1270,29 +1270,29 @@ p { margin: 0 0 16px; }
 .hero-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  max-width: 960px;
+  gap: 14px;
+  max-width: 820px;
   margin: 0 auto;
   position: relative;
   z-index: 2;
 }
 .hero-cards-grid .hero-icon-card {
-  min-height: 210px;
-  padding: 28px 22px;
+  min-height: 148px;
+  padding: 18px 16px;
 }
 .hero-cards-grid .hero-icon-card .hic-icon {
-  width: 68px;
-  height: 68px;
-  border-radius: 18px;
-  font-size: 1.6rem;
-  margin-bottom: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
 }
 .hero-cards-grid .hero-icon-card h4 {
-  font-size: 1.1rem;
-  margin-bottom: 6px;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
 }
 .hero-cards-grid .hero-icon-card p {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 .hero-icon-card {
   background: rgba(14, 22, 35, 0.92);
@@ -1314,9 +1314,9 @@ p { margin: 0 0 16px; }
   -webkit-tap-highlight-color: transparent;
 }
 .hero--command .hero-icon-card {
-  min-height: 178px;
+  min-height: 138px;
   aspect-ratio: auto;
-  padding: 18px 14px;
+  padding: 14px 12px;
   display: grid;
   grid-template-rows: auto auto 1fr;
   align-items: center;
@@ -5090,18 +5090,18 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .hero-content { padding: 24px; }
   .hero-visual { margin-top: 20px; }
   .hero-visual-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .hero-icon-card { min-height: 136px; }
+  .hero-icon-card { min-height: 120px; }
   .hero--command .hero-visual--command {
     justify-content: stretch;
   }
   .hero--command .hero-visual-grid {
     width: 100%;
-    column-gap: 12px;
-    row-gap: 12px;
+    column-gap: 10px;
+    row-gap: 10px;
   }
   .hero--command .hero-icon-card {
-    min-height: 146px;
-    padding: 16px 11px;
+    min-height: 120px;
+    padding: 12px 10px;
   }
   .section { padding: 60px 0; }
   .cta-section { margin: 0; border-radius: 0; }
@@ -5332,14 +5332,14 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .hero-visual { margin-top: 16px; }
   .hero-visual-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .hero-icon-card {
-    min-height: 122px;
-    padding: 14px 10px;
+    min-height: 110px;
+    padding: 12px 10px;
   }
   .hero--command .hero-visual-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .hero--command .hero-icon-card {
-    min-height: 130px;
+    min-height: 110px;
   }
   .hero-command-top {
     margin-bottom: 28px;
@@ -5359,17 +5359,17 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
   .hero-cards-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
   .hero-cards-grid .hero-icon-card {
-    min-height: 150px;
-    padding: 20px 16px;
+    min-height: 120px;
+    padding: 14px 12px;
   }
   .hero-cards-grid .hero-icon-card .hic-icon {
-    width: 52px;
-    height: 52px;
-    font-size: 1.3rem;
-    margin-bottom: 10px;
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
   }
   .service-card .card-link {
     width: 100%;
@@ -6843,4 +6843,57 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   background: rgba(59, 130, 246, 0.08);
   border-color: rgba(59, 130, 246, 0.3);
   color: var(--blue-600);
+}
+
+/* ============================================================
+   Light Theme — Hero Service Ticker (Flowing Line)
+   Override inline JS-set custom properties with vibrant light colors
+   ============================================================ */
+[data-theme="light"] .hero-service-pill {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #1e40af !important;
+}
+[data-theme="light"] .hero-service-pill i {
+  color: #2563eb !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+2) {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #065f46 !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+2) i {
+  color: #059669 !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+3) {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #92400e !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+3) i {
+  color: #d97706 !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+4) {
+  background: rgba(236, 72, 153, 0.1) !important;
+  border-color: rgba(236, 72, 153, 0.35) !important;
+  color: #9d174d !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+4) i {
+  color: #db2777 !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+5) {
+  background: rgba(14, 165, 233, 0.1) !important;
+  border-color: rgba(14, 165, 233, 0.35) !important;
+  color: #0c4a6e !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+5) i {
+  color: #0284c7 !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+6) {
+  background: rgba(168, 85, 247, 0.1) !important;
+  border-color: rgba(168, 85, 247, 0.35) !important;
+  color: #6b21a8 !important;
+}
+[data-theme="light"] .hero-service-pill:nth-child(6n+6) i {
+  color: #9333ea !important;
 }
