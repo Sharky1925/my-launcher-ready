@@ -179,6 +179,7 @@
         {% if site_settings.get('phone') %}
         <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
         {% endif %}
+        <a class="btn-nav-quote" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-lines"></i> Request a Quote</a>
         <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
         <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
         <button type="button" class="theme-toggle" id="theme-toggle-desktop" aria-label="Toggle theme">
@@ -258,6 +259,7 @@
               {% if site_settings.get('phone') %}
               <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
               {% endif %}
+              <a class="btn-nav-quote" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-lines"></i> Request a Quote</a>
               <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
               <a class="btn-nav-cta" href="{{ url_for('main.contact') }}">Get in Touch</a>
             </div>
