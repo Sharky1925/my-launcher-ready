@@ -6,7 +6,7 @@ import re
 import secrets
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, session, current_app
 from werkzeug.security import check_password_hash, generate_password_hash
 
 try:
@@ -1630,6 +1630,33 @@ def build_sitemap_entry(path, lastmod=None, changefreq='weekly', priority='0.6')
     return '\n'.join(lines)
 
 
+def set_public_cache_headers(response, max_age, s_maxage=None, stale_while_revalidate=60, stale_if_error=86400):
+    directives = ['public', f'max-age={int(max_age)}']
+    if s_maxage is not None:
+        directives.append(f's-maxage={int(s_maxage)}')
+    if stale_while_revalidate is not None:
+        directives.append(f'stale-while-revalidate={int(stale_while_revalidate)}')
+    if stale_if_error is not None:
+        directives.append(f'stale-if-error={int(stale_if_error)}')
+    response.headers['Cache-Control'] = ', '.join(directives)
+    return response
+
+
+def cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400):
+    body = json.dumps(payload, separators=(',', ':'), sort_keys=True, ensure_ascii=False)
+    digest = hashlib.sha256(body.encode('utf-8')).hexdigest()
+    response = current_app.response_class(body, mimetype='application/json')
+    response.set_etag(digest)
+    response.make_conditional(request)
+    return set_public_cache_headers(
+        response,
+        max_age=max_age,
+        s_maxage=s_maxage,
+        stale_while_revalidate=stale_while_revalidate,
+        stale_if_error=stale_if_error,
+    )
+
+
 @main_bp.route('/')
 def index():
     pro_services = normalize_icon_attr(
@@ -2647,8 +2674,15 @@ def sitemap_xml():
         '</urlset>',
     ])
     response = current_app.response_class(xml_body, mimetype='application/xml')
-    response.headers['Cache-Control'] = 'public, max-age=3600'
-    return response
+    response.set_etag(hashlib.sha256(xml_body.encode('utf-8')).hexdigest())
+    response.make_conditional(request)
+    return set_public_cache_headers(
+        response,
+        max_age=3600,
+        s_maxage=21600,
+        stale_while_revalidate=300,
+        stale_if_error=86400,
+    )
 
 
 @main_bp.route('/robots.txt')
@@ -2668,8 +2702,15 @@ def robots_txt():
         '',
     ])
     response = current_app.response_class(body, mimetype='text/plain')
-    response.headers['Cache-Control'] = 'public, max-age=3600'
-    return response
+    response.set_etag(hashlib.sha256(body.encode('utf-8')).hexdigest())
+    response.make_conditional(request)
+    return set_public_cache_headers(
+        response,
+        max_age=3600,
+        s_maxage=21600,
+        stale_while_revalidate=300,
+        stale_if_error=86400,
+    )
 
 
 @main_bp.route('/api/delivery/pages/<slug>')
@@ -2691,9 +2732,7 @@ def acp_delivery_page(slug):
         'published_at': item.published_at.isoformat() if item.published_at else None,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
     }
-    response = jsonify(payload)
-    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
-    return response
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
 
 
 @main_bp.route('/api/delivery/content/<content_type_key>/<entry_key>')
@@ -2739,9 +2778,7 @@ def acp_delivery_content_entry(content_type_key, entry_key):
         'published_at': item.published_at.isoformat() if item.published_at else None,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
     }
-    response = jsonify(payload)
-    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
-    return response
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
 
 
 @main_bp.route('/api/delivery/theme')
@@ -2770,9 +2807,7 @@ def acp_delivery_theme(token_set_key):
         'published_at': item.published_at.isoformat() if item.published_at else None,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
     }
-    response = jsonify(payload)
-    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
-    return response
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
 
 
 @main_bp.route('/api/delivery/dashboards/<dashboard_id>')
@@ -2798,6 +2833,4 @@ def acp_delivery_dashboard(dashboard_id):
         'published_at': item.published_at.isoformat() if item.published_at else None,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
     }
-    response = jsonify(payload)
-    response.headers['Cache-Control'] = 'public, max-age=120, s-maxage=300'
-    return response
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)

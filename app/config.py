@@ -1,5 +1,6 @@
 import os
 import tempfile
+from urllib.parse import urlparse
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -57,13 +58,33 @@ def _database_url():
     return 'sqlite:///' + os.path.join(basedir, 'site.db')
 
 
+def _database_engine_options(database_url):
+    if not database_url.startswith('sqlite'):
+        options = {
+            'pool_pre_ping': True,
+            'pool_recycle': 300,
+        }
+        parsed = urlparse(database_url)
+        if parsed.scheme.startswith('postgresql'):
+            connect_timeout_seconds = max(1, _as_int(os.environ.get('DB_CONNECT_TIMEOUT_SECONDS'), 5))
+            statement_timeout_ms = max(1000, _as_int(os.environ.get('DB_STATEMENT_TIMEOUT_MS'), 8000))
+            idle_tx_timeout_ms = max(1000, _as_int(os.environ.get('DB_IDLE_IN_TX_TIMEOUT_MS'), 15000))
+            pg_options = [
+                f'-c statement_timeout={statement_timeout_ms}',
+                f'-c idle_in_transaction_session_timeout={idle_tx_timeout_ms}',
+            ]
+            options['connect_args'] = {
+                'connect_timeout': connect_timeout_seconds,
+                'options': ' '.join(pg_options),
+            }
+        return options
+    return {}
+
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or ''
     SQLALCHEMY_DATABASE_URI = _database_url()
-    SQLALCHEMY_ENGINE_OPTIONS = {} if SQLALCHEMY_DATABASE_URI.startswith('sqlite') else {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-    }
+    SQLALCHEMY_ENGINE_OPTIONS = _database_engine_options(SQLALCHEMY_DATABASE_URI)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = (os.environ.get('UPLOAD_FOLDER') or '').strip() or (
         os.path.join(tempfile.gettempdir(), 'uploads') if _is_vercel_runtime() else os.path.join(basedir, 'uploads')

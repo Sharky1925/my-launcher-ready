@@ -90,6 +90,8 @@ try:
     from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from ..content_schemas import CONTENT_SCHEMAS
     from ..page_sync import run_page_route_sync
+    from ..service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
+    from .main import SERVICE_PROFILES
 except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     from models import (
         db,
@@ -167,6 +169,8 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
     from utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
     from content_schemas import CONTENT_SCHEMAS
     from page_sync import run_page_route_sync
+    from service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
+    from routes.main import SERVICE_PROFILES
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates/admin')
 ADMIN_LOGIN_LIMIT = 5
@@ -210,6 +214,11 @@ SUPPORT_TICKET_EVENT_BADGES = {
     SUPPORT_TICKET_EVENT_CREATED: 'bg-primary',
     SUPPORT_TICKET_EVENT_REVIEW_ACTION: 'bg-info text-dark',
     SUPPORT_TICKET_EVENT_ADMIN_UPDATE: 'bg-secondary',
+}
+SERVICE_PROFILE_FALLBACK_SLUGS = {
+    str(slug).strip().lower()
+    for slug in (set(SERVICE_RESEARCH_OVERRIDES.keys()) | set(SERVICE_PROFILES.keys()))
+    if str(slug).strip()
 }
 ADMIN_PERMISSION_MAP = {
     'admin.control_center': 'dashboard:view',
@@ -1384,12 +1393,16 @@ def dashboard():
         SupportTicket.updated_at >= last_7d,
     ).count()
 
-    services_missing_profile = Service.query.filter(
-        or_(
-            Service.profile_json.is_(None),
-            func.trim(Service.profile_json) == '',
-        )
-    ).count()
+    service_profile_rows = Service.query.with_entities(Service.slug, Service.profile_json).all()
+    services_missing_profile = 0
+    for slug, profile_json in service_profile_rows:
+        if (profile_json or '').strip():
+            continue
+        normalized_slug = (slug or '').strip().lower()
+        # Treat known profile registries as valid fallback content, even without per-row JSON.
+        if normalized_slug and normalized_slug in SERVICE_PROFILE_FALLBACK_SLUGS:
+            continue
+        services_missing_profile += 1
     services_missing_image = Service.query.filter(
         or_(
             Service.image.is_(None),
@@ -1511,7 +1524,7 @@ def dashboard():
             'label': 'Content Structure',
             'issues': content_issues,
             'href': url_for('admin.services'),
-            'description': 'Service profiles and industry challenge/solution completeness.',
+            'description': 'Service profile coverage (custom or fallback registry) and industry challenge/solution completeness.',
         },
         {
             'label': 'SEO Readiness',

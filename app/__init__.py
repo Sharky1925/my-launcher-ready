@@ -3,6 +3,7 @@ import re
 import secrets
 import json
 import logging
+from time import perf_counter
 from urllib.parse import urlparse
 from flask import Flask, abort, flash, g, has_request_context, redirect, render_template, request, session, url_for
 from flask_login import LoginManager
@@ -305,6 +306,7 @@ def create_app(config_overrides=None):
             g.request_id = incoming
         else:
             g.request_id = secrets.token_hex(16)
+        g.request_started_at = perf_counter()
 
     @app.before_request
     def enforce_csrf():
@@ -376,6 +378,15 @@ def create_app(config_overrides=None):
 
     @app.after_request
     def add_security_headers(response):
+        request_started_at = getattr(g, 'request_started_at', None)
+        if isinstance(request_started_at, (int, float)):
+            duration_ms = max(0.0, (perf_counter() - request_started_at) * 1000.0)
+            timing_value = f'app;dur={duration_ms:.2f}'
+            prior_timing = response.headers.get('Server-Timing')
+            if prior_timing:
+                response.headers['Server-Timing'] = f'{prior_timing}, {timing_value}'
+            else:
+                response.headers['Server-Timing'] = timing_value
         response.headers['X-Request-ID'] = getattr(g, 'request_id', '')
         response.headers.setdefault('X-Content-Type-Options', 'nosniff')
         response.headers.setdefault('X-Frame-Options', 'DENY')

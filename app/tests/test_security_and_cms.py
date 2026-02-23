@@ -148,10 +148,12 @@ def test_public_pages_and_security_headers(client):
     assert response.status_code == 200
     assert "Content-Security-Policy" in response.headers
     csp = response.headers.get("Content-Security-Policy", "")
+    server_timing = response.headers.get("Server-Timing", "")
     assert "script-src 'self' 'nonce-" in csp
     assert "script-src 'self' 'unsafe-inline'" not in csp
     assert "style-src 'self' 'nonce-" in csp
     assert "style-src 'self' 'unsafe-inline'" not in csp
+    assert server_timing.startswith("app;dur=")
     assert response.headers.get("X-Frame-Options") == "DENY"
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
     assert response.headers.get("Cross-Origin-Resource-Policy") == "same-origin"
@@ -185,6 +187,19 @@ def test_admin_dashboard_control_center_search_renders(client):
     html = response.get_data(as_text=True)
     assert "Unified Control Center" in html
     assert "Unified Search Results" in html
+
+
+def test_dashboard_content_structure_uses_profile_fallback_registry(client):
+    admin_login(client)
+    response = client.get("/admin/")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    match = re.search(
+        r'Content Structure</span>\s*<span class="check-badge [^"]+">(\d+) issue',
+        html,
+    )
+    assert match is not None
+    assert int(match.group(1)) == 0
 
 
 def test_admin_control_center_two_main_sections_render(client):
@@ -344,6 +359,14 @@ def test_acp_delivery_api_returns_only_published_documents(client, app):
     published_page_resp = client.get(f"/api/delivery/pages/{published_slug}")
     assert published_page_resp.status_code == 200
     assert published_page_resp.get_json()["slug"] == published_slug
+    assert "stale-while-revalidate=" in (published_page_resp.headers.get("Cache-Control") or "")
+    page_etag = published_page_resp.headers.get("ETag")
+    assert page_etag
+    published_page_cached = client.get(
+        f"/api/delivery/pages/{published_slug}",
+        headers={"If-None-Match": page_etag},
+    )
+    assert published_page_cached.status_code == 304
 
     draft_page_resp = client.get(f"/api/delivery/pages/{draft_slug}")
     assert draft_page_resp.status_code == 404
@@ -351,6 +374,7 @@ def test_acp_delivery_api_returns_only_published_documents(client, app):
     published_dash_resp = client.get(f"/api/delivery/dashboards/{published_dashboard_id}")
     assert published_dash_resp.status_code == 200
     assert published_dash_resp.get_json()["dashboard_id"] == published_dashboard_id
+    assert published_dash_resp.headers.get("ETag")
 
     draft_dash_resp = client.get(f"/api/delivery/dashboards/{draft_dashboard_id}")
     assert draft_dash_resp.status_code == 404
@@ -458,6 +482,8 @@ def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):
     assert published_entry_payload["entry_key"] == published_key
     assert published_entry_payload["content_type"]["key"] == type_key
     assert published_entry_payload["data"]["headline"] == "Published headline"
+    assert "stale-if-error=" in (published_entry_resp.headers.get("Cache-Control") or "")
+    assert published_entry_resp.headers.get("ETag")
 
     draft_entry_resp = client.get(f"/api/delivery/content/{type_key}/{draft_key}")
     assert draft_entry_resp.status_code == 404
@@ -467,6 +493,7 @@ def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):
     published_theme_payload = published_theme_resp.get_json()
     assert published_theme_payload["key"] == theme_key
     assert published_theme_payload["tokens"]["css_vars"]["--accent-cyan"] == "#123456"
+    assert published_theme_resp.headers.get("ETag")
 
     draft_theme_resp = client.get(f"/api/delivery/theme/{draft_theme_key}")
     assert draft_theme_resp.status_code == 404
