@@ -47,9 +47,18 @@
   <link href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version }}" rel="stylesheet">
   {% if theme_css_vars %}
   <style nonce="{{ csp_nonce }}">
+  :root {
+    {% for key, value in theme_css_vars.items() %}
+    {% if key.startswith('--font-') %}
+    {{ key }}: {{ value }};
+    {% endif %}
+    {% endfor %}
+  }
   [data-theme="{{ theme_mode|default('dark') }}"] {
     {% for key, value in theme_css_vars.items() %}
+    {% if not key.startswith('--font-') %}
     {{ key }}: {{ value }};
+    {% endif %}
     {% endfor %}
     {% if theme_mode|default('dark') == 'light' %}
     color-scheme: light;
