@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="{{ theme_mode|default('dark') }}" data-theme="{{ theme_mode|default('dark') }}">
+<html lang="en" data-bs-theme="{{ theme_mode|default('light') }}" data-theme="{{ theme_mode|default('light') }}">
 <head>
-  <script nonce="{{ csp_nonce }}">(function(){var root=document.documentElement;var t='';try{t=localStorage.getItem('theme')||''}catch(e){t=''}if(t!=='dark'&&t!=='light'){var fallback=(root.getAttribute('data-theme')||'').toLowerCase();if(fallback!=='dark'&&fallback!=='light'){fallback=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}t=fallback}root.setAttribute('data-theme',t);root.setAttribute('data-bs-theme',t)})()</script>
+  <script nonce="{{ csp_nonce }}">(function(){var root=document.documentElement;var t='';try{t=localStorage.getItem('theme')||''}catch(e){t=''}if(t!=='dark'&&t!=='light'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}root.setAttribute('data-theme',t);root.setAttribute('data-bs-theme',t)})()</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ site_settings.get('meta_title', 'Right On Repair — IT Services & Computer Repair in Orange County') }}{% endblock %}</title>
