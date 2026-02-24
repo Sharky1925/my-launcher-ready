@@ -6902,3 +6902,11 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 [data-theme="light"] .hero-service-pill:nth-child(6n+6) i {
   color: #9333ea !important;
 }
+
+/* --- Section Alt (base) — light override --- */
+[data-theme="light"] .section--alt {
+  background: linear-gradient(140deg, rgba(59, 130, 246, 0.04), rgba(248, 250, 252, 0.8));
+}
+[data-theme="light"] .section--alt::before {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.04), rgba(248, 250, 252, 0.02));
+}
