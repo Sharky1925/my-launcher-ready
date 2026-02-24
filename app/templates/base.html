@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="{{ theme_mode|default('dark') }}" data-theme="{{ theme_mode|default('dark') }}">
 <head>
-  <script nonce="{{ csp_nonce }}">(function(){var t=localStorage.getItem('theme');if(!t||t!=='dark'&&t!=='light'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t)})()</script>
+  <script nonce="{{ csp_nonce }}">(function(){var root=document.documentElement;var t='';try{t=localStorage.getItem('theme')||''}catch(e){t=''}if(t!=='dark'&&t!=='light'){var fallback=(root.getAttribute('data-theme')||'').toLowerCase();if(fallback!=='dark'&&fallback!=='light'){fallback=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}t=fallback}root.setAttribute('data-theme',t);root.setAttribute('data-bs-theme',t)})()</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ site_settings.get('meta_title', 'Right On Repair — IT Services & Computer Repair in Orange County') }}{% endblock %}</title>
@@ -46,10 +46,24 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version }}" rel="stylesheet">
   {% if theme_css_vars %}
+  {# Only explicit layout/typography tokens are global.
+     All other theme tokens are scoped to the configured base mode so
+     light-mode CSS overrides keep working when users toggle mode. #}
+  {% set universal_vars = ['--radius-lg','--radius-md','--radius-sm','--radius-full','--btn-radius','--font-body','--font-heading','--font-slogan','--ease-smooth','--ease-soft','--transition-fast','--transition-base','--motion-duration-base','--motion-ease-standard'] %}
+  {% set base_theme = theme_mode if theme_mode in ['dark', 'light'] else 'dark' %}
   <style nonce="{{ csp_nonce }}">
-  :root {
+  html {
     {% for key, value in theme_css_vars.items() %}
+    {% if key in universal_vars %}
     {{ key }}: {{ value }};
+    {% endif %}
+    {% endfor %}
+  }
+  [data-theme="{{ base_theme }}"] {
+    {% for key, value in theme_css_vars.items() %}
+    {% if key not in universal_vars %}
+    {{ key }}: {{ value }};
+    {% endif %}
     {% endfor %}
   }
   </style>

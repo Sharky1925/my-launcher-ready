@@ -16,6 +16,7 @@ try:
         ContactSubmission,
         Post,
         Service,
+        SiteSetting,
         User,
         SupportClient,
         SupportTicket,
@@ -54,6 +55,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         ContactSubmission,
         Post,
         Service,
+        SiteSetting,
         User,
         SupportClient,
         SupportTicket,
@@ -180,6 +182,47 @@ def test_public_pages_and_security_headers(client):
     admin_login_html = admin_login_page.get_data(as_text=True)
     assert '<style nonce="' in admin_login_html
     assert "style=" not in admin_login_html
+
+
+def test_theme_script_falls_back_to_server_default_mode(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "root.getAttribute('data-theme')" in html
+    assert "window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches" in html
+
+
+def test_theme_css_vars_scope_to_configured_mode_only(client, app):
+    with app.app_context():
+        setting = SiteSetting.query.filter_by(key="theme_mode").first()
+        if setting is None:
+            setting = SiteSetting(key="theme_mode", value="light")
+            db.session.add(setting)
+        else:
+            setting.value = "light"
+
+        token_set = AcpThemeTokenSet.query.filter_by(key="default").first()
+        if token_set is None:
+            token_set = AcpThemeTokenSet(
+                key="default",
+                name="Default Theme",
+                status=WORKFLOW_PUBLISHED,
+                tokens_json='{"css_vars":{"--bg-gradient":"linear-gradient(180deg, #000000, #111111)","--font-body":"\'Manrope\', sans-serif"}}',
+                published_at=utc_now_naive(),
+            )
+            db.session.add(token_set)
+        else:
+            token_set.status = WORKFLOW_PUBLISHED
+            token_set.tokens_json = '{"css_vars":{"--bg-gradient":"linear-gradient(180deg, #000000, #111111)","--font-body":"\'Manrope\', sans-serif"}}'
+        db.session.commit()
+
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "html {" in html
+    assert "[data-theme=\"light\"] {" in html
+    assert "--bg-gradient: linear-gradient(180deg, #000000, #111111);" in html
+    assert ":root {" not in html
 
 
 def test_admin_dashboard_control_center_search_renders(client):
