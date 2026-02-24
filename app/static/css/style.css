@@ -5051,6 +5051,32 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 .industry-detail-clean .metric-card {
   box-shadow: none;
 }
+.industry-detail-clean .industry-stat-grid {
+  --bs-gutter-x: 12px;
+  --bs-gutter-y: 12px;
+}
+.industry-detail-clean .industry-stat-col {
+  display: flex;
+}
+.industry-detail-clean .industry-stat-col .metric-card--stat {
+  width: 100%;
+  min-height: 128px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.industry-detail-clean .industry-stat-col .metric-card--stat .mc-value {
+  font-size: clamp(1.2rem, 2.2vw, 1.85rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-wrap: balance;
+}
+.industry-detail-clean .industry-stat-col .metric-card--stat .mc-label {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
 .industry-detail-clean .section-label--industry-challenges i {
   color: #ff4a5f;
   background: linear-gradient(135deg, rgba(255, 132, 148, 0.28), rgba(255, 95, 116, 0.2));
@@ -5615,6 +5641,13 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
   .remote-ticket-panel {
     padding: 16px;
+  }
+}
+
+@media (max-width: 575px) {
+  .industry-detail-clean .industry-stat-col {
+    flex: 0 0 100%;
+    max-width: 100%;
   }
 }
 

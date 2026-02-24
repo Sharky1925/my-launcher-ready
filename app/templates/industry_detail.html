@@ -47,10 +47,10 @@
       <div class="col-lg-5 reveal-right">
         {% set stat_items = industry.stats.split('|') if industry.stats else [] %}
         {% if stat_items %}
-        <div class="row g-3">
+        <div class="row g-3 industry-stat-grid">
           {% for stat in stat_items %}
           {% set parts = stat.split(':') %}
-          <div class="col-6">
+          <div class="col-6 industry-stat-col">
             <div class="metric-card metric-card--stat">
               <div class="mc-value">{{ parts[1] if parts|length > 1 else '' }}</div>
               <div class="mc-label">{{ parts[0] }}</div>
