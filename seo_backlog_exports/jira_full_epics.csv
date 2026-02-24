@@ -1,0 +1,8 @@
+"Issue Type","Summary","Epic Name","Description","Priority","Effort","Labels","Owner Role"
+"Epic","EPIC A - Strategy & Tracking Foundation","EPIC A - Strategy & Tracking Foundation","Set up measurement, attribution, ranking visibility, and reporting foundation.","Highest","L","seo,foundation,tracking","SEO/PM"
+"Epic","EPIC B - Technical SEO & Performance","EPIC B - Technical SEO & Performance","Fix crawl/indexation and improve Core Web Vitals and structured data.","Highest","L","seo,technical,performance","Dev+SEO"
+"Epic","EPIC C - Information Architecture & Core Money Pages","EPIC C - Information Architecture & Core Money Pages","Build high-intent service and repair pages with strong conversion architecture.","Highest","L","seo,ia,money-pages","SEO+Content+Dev"
+"Epic","EPIC D - Local SEO (GBP + Citations + Reviews + Location Pages)","EPIC D - Local SEO (GBP + Citations + Reviews + Location Pages)","Improve local visibility via GBP, reviews, citations, and unique location pages.","Highest","L","seo,local,gbp","SEO+Ops"
+"Epic","EPIC E - Content Engine (Clusters + Editorial Calendar + Link Targets)","EPIC E - Content Engine (Clusters + Editorial Calendar + Link Targets)","Run 90-day content engine with internal linking to money pages.","High","L","seo,content,clusters","SEO+Content"
+"Epic","EPIC F - CRO + UX/Design System","EPIC F - CRO + UX/Design System","Standardize conversion-focused UI and run A/B tests.","High","M","cro,ux,design-system","Designer+Dev+SEO"
+"Epic","EPIC G - Authority Building (Digital PR + Partnerships + Local Links)","EPIC G - Authority Building (Digital PR + Partnerships + Local Links)","Grow authority with local links, partnerships, PR, and reputation assets.","Medium","M","seo,authority,links","SEO+Ops"
