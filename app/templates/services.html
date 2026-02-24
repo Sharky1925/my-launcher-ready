@@ -78,7 +78,7 @@
         <div class="service-card service-card--services-page reveal stagger-{{ loop.index }}">
           <div class="icon-wrap {{ colors[(loop.index0) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
           <h3>{{ service.title }}</h3>
-          <p>{{ service.description[:120] }}...</p>
+          <p>{{ (service.description or 'Comprehensive technology support for business reliability.') | truncate(100, False) }}</p>
           <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
         </div>
       </div>
@@ -104,7 +104,7 @@
         <div class="service-card service-card--services-page reveal stagger-{{ loop.index }}">
           <div class="icon-wrap {{ rcolors[(loop.index0) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
           <h3>{{ service.title }}</h3>
-          <p>{{ service.description[:120] }}...</p>
+          <p>{{ (service.description or 'Comprehensive technology support for business reliability.') | truncate(100, False) }}</p>
           <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
         </div>
       </div>

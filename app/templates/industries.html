@@ -73,7 +73,7 @@
         <a href="{{ url_for('main.industry_detail', slug=ind.slug) }}" class="industry-card industry-card--industries-page reveal stagger-{{ loop.index }}">
           <div class="ind-icon {{ colors[(loop.index0) % 8] }}"><i class="{{ ind.icon_class }}"></i></div>
           <h3>{{ ind.title }}</h3>
-          <p>{{ ind.description[:90] }}...</p>
+          <p>{{ (ind.description or 'Sector-aligned IT support for reliable operations.') | truncate(82, False) }}</p>
           <span class="ind-link">Explore <i class="fa-solid fa-arrow-right"></i></span>
         </a>
       </div>

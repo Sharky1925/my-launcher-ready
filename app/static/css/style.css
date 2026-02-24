@@ -6931,3 +6931,246 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
 [data-theme="light"] .section--alt::before {
   background: linear-gradient(180deg, rgba(59, 130, 246, 0.04), rgba(248, 250, 252, 0.02));
 }
+
+/* ============================================================
+   Global Density + Readability Optimization
+   Less crowded, cleaner spacing, calmer motion/effects
+   ============================================================ */
+.section {
+  padding: 74px 0;
+}
+.section-sm {
+  padding: 50px 0;
+}
+.section-heading {
+  margin-bottom: 34px;
+}
+.section-heading h2 {
+  font-size: clamp(1.52rem, 2.6vw, 2.18rem);
+  letter-spacing: -0.018em;
+}
+.section-heading p {
+  font-size: 0.92rem;
+  line-height: 1.66;
+  max-width: 62ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.page-header {
+  padding: 62px 0 34px;
+}
+.page-header.section-bottom-spacious {
+  padding-bottom: 30px;
+}
+.page-header p {
+  max-width: 60ch;
+  line-height: 1.62;
+}
+
+.hero-command-top {
+  max-width: 700px;
+  margin: 0 auto 34px;
+}
+.hero-command-top .lead {
+  max-width: 58ch;
+  margin-bottom: 20px;
+}
+.signal-strip {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.signal-pill {
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+}
+.hero-buttons {
+  max-width: 520px;
+  gap: 8px;
+}
+.hero-buttons .btn {
+  min-height: 38px;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  box-shadow: 0 8px 20px rgba(14, 32, 64, 0.24);
+  filter: none;
+}
+.hero-buttons .btn:hover {
+  filter: none;
+}
+.hero-cards-grid {
+  max-width: 790px;
+  gap: 12px;
+}
+.hero-cards-grid .hero-icon-card {
+  min-height: 132px;
+  padding: 14px 12px;
+}
+.hero-cards-grid .hero-icon-card h4 {
+  font-size: 0.9rem;
+}
+.hero-cards-grid .hero-icon-card p {
+  font-size: 0.78rem;
+  line-height: 1.38;
+}
+.hero-icon-card {
+  box-shadow: 0 10px 22px rgba(8, 20, 42, 0.2);
+  backdrop-filter: blur(12px);
+}
+.hero-icon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(14, 31, 60, 0.24);
+}
+
+.hero-service-crossing {
+  margin-top: 22px;
+}
+.hero-service-track {
+  animation-duration: 160s;
+}
+.hero-service-pill {
+  font-size: 0.67rem;
+  padding: 4px 10px;
+}
+
+.services-layout-panel,
+.industries-layout-panel {
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(7, 21, 42, 0.18);
+}
+.services-layout-actions,
+.industries-layout-actions {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+.services-layout-link,
+.industries-layout-link {
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  border-radius: 10px;
+}
+
+.service-card,
+.industry-card,
+.feature-item,
+.challenge-card,
+.metric-card,
+.timeline-card,
+.testimonial-card,
+.service-visual-panel,
+.service-snapshot-card,
+.lead-time-card,
+.brand-service-card,
+.service-faq-item {
+  backdrop-filter: blur(9px);
+  box-shadow: 0 8px 20px rgba(8, 21, 43, 0.16);
+}
+.service-card,
+.industry-card {
+  padding: 16px;
+}
+.service-card h3,
+.industry-card h3 {
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+.service-card p,
+.industry-card p,
+.feature-item p,
+.challenge-card .ch-body p,
+.service-snapshot-card p,
+.brand-service-card p {
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.service-card p,
+.industry-card p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.service-card:hover,
+.industry-card:hover,
+.feature-item:hover,
+.challenge-card:hover,
+.metric-card:hover,
+.timeline-card:hover,
+.testimonial-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(10, 24, 48, 0.2);
+}
+.service-card .icon-wrap,
+.industry-card .ind-icon,
+.feature-item .fi-icon,
+.challenge-card .ch-icon,
+.metric-card .mc-icon {
+  animation: none;
+}
+
+.cta-strip {
+  padding: 44px 0;
+  box-shadow: 0 14px 30px rgba(7, 21, 45, 0.2);
+}
+
+.chip-list {
+  gap: 8px;
+}
+.chip {
+  font-size: 0.76rem;
+  padding: 5px 10px;
+}
+.chip--muted {
+  opacity: 0.82;
+  background: rgba(85, 113, 165, 0.18);
+  border-color: rgba(132, 166, 219, 0.28);
+}
+
+.glow-line {
+  opacity: 0.22;
+}
+
+@media (max-width: 991px) {
+  .section {
+    padding: 60px 0;
+  }
+  .section-sm {
+    padding: 42px 0;
+  }
+  .hero-command-top {
+    margin-bottom: 24px;
+  }
+  .hero-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 100%;
+    gap: 10px;
+  }
+  .hero-cards-grid .hero-icon-card {
+    min-height: 112px;
+  }
+}
+
+@media (max-width: 767px) {
+  .section-heading {
+    margin-bottom: 26px;
+  }
+  .section-heading h2 {
+    font-size: clamp(1.28rem, 6.2vw, 1.7rem);
+  }
+  .hero-buttons {
+    grid-template-columns: 1fr;
+  }
+  .services-layout-actions,
+  .industries-layout-actions {
+    grid-template-columns: 1fr;
+  }
+  .service-card,
+  .industry-card {
+    padding: 14px;
+  }
+}

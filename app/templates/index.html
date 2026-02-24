@@ -53,7 +53,7 @@
     </div>
 
     <!-- Trust Signal Ticker -->
-    {% set trust_signals = cb.get('trust_signals', {}).get('items', []) %}
+    {% set trust_signals = cb.get('trust_signals', {}).get('items', [])[:8] %}
     {% if trust_signals %}
     <div class="hero-service-crossing reveal" aria-label="Trust and compliance signals">
       <div class="hero-service-lane hero-service-lane--forward">
@@ -90,7 +90,7 @@
         <div class="service-card reveal" data-delay="{{ loop.index0 * 60 }}">
           <div class="icon-wrap {{ colors[(loop.index0) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
           <h3>{{ service.title }}</h3>
-          <p>{{ service.description[:120] }}...</p>
+          <p>{{ (service.description or 'Structured technology support tailored to your operations.') | truncate(96, False) }}</p>
           <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
         </div>
       </div>
@@ -100,7 +100,7 @@
         <div class="service-card reveal" data-delay="{{ (pro_services|length + loop.index0) * 60 }}">
           <div class="icon-wrap {{ colors[((pro_services|length + loop.index0)) % 6] }}"><i class="{{ service.icon_class }}"></i></div>
           <h3>{{ service.title }}</h3>
-          <p>{{ service.description[:120] }}...</p>
+          <p>{{ (service.description or 'Structured technology support tailored to your operations.') | truncate(96, False) }}</p>
           <a href="{{ url_for('main.service_detail', slug=service.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ service.title }}">Learn more <i class="fa-solid fa-arrow-right"></i></a>
         </div>
       </div>
@@ -126,7 +126,7 @@
         <div class="service-card reveal" data-delay="{{ loop.index0 * 60 }}">
           <div class="icon-wrap {{ colors[(loop.index0) % 6] }}"><i class="{{ ind.icon_class }}"></i></div>
           <h3>{{ ind.title }}</h3>
-          <p>{{ ind.description[:100] }}...</p>
+          <p>{{ (ind.description or 'Industry-specific support aligned to your workflows.') | truncate(84, False) }}</p>
           <a href="{{ url_for('main.industry_detail', slug=ind.slug) }}" class="card-link stretched-link" aria-label="Learn more about {{ ind.title }}">Industry Page <i class="fa-solid fa-arrow-right"></i></a>
         </div>
       </div>
@@ -219,10 +219,14 @@
       <h2>{{ sa.get('title', 'IT Services Across Orange County') }}</h2>
       <p>{{ sa.get('subtitle', 'On-site and remote support for businesses throughout the region.') }}</p>
     </div>
+    {% set service_area_cities = sa.get('cities', ['Anaheim', 'Irvine', 'Santa Ana', 'Huntington Beach', 'Costa Mesa', 'Fullerton', 'Orange', 'Mission Viejo', 'Newport Beach', 'Laguna Beach', 'Tustin', 'Lake Forest', 'Buena Park', 'Garden Grove', 'Westminster', 'Yorba Linda', 'San Clemente', 'Dana Point', 'Rancho Santa Margarita', 'Aliso Viejo']) %}
     <div class="chip-list chip-list-centered reveal">
-      {% for city in sa.get('cities', ['Anaheim', 'Irvine', 'Santa Ana', 'Huntington Beach', 'Costa Mesa', 'Fullerton', 'Orange', 'Mission Viejo', 'Newport Beach', 'Laguna Beach', 'Tustin', 'Lake Forest', 'Buena Park', 'Garden Grove', 'Westminster', 'Yorba Linda', 'San Clemente', 'Dana Point', 'Rancho Santa Margarita', 'Aliso Viejo']) %}
+      {% for city in service_area_cities[:10] %}
       <span class="chip"><i class="fa-solid fa-location-dot"></i> {{ city }}</span>
       {% endfor %}
+      {% if service_area_cities|length > 10 %}
+      <span class="chip chip--muted"><i class="fa-solid fa-ellipsis"></i> More Orange County cities</span>
+      {% endif %}
     </div>
   </div>
 </section>
