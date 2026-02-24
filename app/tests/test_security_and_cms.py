@@ -192,7 +192,7 @@ def test_theme_script_falls_back_to_server_default_mode(client):
     assert "window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches" in html
 
 
-def test_theme_css_vars_scope_to_configured_mode_only(client, app):
+def test_theme_css_vars_scope_dark_only_for_single_palette_tokens(client, app):
     with app.app_context():
         setting = SiteSetting.query.filter_by(key="theme_mode").first()
         if setting is None:
@@ -220,7 +220,7 @@ def test_theme_css_vars_scope_to_configured_mode_only(client, app):
     assert response.status_code == 200
     html = response.get_data(as_text=True)
     assert "html {" in html
-    assert "[data-theme=\"light\"] {" in html
+    assert "[data-theme=\"dark\"] {" in html
     assert "--bg-gradient: linear-gradient(180deg, #000000, #111111);" in html
     assert ":root {" not in html
 

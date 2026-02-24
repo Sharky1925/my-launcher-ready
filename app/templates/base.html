@@ -47,10 +47,11 @@
   <link href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version }}" rel="stylesheet">
   {% if theme_css_vars %}
   {# Only explicit layout/typography tokens are global.
-     All other theme tokens are scoped to the configured base mode so
-     light-mode CSS overrides keep working when users toggle mode. #}
+     Color and surface tokens are scoped to dark mode only because the
+     current admin token model stores a single palette (no dark/light split).
+     This keeps light mode deterministic and prevents accidental dark-token
+     overrides when users switch to light mode. #}
   {% set universal_vars = ['--radius-lg','--radius-md','--radius-sm','--radius-full','--btn-radius','--font-body','--font-heading','--font-slogan','--ease-smooth','--ease-soft','--transition-fast','--transition-base','--motion-duration-base','--motion-ease-standard'] %}
-  {% set base_theme = theme_mode if theme_mode in ['dark', 'light'] else 'dark' %}
   <style nonce="{{ csp_nonce }}">
   html {
     {% for key, value in theme_css_vars.items() %}
@@ -59,7 +60,7 @@
     {% endif %}
     {% endfor %}
   }
-  [data-theme="{{ base_theme }}"] {
+  [data-theme="dark"] {
     {% for key, value in theme_css_vars.items() %}
     {% if key not in universal_vars %}
     {{ key }}: {{ value }};
