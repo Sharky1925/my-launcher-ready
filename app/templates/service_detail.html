@@ -217,8 +217,8 @@
         {% include "_hero_slogan.html" %}
         <p class="industry-hero-description">{{ meta_desc }}</p>
         <div class="hero-buttons industry-hero-actions">
-          <a href="{{ url_for('main.request_quote') }}" class="btn btn-primary">Free IT Assessment <i class="fa-solid fa-magnifying-glass-chart"></i></a>
-          <a href="{{ url_for('main.remote_support') }}" class="btn btn-ghost">Remote Support <i class="fa-solid fa-life-ring"></i></a>
+          <a href="{{ url_for('main.request_quote') }}" class="btn btn-primary">Request A Quote <i class="fa-solid fa-magnifying-glass-chart"></i></a>
+          <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support">Remote Support <i class="fa-solid fa-life-ring"></i></a>
         </div>
         {% if hero_badges %}
         <div class="service-hero-badges">
@@ -656,10 +656,10 @@
 <section class="section-sm section-bottom-spacious" id="service-contact">
   <div class="cta-section reveal-scale">
     <div class="cta-inner">
-      <h2>Book a Free IT Assessment</h2>
+      <h2>Request A Quote</h2>
       <p>Get a scoped plan for {{ service.title | lower }}, with clear priorities, timeline options, and next steps.</p>
       <div class="cta-actions cta-actions-dual">
-        <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request Assessment</a>
+        <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request A Quote</a>
         <a href="{{ url_for('main.contact', subject='Service Consultation: ' ~ service.title) }}" class="btn btn-remote-support"><i class="fa-solid fa-paper-plane"></i> Send Message</a>
       </div>
     </div>
