@@ -713,6 +713,21 @@ def test_hsts_header_on_trusted_forwarded_proto(tmp_path, monkeypatch):
     assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
 
 
+def test_force_https_redirects_insecure_requests(tmp_path, monkeypatch):
+    secure_app = build_test_app(tmp_path, monkeypatch, {"FORCE_HTTPS": True})
+    secure_client = secure_app.test_client()
+    response = secure_client.get("/services?kind=repair", base_url="http://example.com", follow_redirects=False)
+    assert response.status_code == 308
+    assert response.headers.get("Location") == "https://example.com/services?kind=repair"
+
+
+def test_force_https_exempt_paths_do_not_redirect(tmp_path, monkeypatch):
+    secure_app = build_test_app(tmp_path, monkeypatch, {"FORCE_HTTPS": True})
+    secure_client = secure_app.test_client()
+    response = secure_client.get("/healthz", base_url="http://example.com", follow_redirects=False)
+    assert response.status_code == 200
+
+
 def test_health_endpoint_reports_ok(client):
     response = client.get("/healthz")
     assert response.status_code == 200

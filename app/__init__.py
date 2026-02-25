@@ -369,6 +369,23 @@ def create_app(config_overrides=None):
         g.request_started_at = perf_counter()
 
     @app.before_request
+    def enforce_https():
+        if not app.config.get('FORCE_HTTPS', False):
+            return
+        if request.is_secure:
+            return
+        path = request.path or '/'
+        exempt_prefixes = app.config.get('FORCE_HTTPS_EXEMPT_PATHS', ())
+        for prefix in exempt_prefixes:
+            if path == prefix or path.startswith(prefix + '/'):
+                return
+        target = f"https://{request.host}{path}"
+        query = request.query_string.decode('utf-8', errors='ignore')
+        if query:
+            target = f'{target}?{query}'
+        return redirect(target, code=308)
+
+    @app.before_request
     def enforce_csrf():
         if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
             return

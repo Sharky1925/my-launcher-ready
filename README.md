@@ -171,6 +171,7 @@ gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
    - `APP_BASE_URL`
    - `SESSION_COOKIE_SECURE=1`
    - `TRUST_PROXY_HEADERS=1`
+   - `FORCE_HTTPS=1`
 2. For email delivery:
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
    - `MAIL_FROM`

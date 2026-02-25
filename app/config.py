@@ -118,6 +118,13 @@ class Config:
     HSTS_MAX_AGE = _as_int(os.environ.get('HSTS_MAX_AGE'), 31536000)
     HSTS_INCLUDE_SUBDOMAINS = _as_bool(os.environ.get('HSTS_INCLUDE_SUBDOMAINS'), True)
     HSTS_PRELOAD = _as_bool(os.environ.get('HSTS_PRELOAD'), False)
+    FORCE_HTTPS = _as_bool(os.environ.get('FORCE_HTTPS'), _is_production_runtime())
+    _force_https_exempt = [p.strip() for p in os.environ.get('FORCE_HTTPS_EXEMPT_PATHS', '/healthz,/readyz').split(',')]
+    FORCE_HTTPS_EXEMPT_PATHS = tuple(
+        f'/{path}' if path and not path.startswith('/') else path
+        for path in _force_https_exempt
+        if path
+    )
     _trusted_hosts = [h.strip() for h in os.environ.get('TRUSTED_HOSTS', '').split(',') if h.strip()]
     TRUSTED_HOSTS = _trusted_hosts or None
 
