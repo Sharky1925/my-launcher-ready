@@ -4,7 +4,7 @@ import secrets
 import json
 import logging
 from time import perf_counter
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit
 from flask import Flask, abort, flash, g, has_request_context, redirect, render_template, request, session, url_for
 from flask_login import LoginManager
 from markupsafe import Markup, escape
@@ -66,9 +66,41 @@ class PathInfoNormalizer:
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO')
         if not path:
-            environ['PATH_INFO'] = '/'
-        elif not str(path).startswith('/'):
-            environ['PATH_INFO'] = f"/{path}"
+            path = '/'
+        else:
+            path = str(path)
+            if not path.startswith('/'):
+                path = f'/{path}'
+
+        # Some proxies can forward full URLs or host-prefixed paths.
+        if path.startswith('/http://') or path.startswith('/https://'):
+            parsed = urlsplit(path.lstrip('/'))
+            path = parsed.path or '/'
+            if parsed.query and not environ.get('QUERY_STRING'):
+                environ['QUERY_STRING'] = parsed.query
+
+        host = (environ.get('HTTP_HOST') or '').split(':', 1)[0].strip().lower()
+        if host:
+            host_variants = {host}
+            if host.startswith('www.'):
+                host_variants.add(host[4:])
+            else:
+                host_variants.add(f'www.{host}')
+            for host_variant in host_variants:
+                prefix = f'/{host_variant}'
+                if path == prefix:
+                    path = '/'
+                    break
+                if path.startswith(prefix + '/'):
+                    path = path[len(prefix):]
+                    break
+
+        while path.startswith('//'):
+            path = path[1:]
+        if not path:
+            path = '/'
+
+        environ['PATH_INFO'] = path
         return self.app(environ, start_response)
 
 
