@@ -57,6 +57,21 @@ _sentry_initialized = False
 WORKFLOW_SCHEDULE_POLL_SECONDS = 30
 
 
+class PathInfoNormalizer:
+    """Normalize malformed PATH_INFO values from reverse proxies."""
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        path = environ.get('PATH_INFO')
+        if not path:
+            environ['PATH_INFO'] = '/'
+        elif not str(path).startswith('/'):
+            environ['PATH_INFO'] = f"/{path}"
+        return self.app(environ, start_response)
+
+
 class JsonLogFormatter(logging.Formatter):
     def format(self, record):
         payload = {
@@ -260,6 +275,7 @@ def create_app(config_overrides=None):
     if config_overrides:
         app.config.update(config_overrides)
     configure_logging(app)
+    app.wsgi_app = PathInfoNormalizer(app.wsgi_app)
 
     asset_version = (app.config.get('ASSET_VERSION') or '').strip()
     if not asset_version:
