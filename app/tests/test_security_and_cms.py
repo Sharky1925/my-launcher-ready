@@ -720,6 +720,13 @@ def test_health_endpoint_reports_ok(client):
     assert payload["status"] == "ok"
 
 
+def test_health_endpoint_handles_whitespace_prefixed_path_segment(client):
+    response = client.get("/", environ_overrides={"PATH_INFO": "/ /healthz"})
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "ok"
+
+
 def test_readiness_endpoint_reports_ready(client):
     response = client.get("/readyz")
     assert response.status_code == 200

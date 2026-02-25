@@ -97,6 +97,18 @@ class PathInfoNormalizer:
 
         while path.startswith('//'):
             path = path[1:]
+
+        # Some reverse proxies can prepend a whitespace-only segment
+        # (e.g. "/ /healthz") when path fields are misconfigured.
+        # Drop only leading empty/whitespace segments, preserving real segments.
+        parts = path.split('/')
+        first_real = 1
+        while first_real < len(parts) and not parts[first_real].strip():
+            first_real += 1
+        if first_real > 1:
+            remainder = '/'.join(parts[first_real:])
+            path = f'/{remainder}' if remainder else '/'
+
         if not path:
             path = '/'
 
