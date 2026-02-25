@@ -1,11 +1,12 @@
-# IT Services CMS
+# IT Services Website + Headless Backend
 
-A professional IT Services company website with a full built-in CMS admin panel. Powered by Python Flask + SQLite.
+A professional IT Services website with a Flask backend and optional admin panel. Powered by Python Flask + SQLite/PostgreSQL.
 
 ## What It Does
 
 - **Public Website**: Professional IT services company site with Home, About, Services, Blog, and Contact pages
-- **Admin CMS**: Full content management system at `/admin` to manage all website content
+- **Optional Admin Panel**: Built-in dashboard at `/admin` (can be ignored if you use a headless CMS)
+- **Headless Sync API**: Push/pull content from external headless CMS platforms (WordPress, Strapi, Directus, Contentful, etc.)
 - **Content Types**: Services, Team Members, Blog Posts, Testimonials, Media Library, Contact Submissions, Site Settings
 
 ## Quick Start (Local Development)
@@ -56,6 +57,45 @@ python -m pytest -q
 **Security Events**: Review Turnstile verification failures and rate-limited form attempts from the admin panel (`/admin/security-events`).
 
 ## API Documentation
+
+### Headless CMS Sync API
+
+Use these endpoints to keep the current frontend templates while managing content in an external headless CMS.
+
+- `GET /api/headless/export`
+  - Auth: `Authorization: Bearer <HEADLESS_SYNC_TOKEN>` or `X-Headless-Token: <HEADLESS_SYNC_TOKEN>`
+  - Returns current content payload (`site_settings`, `content_blocks`, `services`, `industries`, `posts`)
+  - Query: `?include_drafts=1` to include draft content
+- `POST /api/headless/sync`
+  - Auth: same token header
+  - Accepts upsert payload keys: `site_settings`, `content_blocks`, `services`, `industries`, `posts`
+  - Optional: `dry_run: true` to validate payload without committing database changes
+
+Example:
+
+```bash
+SYNC_TOKEN="change-me"
+
+# Export published content
+curl -s https://www.righttechexperts.com/api/headless/export \
+  -H "Authorization: Bearer $SYNC_TOKEN"
+
+# Sync content from external CMS
+curl -s -X POST https://www.righttechexperts.com/api/headless/sync \
+  -H "Authorization: Bearer $SYNC_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "site_settings": {"company_phone": "+1 (555) 123-4567"},
+    "services": [
+      {
+        "slug": "managed-it-services",
+        "title": "Managed IT Services",
+        "description": "24/7 monitoring, helpdesk, patching, and reporting.",
+        "workflow_status": "published"
+      }
+    ]
+  }'
+```
 
 ### JavaScript (Fetch)
 
@@ -189,6 +229,10 @@ gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
    - `SENTRY_DSN`
    - `SENTRY_ENVIRONMENT`
    - `SENTRY_TRACES_SAMPLE_RATE`
+6. For headless CMS sync:
+   - `HEADLESS_SYNC_TOKEN` (required to enable API auth)
+   - `HEADLESS_SYNC_ENABLED` (default: `1`)
+   - `HEADLESS_SYNC_MAX_ITEMS` (default: `250`)
 
 ### Cloudflare (JS Worker + D1/R2)
 

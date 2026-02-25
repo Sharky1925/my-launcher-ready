@@ -19,6 +19,8 @@ try:
         Post,
         ContactSubmission,
         Industry,
+        SiteSetting,
+        ContentBlock,
         SupportClient,
         SupportTicket,
         SupportTicketEmailVerification,
@@ -51,6 +53,8 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         Post,
         ContactSubmission,
         Industry,
+        SiteSetting,
+        ContentBlock,
         SupportClient,
         SupportTicket,
         SupportTicketEmailVerification,
@@ -171,6 +175,54 @@ def _safe_json_loads(raw_value, fallback):
         return json.loads(value)
     except (TypeError, json.JSONDecodeError):
         return fallback
+
+
+def _headless_sync_token_from_request():
+    auth_header = (request.headers.get('Authorization') or '').strip()
+    if auth_header.lower().startswith('bearer '):
+        token = auth_header[7:].strip()
+        if token:
+            return token
+    return (request.headers.get('X-Headless-Token') or '').strip()
+
+
+def _is_headless_sync_authorized():
+    expected = (current_app.config.get('HEADLESS_SYNC_TOKEN') or '').strip()
+    if not expected:
+        return False
+    provided = _headless_sync_token_from_request()
+    if not provided:
+        return False
+    return secrets.compare_digest(expected, provided)
+
+
+def _normalize_slug(value, fallback=''):
+    raw = str(value or '').strip().lower()
+    text = re.sub(r'[^a-z0-9]+', '-', raw)
+    text = re.sub(r'-{2,}', '-', text).strip('-')
+    return text or fallback
+
+
+def _normalize_workflow_status(value):
+    candidate = str(value or '').strip().lower()
+    if candidate in {'draft', 'review', 'approved', 'published'}:
+        return candidate
+    return WORKFLOW_PUBLISHED
+
+
+def _safe_int(value, default=0):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _coerce_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
 SERVICE_PROFILES = {
@@ -2730,6 +2782,352 @@ def robots_txt():
         stale_while_revalidate=300,
         stale_if_error=86400,
     )
+
+
+@main_bp.route('/api/headless/export')
+def headless_export():
+    if not current_app.config.get('HEADLESS_SYNC_ENABLED', True):
+        abort(404)
+    if not (current_app.config.get('HEADLESS_SYNC_TOKEN') or '').strip():
+        return {'ok': False, 'error': 'HEADLESS_SYNC_TOKEN is not configured.'}, 503
+    if not _is_headless_sync_authorized():
+        return {'ok': False, 'error': 'Unauthorized.'}, 401
+
+    published_only = not _coerce_bool(request.args.get('include_drafts'), False)
+
+    services_query = Service.query.filter(db.or_(Service.is_trashed == False, Service.is_trashed == None))
+    industries_query = Industry.query.filter(db.or_(Industry.is_trashed == False, Industry.is_trashed == None))
+    posts_query = Post.query.filter(db.or_(Post.is_trashed == False, Post.is_trashed == None))
+    if published_only:
+        services_query = services_query.filter(Service.workflow_status == WORKFLOW_PUBLISHED)
+        industries_query = industries_query.filter(Industry.workflow_status == WORKFLOW_PUBLISHED)
+        posts_query = posts_query.filter(Post.workflow_status == WORKFLOW_PUBLISHED)
+
+    payload = {
+        'site_settings': {item.key: item.value for item in SiteSetting.query.order_by(SiteSetting.key.asc()).all()},
+        'content_blocks': [
+            {
+                'page': block.page,
+                'section': block.section,
+                'content': _safe_json_loads(block.content, {}),
+            }
+            for block in ContentBlock.query.order_by(ContentBlock.page.asc(), ContentBlock.section.asc()).all()
+        ],
+        'services': [
+            {
+                'slug': item.slug,
+                'title': item.title,
+                'description': item.description,
+                'service_type': item.service_type,
+                'icon_class': item.icon_class,
+                'image': item.image,
+                'is_featured': bool(item.is_featured),
+                'sort_order': item.sort_order,
+                'workflow_status': item.workflow_status,
+                'seo_title': item.seo_title,
+                'seo_description': item.seo_description,
+                'og_image': item.og_image,
+            }
+            for item in services_query.order_by(Service.sort_order.asc(), Service.id.asc()).all()
+        ],
+        'industries': [
+            {
+                'slug': item.slug,
+                'title': item.title,
+                'description': item.description,
+                'icon_class': item.icon_class,
+                'hero_description': item.hero_description,
+                'challenges': item.challenges,
+                'solutions': item.solutions,
+                'stats': item.stats,
+                'sort_order': item.sort_order,
+                'workflow_status': item.workflow_status,
+                'seo_title': item.seo_title,
+                'seo_description': item.seo_description,
+                'og_image': item.og_image,
+            }
+            for item in industries_query.order_by(Industry.sort_order.asc(), Industry.id.asc()).all()
+        ],
+        'posts': [
+            {
+                'slug': item.slug,
+                'title': item.title,
+                'excerpt': item.excerpt,
+                'content': item.content,
+                'featured_image': item.featured_image,
+                'category': item.category.name if item.category else '',
+                'category_slug': item.category.slug if item.category else '',
+                'workflow_status': item.workflow_status,
+                'seo_title': item.seo_title,
+                'seo_description': item.seo_description,
+                'og_image': item.og_image,
+            }
+            for item in posts_query.order_by(Post.updated_at.desc(), Post.id.desc()).all()
+        ],
+    }
+    return cached_json_response(payload, max_age=60, s_maxage=120, stale_while_revalidate=60, stale_if_error=300)
+
+
+@main_bp.route('/api/headless/sync', methods=['POST'])
+def headless_sync_upsert():
+    if not current_app.config.get('HEADLESS_SYNC_ENABLED', True):
+        abort(404)
+    if not (current_app.config.get('HEADLESS_SYNC_TOKEN') or '').strip():
+        return {'ok': False, 'error': 'HEADLESS_SYNC_TOKEN is not configured.'}, 503
+    if not _is_headless_sync_authorized():
+        return {'ok': False, 'error': 'Unauthorized.'}, 401
+
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return {'ok': False, 'error': 'JSON object payload is required.'}, 400
+
+    max_items = int(current_app.config.get('HEADLESS_SYNC_MAX_ITEMS', 250))
+    dry_run = _coerce_bool(payload.get('dry_run'), False)
+    now = utc_now_naive()
+    errors = []
+    summary = {
+        'site_settings': {'created': 0, 'updated': 0, 'skipped': 0},
+        'content_blocks': {'created': 0, 'updated': 0, 'skipped': 0},
+        'services': {'created': 0, 'updated': 0, 'skipped': 0},
+        'industries': {'created': 0, 'updated': 0, 'skipped': 0},
+        'posts': {'created': 0, 'updated': 0, 'skipped': 0},
+        'categories': {'created': 0, 'updated': 0, 'skipped': 0},
+    }
+
+    def _append_error(message):
+        if len(errors) < 100:
+            errors.append(message)
+
+    def _iter_items(raw, label):
+        if raw is None:
+            return []
+        if not isinstance(raw, list):
+            _append_error(f'{label} must be an array.')
+            return []
+        if len(raw) > max_items:
+            _append_error(f'{label} exceeds HEADLESS_SYNC_MAX_ITEMS ({max_items}).')
+            return []
+        return raw
+
+    try:
+        site_settings_payload = payload.get('site_settings')
+        if site_settings_payload is not None:
+            if not isinstance(site_settings_payload, dict):
+                _append_error('site_settings must be an object.')
+            elif len(site_settings_payload) > max_items:
+                _append_error(f'site_settings exceeds HEADLESS_SYNC_MAX_ITEMS ({max_items}).')
+            else:
+                for raw_key, raw_value in site_settings_payload.items():
+                    key = clean_text(raw_key, 100)
+                    if not key:
+                        summary['site_settings']['skipped'] += 1
+                        _append_error('site_settings contains an empty key.')
+                        continue
+                    value = '' if raw_value is None else str(raw_value)
+                    item = SiteSetting.query.filter_by(key=key).first()
+                    if item:
+                        item.value = value
+                        summary['site_settings']['updated'] += 1
+                    else:
+                        db.session.add(SiteSetting(key=key, value=value))
+                        summary['site_settings']['created'] += 1
+
+        for idx, item in enumerate(_iter_items(payload.get('content_blocks'), 'content_blocks')):
+            if not isinstance(item, dict):
+                summary['content_blocks']['skipped'] += 1
+                _append_error(f'content_blocks[{idx}] must be an object.')
+                continue
+            page = clean_text(item.get('page'), 50)
+            section = clean_text(item.get('section'), 80)
+            content = item.get('content')
+            if not page or not section:
+                summary['content_blocks']['skipped'] += 1
+                _append_error(f'content_blocks[{idx}] requires page and section.')
+                continue
+            if not isinstance(content, (dict, list)):
+                summary['content_blocks']['skipped'] += 1
+                _append_error(f'content_blocks[{idx}] content must be an object or array.')
+                continue
+            row = ContentBlock.query.filter_by(page=page, section=section).first()
+            serialized = json.dumps(content, ensure_ascii=False)
+            if row:
+                row.content = serialized
+                summary['content_blocks']['updated'] += 1
+            else:
+                db.session.add(ContentBlock(page=page, section=section, content=serialized))
+                summary['content_blocks']['created'] += 1
+
+        for idx, item in enumerate(_iter_items(payload.get('services'), 'services')):
+            if not isinstance(item, dict):
+                summary['services']['skipped'] += 1
+                _append_error(f'services[{idx}] must be an object.')
+                continue
+            title = clean_text(item.get('title'), 200)
+            slug = _normalize_slug(item.get('slug') or item.get('key') or title)
+            description = str(item.get('description') or '').strip()
+            if not slug:
+                summary['services']['skipped'] += 1
+                _append_error(f'services[{idx}] requires slug or title.')
+                continue
+            row = Service.query.filter_by(slug=slug).first()
+            if not row and (not title or not description):
+                summary['services']['skipped'] += 1
+                _append_error(f'services[{idx}] new items require title and description.')
+                continue
+            if not row:
+                row = Service(
+                    slug=slug,
+                    title=title,
+                    description=description,
+                    created_at=now,
+                )
+                db.session.add(row)
+                summary['services']['created'] += 1
+            else:
+                summary['services']['updated'] += 1
+            if title:
+                row.title = title
+            if description:
+                row.description = description
+            row.icon_class = clean_text(item.get('icon_class') or row.icon_class or 'fa-solid fa-gear', 100)
+            service_type = clean_text(item.get('service_type') or row.service_type or 'professional', 20).lower()
+            row.service_type = service_type if service_type in {'professional', 'repair'} else 'professional'
+            row.is_featured = _coerce_bool(item.get('is_featured'), row.is_featured)
+            row.sort_order = _safe_int(item.get('sort_order'), row.sort_order or 0)
+            row.image = clean_text(item.get('image') or row.image, 300) or None
+            row.seo_title = clean_text(item.get('seo_title') or row.seo_title, 200) or None
+            row.seo_description = clean_text(item.get('seo_description') or row.seo_description, 500) or None
+            row.og_image = clean_text(item.get('og_image') or row.og_image, 500) or None
+            row.workflow_status = _normalize_workflow_status(item.get('workflow_status') or row.workflow_status)
+            row.is_trashed = False
+            if row.workflow_status == WORKFLOW_PUBLISHED:
+                row.published_at = row.published_at or now
+                row.reviewed_at = row.reviewed_at or now
+                row.approved_at = row.approved_at or now
+            row.updated_at = now
+
+        for idx, item in enumerate(_iter_items(payload.get('industries'), 'industries')):
+            if not isinstance(item, dict):
+                summary['industries']['skipped'] += 1
+                _append_error(f'industries[{idx}] must be an object.')
+                continue
+            title = clean_text(item.get('title'), 200)
+            slug = _normalize_slug(item.get('slug') or item.get('key') or title)
+            description = str(item.get('description') or '').strip()
+            if not slug:
+                summary['industries']['skipped'] += 1
+                _append_error(f'industries[{idx}] requires slug or title.')
+                continue
+            row = Industry.query.filter_by(slug=slug).first()
+            if not row and (not title or not description):
+                summary['industries']['skipped'] += 1
+                _append_error(f'industries[{idx}] new items require title and description.')
+                continue
+            if not row:
+                row = Industry(
+                    slug=slug,
+                    title=title,
+                    description=description,
+                    created_at=now,
+                )
+                db.session.add(row)
+                summary['industries']['created'] += 1
+            else:
+                summary['industries']['updated'] += 1
+            if title:
+                row.title = title
+            if description:
+                row.description = description
+            row.icon_class = clean_text(item.get('icon_class') or row.icon_class or 'fa-solid fa-building', 100)
+            row.hero_description = clean_text(item.get('hero_description') or row.hero_description, 2000) or None
+            row.challenges = clean_text(item.get('challenges') or row.challenges, 4000) or None
+            row.solutions = clean_text(item.get('solutions') or row.solutions, 4000) or None
+            row.stats = clean_text(item.get('stats') or row.stats, 4000) or None
+            row.sort_order = _safe_int(item.get('sort_order'), row.sort_order or 0)
+            row.seo_title = clean_text(item.get('seo_title') or row.seo_title, 200) or None
+            row.seo_description = clean_text(item.get('seo_description') or row.seo_description, 500) or None
+            row.og_image = clean_text(item.get('og_image') or row.og_image, 500) or None
+            row.workflow_status = _normalize_workflow_status(item.get('workflow_status') or row.workflow_status)
+            row.is_trashed = False
+            if row.workflow_status == WORKFLOW_PUBLISHED:
+                row.published_at = row.published_at or now
+                row.reviewed_at = row.reviewed_at or now
+                row.approved_at = row.approved_at or now
+            row.updated_at = now
+
+        for idx, item in enumerate(_iter_items(payload.get('posts'), 'posts')):
+            if not isinstance(item, dict):
+                summary['posts']['skipped'] += 1
+                _append_error(f'posts[{idx}] must be an object.')
+                continue
+            title = clean_text(item.get('title'), 300)
+            slug = _normalize_slug(item.get('slug') or item.get('key') or title)
+            content = str(item.get('content') or '').strip()
+            if not slug:
+                summary['posts']['skipped'] += 1
+                _append_error(f'posts[{idx}] requires slug or title.')
+                continue
+            row = Post.query.filter_by(slug=slug).first()
+            if not row and (not title or not content):
+                summary['posts']['skipped'] += 1
+                _append_error(f'posts[{idx}] new items require title and content.')
+                continue
+            if not row:
+                row = Post(
+                    slug=slug,
+                    title=title,
+                    content=content,
+                    created_at=now,
+                )
+                db.session.add(row)
+                summary['posts']['created'] += 1
+            else:
+                summary['posts']['updated'] += 1
+            category_name = clean_text(item.get('category') or item.get('category_name'), 100)
+            if category_name:
+                category_slug = _normalize_slug(item.get('category_slug') or category_name)
+                category = Category.query.filter_by(slug=category_slug).first()
+                if not category:
+                    category = Category(name=category_name, slug=category_slug)
+                    db.session.add(category)
+                    summary['categories']['created'] += 1
+                else:
+                    summary['categories']['updated'] += 1
+                row.category = category
+            if title:
+                row.title = title
+            if content:
+                row.content = content
+            row.excerpt = clean_text(item.get('excerpt') or row.excerpt, 2000) or None
+            row.featured_image = clean_text(item.get('featured_image') or row.featured_image, 300) or None
+            row.seo_title = clean_text(item.get('seo_title') or row.seo_title, 200) or None
+            row.seo_description = clean_text(item.get('seo_description') or row.seo_description, 500) or None
+            row.og_image = clean_text(item.get('og_image') or row.og_image, 500) or None
+            row.workflow_status = _normalize_workflow_status(item.get('workflow_status') or row.workflow_status)
+            row.is_trashed = False
+            row.is_published = row.workflow_status == WORKFLOW_PUBLISHED
+            if row.workflow_status == WORKFLOW_PUBLISHED:
+                row.published_at = row.published_at or now
+                row.reviewed_at = row.reviewed_at or now
+                row.approved_at = row.approved_at or now
+            row.updated_at = now
+
+        if dry_run:
+            db.session.rollback()
+        else:
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception('Headless sync failed.')
+        return {'ok': False, 'error': 'Sync failed due to server error.'}, 500
+
+    status_code = 200 if not errors else 207
+    return {
+        'ok': len(errors) == 0,
+        'dry_run': dry_run,
+        'summary': summary,
+        'errors': errors,
+    }, status_code
 
 
 @main_bp.route('/api/delivery/pages/<slug>')

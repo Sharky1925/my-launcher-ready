@@ -428,6 +428,9 @@ def create_app(config_overrides=None):
     def enforce_csrf():
         if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
             return
+        csrf_exempt_endpoints = set(app.config.get('CSRF_EXEMPT_ENDPOINTS') or ())
+        if request.endpoint in csrf_exempt_endpoints:
+            return
         expected = session.get('_csrf_token')
         provided = request.form.get('_csrf_token') or request.headers.get('X-CSRF-Token')
         if not expected or not provided or not secrets.compare_digest(expected, provided):

@@ -16,6 +16,7 @@ try:
         ContactSubmission,
         Post,
         Service,
+        ContentBlock,
         SiteSetting,
         User,
         SupportClient,
@@ -55,6 +56,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         ContactSubmission,
         Post,
         Service,
+        ContentBlock,
         SiteSetting,
         User,
         SupportClient,
@@ -644,6 +646,186 @@ def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):
 
     draft_theme_resp = client.get(f"/api/delivery/theme/{draft_theme_key}")
     assert draft_theme_resp.status_code == 404
+
+
+def test_headless_sync_returns_503_when_token_not_configured(client):
+    response = client.post("/api/headless/sync", json={})
+    assert response.status_code == 503
+    payload = response.get_json()
+    assert payload["ok"] is False
+
+
+def test_headless_sync_requires_token_auth(tmp_path, monkeypatch):
+    token = f"sync-token-{uuid.uuid4().hex[:8]}"
+    secured_app = build_test_app(tmp_path, monkeypatch, {"HEADLESS_SYNC_TOKEN": token})
+    secured_client = secured_app.test_client()
+
+    response = secured_client.post("/api/headless/sync", json={})
+    assert response.status_code == 401
+    assert response.get_json()["ok"] is False
+
+    export_response = secured_client.get("/api/headless/export")
+    assert export_response.status_code == 401
+    assert export_response.get_json()["ok"] is False
+
+
+def test_headless_sync_upsert_and_export_roundtrip(tmp_path, monkeypatch):
+    token = f"sync-token-{uuid.uuid4().hex[:8]}"
+    sync_app = build_test_app(tmp_path, monkeypatch, {"HEADLESS_SYNC_TOKEN": token})
+    sync_client = sync_app.test_client()
+    suffix = uuid.uuid4().hex[:8]
+
+    published_service_slug = f"headless-service-pub-{suffix}"
+    draft_service_slug = f"headless-service-draft-{suffix}"
+    industry_slug = f"headless-industry-{suffix}"
+    post_slug = f"headless-post-{suffix}"
+    category_name = f"Headless Category {suffix}"
+    category_slug = f"headless-category-{suffix}"
+    setting_key = f"headless.setting.{suffix}"
+
+    payload = {
+        "site_settings": {setting_key: f"enabled-{suffix}"},
+        "content_blocks": [
+            {
+                "page": "home",
+                "section": f"headless-{suffix}",
+                "content": {"title": "Headless Sync", "cta": "Call us"},
+            }
+        ],
+        "services": [
+            {
+                "slug": published_service_slug,
+                "title": "Headless Published Service",
+                "description": "Published service synced from external CMS.",
+                "workflow_status": WORKFLOW_PUBLISHED,
+                "is_featured": True,
+            },
+            {
+                "slug": draft_service_slug,
+                "title": "Headless Draft Service",
+                "description": "Draft service synced from external CMS.",
+                "workflow_status": WORKFLOW_DRAFT,
+            },
+        ],
+        "industries": [
+            {
+                "slug": industry_slug,
+                "title": "Headless Industry",
+                "description": "Industry synced from external CMS.",
+                "workflow_status": WORKFLOW_PUBLISHED,
+            }
+        ],
+        "posts": [
+            {
+                "slug": post_slug,
+                "title": "Headless CMS Compatibility",
+                "content": "This post is managed by external headless CMS sync.",
+                "excerpt": "Headless export/import contract test.",
+                "category": category_name,
+                "category_slug": category_slug,
+                "workflow_status": WORKFLOW_PUBLISHED,
+            }
+        ],
+    }
+
+    sync_response = sync_client.post(
+        "/api/headless/sync",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert sync_response.status_code == 200
+    sync_payload = sync_response.get_json()
+    assert sync_payload["ok"] is True
+    assert sync_payload["summary"]["site_settings"]["created"] == 1
+    assert sync_payload["summary"]["content_blocks"]["created"] == 1
+    assert sync_payload["summary"]["services"]["created"] == 2
+    assert sync_payload["summary"]["industries"]["created"] == 1
+    assert sync_payload["summary"]["posts"]["created"] == 1
+    assert sync_payload["summary"]["categories"]["created"] == 1
+
+    with sync_app.app_context():
+        setting = SiteSetting.query.filter_by(key=setting_key).first()
+        assert setting is not None
+        assert setting.value == f"enabled-{suffix}"
+
+        content_block = ContentBlock.query.filter_by(page="home", section=f"headless-{suffix}").first()
+        assert content_block is not None
+        assert '"Headless Sync"' in content_block.content
+
+        published_service = Service.query.filter_by(slug=published_service_slug).first()
+        assert published_service is not None
+        assert published_service.workflow_status == WORKFLOW_PUBLISHED
+        assert published_service.is_featured is True
+
+        draft_service = Service.query.filter_by(slug=draft_service_slug).first()
+        assert draft_service is not None
+        assert draft_service.workflow_status == WORKFLOW_DRAFT
+
+        industry = Industry.query.filter_by(slug=industry_slug).first()
+        assert industry is not None
+        assert industry.workflow_status == WORKFLOW_PUBLISHED
+
+        post = Post.query.filter_by(slug=post_slug).first()
+        assert post is not None
+        assert post.category is not None
+        assert post.category.slug == category_slug
+
+    export_response = sync_client.get(
+        "/api/headless/export",
+        headers={"X-Headless-Token": token},
+    )
+    assert export_response.status_code == 200
+    export_payload = export_response.get_json()
+    exported_service_slugs = {item["slug"] for item in export_payload["services"]}
+    assert published_service_slug in exported_service_slugs
+    assert draft_service_slug not in exported_service_slugs
+    assert export_payload["site_settings"][setting_key] == f"enabled-{suffix}"
+    assert any(item["slug"] == industry_slug for item in export_payload["industries"])
+    assert any(item["slug"] == post_slug for item in export_payload["posts"])
+
+    export_with_drafts_response = sync_client.get(
+        "/api/headless/export?include_drafts=1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert export_with_drafts_response.status_code == 200
+    export_with_drafts_payload = export_with_drafts_response.get_json()
+    exported_service_slugs_with_drafts = {
+        item["slug"]
+        for item in export_with_drafts_payload["services"]
+    }
+    assert draft_service_slug in exported_service_slugs_with_drafts
+
+
+def test_headless_sync_dry_run_does_not_persist_changes(tmp_path, monkeypatch):
+    token = f"sync-token-{uuid.uuid4().hex[:8]}"
+    dry_run_app = build_test_app(tmp_path, monkeypatch, {"HEADLESS_SYNC_TOKEN": token})
+    dry_run_client = dry_run_app.test_client()
+    draft_slug = f"headless-dry-run-{uuid.uuid4().hex[:8]}"
+
+    response = dry_run_client.post(
+        "/api/headless/sync",
+        json={
+            "dry_run": True,
+            "services": [
+                {
+                    "slug": draft_slug,
+                    "title": "Dry Run Service",
+                    "description": "Should not be committed.",
+                    "workflow_status": WORKFLOW_PUBLISHED,
+                }
+            ],
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["ok"] is True
+    assert payload["dry_run"] is True
+    assert payload["summary"]["services"]["created"] == 1
+
+    with dry_run_app.app_context():
+        persisted = Service.query.filter_by(slug=draft_slug).first()
+        assert persisted is None
 
 
 def test_backfill_repairs_legacy_draft_only_service_and_industry_states(app):
