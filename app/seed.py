@@ -972,14 +972,27 @@ def seed_database():
     ensure_phase2_schema()
     backfill_phase2_defaults()
     env_password = os.environ.get('ADMIN_PASSWORD') or ''
+    env_username = (os.environ.get('ADMIN_USERNAME') or 'admin').strip() or 'admin'
+    env_email = (os.environ.get('ADMIN_EMAIL') or 'admin@example.com').strip() or 'admin@example.com'
 
-    # Always sync admin password with env var on startup
+    # Always sync admin credentials with env vars on startup.
+    # If a named admin user is missing, restore one so operators always have
+    # a deterministic break-glass login.
     if env_password:
         try:
-            existing_admin = User.query.filter_by(username='admin').first()
-            if existing_admin:
-                existing_admin.set_password(env_password)
-                db.session.commit()
+            target_admin = User.query.filter_by(username=env_username).first()
+            if not target_admin:
+                target_email = env_email
+                email_owner = User.query.filter_by(email=target_email).first()
+                if email_owner and email_owner.username != env_username:
+                    local, _, domain = target_email.partition('@')
+                    local = local or env_username
+                    domain = domain or 'example.com'
+                    target_email = f'{local}+{secrets.token_hex(4)}@{domain}'
+                target_admin = User(username=env_username, email=target_email, role=ROLE_OWNER)
+                db.session.add(target_admin)
+            target_admin.set_password(env_password)
+            db.session.commit()
         except Exception:
             db.session.rollback()
 

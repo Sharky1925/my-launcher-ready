@@ -806,6 +806,30 @@ def test_seed_database_creates_admin_when_content_exists_without_user(app):
         assert Category.query.filter_by(slug="technology").count() == 1
 
 
+def test_seed_database_restores_named_admin_from_env_when_missing(app, monkeypatch):
+    monkeypatch.setenv("ADMIN_PASSWORD", "RecoveryPass!123")
+    monkeypatch.setenv("ADMIN_USERNAME", "admin")
+    monkeypatch.setenv("ADMIN_EMAIL", "admin@example.com")
+
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        existing_user = User(username="operator", email="admin@example.com")
+        existing_user.set_password("OperatorPass!123")
+        db.session.add(existing_user)
+        db.session.commit()
+
+        assert User.query.filter_by(username="admin").first() is None
+
+        seed_database()
+        db.session.expire_all()
+
+        restored_admin = User.query.filter_by(username="admin").first()
+        assert restored_admin is not None
+        assert restored_admin.email != "admin@example.com"
+        assert restored_admin.check_password("RecoveryPass!123")
+
+
 def test_contact_page_form_has_accessibility_autocomplete(client):
     response = client.get("/contact")
     assert response.status_code == 200

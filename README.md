@@ -169,19 +169,23 @@ gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
    - `SECRET_KEY`
    - `DATABASE_URL`
    - `APP_BASE_URL`
+   - `ADMIN_PASSWORD` (known admin login password)
    - `SESSION_COOKIE_SECURE=1`
    - `TRUST_PROXY_HEADERS=1`
    - `FORCE_HTTPS=1`
-2. For email delivery:
+2. Optional admin recovery controls:
+   - `ADMIN_USERNAME` (default: `admin`)
+   - `ADMIN_EMAIL` (default: `admin@example.com`)
+3. For email delivery:
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
    - `MAIL_FROM`
    - `CONTACT_NOTIFICATION_EMAILS`
    - `TICKET_NOTIFICATION_EMAILS`
-3. For anti-spam and abuse controls:
+4. For anti-spam and abuse controls:
    - `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_ENFORCED`
    - `CONTACT_FORM_LIMIT`, `CONTACT_FORM_WINDOW_SECONDS`
    - `QUOTE_FORM_LIMIT`, `QUOTE_FORM_WINDOW_SECONDS`
-4. For observability:
+5. For observability:
    - `SENTRY_DSN`
    - `SENTRY_ENVIRONMENT`
    - `SENTRY_TRACES_SAMPLE_RATE`
