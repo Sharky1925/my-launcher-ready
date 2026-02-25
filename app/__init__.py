@@ -209,6 +209,45 @@ def safe_referrer_path(fallback):
     return target
 
 
+def get_public_base_url(config):
+    configured = (config.get('APP_BASE_URL') or '').strip()
+    if configured.startswith('http://') or configured.startswith('https://'):
+        return configured.rstrip('/')
+
+    base = request.url_root.rstrip('/')
+    preferred_scheme = (config.get('PREFERRED_URL_SCHEME') or '').strip().lower()
+    if preferred_scheme == 'https' and base.startswith('http://'):
+        return f"https://{base[len('http://'):]}"
+    return base
+
+
+def to_public_url(config, path_or_url):
+    value = str(path_or_url or '').strip()
+    base = get_public_base_url(config)
+    configured = (config.get('APP_BASE_URL') or '').strip()
+    has_configured_base = configured.startswith('http://') or configured.startswith('https://')
+    if not value:
+        return base
+    if value.startswith('https://'):
+        if has_configured_base:
+            parsed = urlsplit(value)
+            path = parsed.path or '/'
+            return f'{base}{path}' + (f'?{parsed.query}' if parsed.query else '')
+        return value
+    if value.startswith('http://'):
+        if has_configured_base:
+            parsed = urlsplit(value)
+            path = parsed.path or '/'
+            return f'{base}{path}' + (f'?{parsed.query}' if parsed.query else '')
+        preferred_scheme = (config.get('PREFERRED_URL_SCHEME') or '').strip().lower()
+        if preferred_scheme == 'https':
+            return f"https://{value[len('http://'):]}"
+        return value
+    if not value.startswith('/'):
+        value = f'/{value}'
+    return f'{base}{value}'
+
+
 def _normalize_icon_class(icon_class, fallback='fa-solid fa-circle'):
     fallback = fallback if _ICON_CLASS_RE.match(fallback) else 'fa-solid fa-circle'
     raw = (icon_class or '').strip()[:120]
@@ -453,6 +492,11 @@ def create_app(config_overrides=None):
             _all_settings = {}
             theme_mode = 'light'
             google_fonts_url = ''
+        public_base_url = get_public_base_url(app.config)
+
+        def public_url(path_or_url=''):
+            return to_public_url(app.config, path_or_url)
+
         return dict(
             site_settings=_all_settings or get_site_settings(),
             nav_professional=nav_professional,
@@ -468,6 +512,8 @@ def create_app(config_overrides=None):
             asset_v=app.config.get('ASSET_VERSION', 'dev'),
             turnstile_enabled=bool(app.config.get('TURNSTILE_SITE_KEY') and app.config.get('TURNSTILE_SECRET_KEY')),
             turnstile_site_key=(app.config.get('TURNSTILE_SITE_KEY') or ''),
+            public_base_url=public_base_url,
+            public_url=public_url,
         )
 
     @app.after_request

@@ -13,7 +13,7 @@
   "numberOfItems": {{ industries|length }},
   "itemListElement": [
     {% for ind in industries %}
-    { "@type": "ListItem", "position": {{ loop.index }}, "item": { "@type": "Service", "name": {{ (ind.title ~ ' IT Solutions') | tojson }}, "url": {{ url_for('main.industry_detail', slug=ind.slug, _external=True) | tojson }} } }{% if not loop.last %},{% endif %}
+    { "@type": "ListItem", "position": {{ loop.index }}, "item": { "@type": "Service", "name": {{ (ind.title ~ ' IT Solutions') | tojson }}, "url": {{ public_url(url_for('main.industry_detail', slug=ind.slug)) | tojson }} } }{% if not loop.last %},{% endif %}
     {% endfor %}
   ]
 }

@@ -12,7 +12,7 @@
   "@type": "WebPage",
   "name": "Personal Quote Request",
   "description": "Quick personal quote request for device repair, home setup, and individual IT support.",
-  "url": {{ request.base_url | tojson }}
+  "url": {{ public_url(request.base_url) | tojson }}
 }
 </script>
 {% endblock %}

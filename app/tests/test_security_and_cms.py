@@ -713,6 +713,42 @@ def test_hsts_header_on_trusted_forwarded_proto(tmp_path, monkeypatch):
     assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
 
 
+def test_public_metadata_urls_use_configured_https_base_url(tmp_path, monkeypatch):
+    secure_app = build_test_app(
+        tmp_path,
+        monkeypatch,
+        {"APP_BASE_URL": "https://www.example.com", "PREFERRED_URL_SCHEME": "https"},
+    )
+    secure_client = secure_app.test_client()
+    response = secure_client.get("/", base_url="http://internal.local")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert '<link rel="canonical" href="https://www.example.com/">' in html
+    assert '<meta property="og:url" content="https://www.example.com/">' in html
+    assert '"url": "https://www.example.com"' in html
+    assert '"image": "https://www.example.com/static/icon.png"' in html
+    assert "http://www.example.com" not in html
+
+
+def test_service_detail_structured_data_uses_https_public_urls(tmp_path, monkeypatch):
+    secure_app = build_test_app(
+        tmp_path,
+        monkeypatch,
+        {"APP_BASE_URL": "https://www.example.com", "PREFERRED_URL_SCHEME": "https"},
+    )
+    secure_client = secure_app.test_client()
+    with secure_app.app_context():
+        service = Service.query.first()
+        assert service is not None
+        slug = service.slug
+    response = secure_client.get(f"/services/{slug}", base_url="http://internal.local")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert f'"url": "https://www.example.com/services/{slug}"' in html
+    assert '"item": "https://www.example.com/services"' in html
+    assert "http://www.example.com/services/" not in html
+
+
 def test_force_https_redirects_insecure_requests(tmp_path, monkeypatch):
     secure_app = build_test_app(tmp_path, monkeypatch, {"FORCE_HTTPS": True})
     secure_client = secure_app.test_client()

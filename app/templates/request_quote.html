@@ -12,7 +12,7 @@
   "@type": "WebPage",
   "name": "Request a Quote",
   "description": "Request a free quote for personal device repair or full business IT solutions including managed IT, cybersecurity, cloud, and development services.",
-  "url": {{ request.base_url | tojson }},
+  "url": {{ public_url(request.base_url) | tojson }},
   "mainEntity": {
     "@type": "Service",
     "name": "IT Services Quote",
@@ -29,8 +29,8 @@
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ url_for('main.index', _external=True) }}" },
-    { "@type": "ListItem", "position": 2, "name": "Request Quote", "item": {{ request.base_url | tojson }} }
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ public_url(url_for('main.index')) }}" },
+    { "@type": "ListItem", "position": 2, "name": "Request Quote", "item": {{ public_url(request.base_url) | tojson }} }
   ]
 }
 </script>

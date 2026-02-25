@@ -11,21 +11,21 @@
   <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
   <meta name="googlebot" content="{% block meta_googlebot %}index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1{% endblock %}">
   <meta name="format-detection" content="telephone=no, email=no">
-  <link rel="canonical" href="{{ request.base_url }}">
+  <link rel="canonical" href="{{ public_url(request.base_url) }}">
   {% block meta_extra %}{% endblock %}
   <!-- Open Graph -->
   <meta property="og:title" content="{% block og_title %}{{ site_settings.get('meta_title', 'Right On Repair') }}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{{ site_settings.get('meta_description', '') }}{% endblock %}">
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-  <meta property="og:url" content="{{ request.url }}">
+  <meta property="og:url" content="{{ public_url(request.url) }}">
   <meta property="og:site_name" content="{{ site_settings.get('company_name', 'Right On Repair') }}">
   <meta property="og:locale" content="en_US">
-  <meta property="og:image" content="{% block og_image %}{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ public_url(url_for('static', filename='icon.png')) }}{% endblock %}">
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{ self.og_title() }}">
   <meta name="twitter:description" content="{{ self.og_description() }}">
-  <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='icon.png') }}">
+  <meta name="twitter:image" content="{{ public_url(url_for('static', filename='icon.png')) }}">
   {% set asset_version = asset_v if asset_v is defined and asset_v else 'dev' %}
   <!-- Fonts & CSS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -83,8 +83,8 @@
     "@type": "LocalBusiness",
     "name": {{ site_settings.get('company_name', 'Right On Repair') | tojson }},
     "description": {{ site_settings.get('meta_description', '') | tojson }},
-    "url": {{ request.url_root.rstrip('/') | tojson }},
-    "image": {{ (request.url_root.rstrip('/') ~ url_for('static', filename='icon.png')) | tojson }},
+    "url": {{ public_base_url | tojson }},
+    "image": {{ public_url(url_for('static', filename='icon.png')) | tojson }},
     "telephone": {{ site_settings.get('phone', '') | tojson }},
     "email": {{ site_settings.get('email', '') | tojson }},
     "address": {

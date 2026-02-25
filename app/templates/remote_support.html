@@ -14,7 +14,7 @@
   "@type": "WebPage",
   "name": "Remote Support Portal",
   "description": "Client portal for support ticket creation and tracking.",
-  "url": {{ request.base_url | tojson }}
+  "url": {{ public_url(request.base_url) | tojson }}
 }
 </script>
 {% endblock %}
