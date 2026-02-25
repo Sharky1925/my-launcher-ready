@@ -661,7 +661,7 @@
     <div class="top-bar">
       <h5>{% block page_title %}Dashboard{% endblock %}</h5>
       <div class="top-actions">
-        <button class="btn btn-sm btn-outline-secondary" onclick="document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',metaKey:true}))" title="Cmd+K"><i class="fa-solid fa-magnifying-glass me-1"></i><kbd style="font-size:.65rem;opacity:.7">&#8984;K</kbd></button>
+        <button class="btn btn-sm btn-outline-secondary" id="openCmdPalette" title="Cmd+K"><i class="fa-solid fa-magnifying-glass me-1"></i><kbd style="font-size:.65rem;opacity:.7">&#8984;K</kbd></button>
         <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square me-1"></i>View Site</a>
         <span class="user-pill">{{ current_user.username }} · {{ role_labels.get(current_user.role_key, current_user.role_key|title) }}</span>
         <form method="POST" action="{{ url_for('admin.logout') }}" class="logout-inline-block-form">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button></form>
@@ -713,17 +713,22 @@
     var palette = document.getElementById('commandPalette');
     var searchInput = document.getElementById('cmdSearch');
     var resultsDiv = document.getElementById('cmdResults');
-    if (!palette) return;
+    var openBtn = document.getElementById('openCmdPalette');
+    if (!palette || !searchInput || !resultsDiv) return;
     var bsModal = null;
     function getModal() {
       if (!bsModal) bsModal = new bootstrap.Modal(palette);
       return bsModal;
     }
+    function openPalette() {
+      getModal().show();
+      setTimeout(function(){ searchInput.focus(); searchInput.select(); }, 150);
+    }
+    if (openBtn) openBtn.addEventListener('click', openPalette);
     document.addEventListener('keydown', function(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        getModal().show();
-        setTimeout(function(){ searchInput.focus(); searchInput.select(); }, 100);
+        openPalette();
       }
     });
     var debounceTimer;
@@ -734,11 +739,12 @@
     function doSearch() {
       var q = searchInput.value.trim();
       if (q.length < 2) { resultsDiv.innerHTML = ''; return; }
-      var csrfToken = document.querySelector('[name=_csrf_token]');
-      fetch('/admin/api/search?q=' + encodeURIComponent(q), {
-        headers: { 'X-CSRF-Token': csrfToken ? csrfToken.value : '' }
+      resultsDiv.innerHTML = '<div class="text-muted small text-center py-2">Searching...</div>';
+      fetch('{{ url_for("admin.admin_search_api") }}?q=' + encodeURIComponent(q))
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
       })
-      .then(function(r) { return r.json(); })
       .then(function(data) {
         var html = '';
         (data.results || []).forEach(function(item) {
@@ -747,10 +753,13 @@
           html += '<span class="d-block text-muted" style="font-size:.72rem;">' + item.type + (item.status ? ' · ' + item.status : '') + '</span>';
           html += '</a>';
         });
-        if (!html) html = '<div class="text-muted small text-center py-2">No results</div>';
+        if (!html) html = '<div class="text-muted small text-center py-2">No results found</div>';
         resultsDiv.innerHTML = html;
       })
-      .catch(function() { resultsDiv.innerHTML = ''; });
+      .catch(function(err) {
+        console.error('Command palette search error:', err);
+        resultsDiv.innerHTML = '<div class="text-muted small text-center py-2">Search failed — please try again</div>';
+      });
     }
   })();
   </script>
