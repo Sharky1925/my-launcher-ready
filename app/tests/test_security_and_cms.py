@@ -1,9 +1,18 @@
 import re
 import hashlib
 import uuid
+import sys
+from pathlib import Path
 from datetime import timedelta
 
 import pytest
+
+TESTS_DIR = Path(__file__).resolve().parent
+APP_DIR = TESTS_DIR.parent
+REPO_DIR = APP_DIR.parent
+for _path in (str(REPO_DIR), str(APP_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 try:
     from app import notifications as notifications_module
@@ -190,7 +199,7 @@ def test_theme_script_falls_back_to_server_default_mode(client):
     response = client.get("/")
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert "root.getAttribute('data-theme')" in html
+    assert "localStorage.getItem('theme')" in html
     assert "window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches" in html
 
 
