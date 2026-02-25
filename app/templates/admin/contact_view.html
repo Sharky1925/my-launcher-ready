@@ -31,14 +31,52 @@
       <div class="col-12">
         <small class="text-muted">Received: {{ item.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
       </div>
-      <div class="col-12">
-        <a href="{{ url_for('admin.contacts') }}" class="btn btn-outline-secondary">Back to List</a>
-        <form method="post" action="{{ url_for('admin.contact_delete', id=item.id) }}" class="d-inline confirm-delete">
-            {{ csrf_input() }}
-          <button class="btn btn-outline-danger ms-2">Delete</button>
-        </form>
-      </div>
     </div>
   </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-3">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Lead Management</h6>
+    <form method="post" action="{{ url_for('admin.contact_status_update', id=item.id) }}">
+      {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Lead Status</label>
+          <select name="lead_status" class="form-select">
+            {% for key, label in (lead_status_labels or {}).items() %}
+            <option value="{{ key }}" {{ 'selected' if item.lead_status == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Notes</label>
+          <textarea name="lead_notes" class="form-control" rows="2">{{ item.lead_notes or '' }}</textarea>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary btn-sm">Update Lead Status</button>
+        </div>
+      </div>
+    </form>
+    {% if item.source_page or item.utm_source or item.referrer_url %}
+    <hr>
+    <h6 class="fw-bold mb-2">Source Information</h6>
+    <div class="row g-2">
+      {% if item.source_page %}<div class="col-md-4"><small class="text-muted d-block">Source Page</small><small>{{ item.source_page }}</small></div>{% endif %}
+      {% if item.utm_source %}<div class="col-md-3"><small class="text-muted d-block">UTM Source</small><small>{{ item.utm_source }}</small></div>{% endif %}
+      {% if item.utm_medium %}<div class="col-md-3"><small class="text-muted d-block">UTM Medium</small><small>{{ item.utm_medium }}</small></div>{% endif %}
+      {% if item.utm_campaign %}<div class="col-md-3"><small class="text-muted d-block">UTM Campaign</small><small>{{ item.utm_campaign }}</small></div>{% endif %}
+      {% if item.referrer_url %}<div class="col-12"><small class="text-muted d-block">Referrer</small><small>{{ item.referrer_url }}</small></div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="mt-3">
+  <a href="{{ url_for('admin.contacts') }}" class="btn btn-outline-secondary">Back to List</a>
+  <form method="post" action="{{ url_for('admin.contact_delete', id=item.id) }}" class="d-inline confirm-delete">
+      {{ csrf_input() }}
+    <button class="btn btn-outline-danger ms-2">Delete</button>
+  </form>
 </div>
 {% endblock %}

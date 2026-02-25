@@ -1,0 +1,40 @@
+{# Reusable version history section for content forms #}
+{% if item and versions %}
+<div class="card border-0 shadow-sm mt-3">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#versionHistory" aria-expanded="false">
+    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-clock-rotate-left me-2"></i>Version History ({{ versions|length }})</h6>
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+  <div class="collapse" id="versionHistory">
+    <div class="card-body pt-0">
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Note</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in versions %}
+            <tr>
+              <td>v{{ v.version_number }}</td>
+              <td>{{ v.change_note or '—' }}</td>
+              <td>{{ v.created_at.strftime('%Y-%m-%d %H:%M') if v.created_at else '—' }}</td>
+              <td>
+                <form method="post" action="{{ restore_url(v.id if v else 0) }}" class="d-inline" onsubmit="return confirm('Restore version {{ v.version_number }}? Current content will be overwritten.')">
+                  {{ csrf_input() }}
+                  <button type="submit" class="btn btn-sm btn-outline-warning"><i class="fa-solid fa-rotate-left"></i> Restore</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

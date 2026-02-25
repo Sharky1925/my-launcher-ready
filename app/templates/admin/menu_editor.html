@@ -1,0 +1,127 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Navigation Editor{% endblock %}
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+  .menu-item-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(7, 13, 23, 0.58);
+    padding: .6rem .8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: grab;
+    margin-bottom: 6px;
+  }
+  .menu-item-card:active { cursor: grabbing; }
+  .menu-item-card .grip { color: var(--text-muted); font-size: .8rem; }
+  .menu-item-card .label { flex: 1; font-size: .85rem; font-weight: 600; }
+  .menu-item-card .meta { font-size: .72rem; color: var(--text-muted); }
+  .menu-children { padding-left: 24px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <ul class="nav nav-tabs mb-3">
+      <li class="nav-item"><a class="nav-link {% if location == 'header' %}active{% endif %}" href="{{ url_for('admin.menu_editor', location='header') }}">Header</a></li>
+      <li class="nav-item"><a class="nav-link {% if location == 'footer' %}active{% endif %}" href="{{ url_for('admin.menu_editor', location='footer') }}">Footer</a></li>
+      <li class="nav-item"><a class="nav-link {% if location == 'mobile' %}active{% endif %}" href="{{ url_for('admin.menu_editor', location='mobile') }}">Mobile</a></li>
+    </ul>
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        {% if items %}
+        <div id="menuList">
+          {% for mi in items %}
+          <div class="menu-item-card" data-id="{{ mi.id }}">
+            <span class="grip"><i class="fa-solid fa-grip-vertical"></i></span>
+            {% if mi.icon_class %}<i class="{{ mi.icon_class }}"></i>{% endif %}
+            <span class="label">{{ mi.label }}</span>
+            <span class="meta">{{ mi.link_type }} {% if mi.custom_url %}· {{ mi.custom_url }}{% elif mi.target_slug %}· {{ mi.target_slug }}{% endif %}</span>
+            <span class="badge {% if mi.is_visible %}bg-success{% else %}bg-secondary{% endif %}">{{ 'Visible' if mi.is_visible else 'Hidden' }}</span>
+            <a href="{{ url_for('admin.menu_item_edit', id=mi.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+            <form method="post" action="{{ url_for('admin.menu_item_delete', id=mi.id) }}" class="d-inline confirm-delete">{{ csrf_input() }}<button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button></form>
+          </div>
+          {% if mi.children %}
+          <div class="menu-children">
+            {% for child in mi.children %}
+            <div class="menu-item-card" data-id="{{ child.id }}">
+              <span class="grip"><i class="fa-solid fa-grip-vertical"></i></span>
+              {% if child.icon_class %}<i class="{{ child.icon_class }}"></i>{% endif %}
+              <span class="label">{{ child.label }}</span>
+              <span class="meta">{{ child.link_type }} {% if child.custom_url %}· {{ child.custom_url }}{% elif child.target_slug %}· {{ child.target_slug }}{% endif %}</span>
+              <a href="{{ url_for('admin.menu_item_edit', id=child.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+              <form method="post" action="{{ url_for('admin.menu_item_delete', id=child.id) }}" class="d-inline confirm-delete">{{ csrf_input() }}<button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button></form>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">No menu items for this location. Add one below.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Add Menu Item</h6>
+        <form method="post" action="{{ url_for('admin.menu_editor', location=location) }}">
+          {{ csrf_input() }}
+          <input type="hidden" name="menu_location" value="{{ location }}">
+          <div class="mb-2">
+            <label class="form-label">Label *</label>
+            <input type="text" name="label" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Link Type</label>
+            <select name="link_type" class="form-select">
+              <option value="custom_url">Custom URL</option>
+              <option value="route">Flask Route Name</option>
+              <option value="service">Service (by slug)</option>
+              <option value="industry">Industry (by slug)</option>
+              <option value="page">Page (by slug)</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Target Slug / Route</label>
+            <input type="text" name="target_slug" class="form-control" placeholder="e.g. main.about or managed-it">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Custom URL</label>
+            <input type="text" name="custom_url" class="form-control" placeholder="/about or https://...">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Icon Class</label>
+            <input type="text" name="icon_class" class="form-control" placeholder="fa-solid fa-home">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Parent Item</label>
+            <select name="parent_id" class="form-select">
+              <option value="">— Top Level —</option>
+              {% for mi in items %}
+              <option value="{{ mi.id }}">{{ mi.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Sort Order</label>
+            <input type="number" name="sort_order" class="form-control" value="0">
+          </div>
+          <div class="form-check mb-3">
+            <input type="checkbox" name="is_visible" class="form-check-input" id="visCheck" checked>
+            <label class="form-check-label" for="visCheck">Visible</label>
+          </div>
+          <div class="form-check mb-3">
+            <input type="checkbox" name="open_in_new_tab" class="form-check-input" id="newTabCheck">
+            <label class="form-check-label" for="newTabCheck">Open in new tab</label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Add Item</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

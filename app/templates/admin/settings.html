@@ -65,6 +65,20 @@
         </div>
       </div>
 
+      <h6 class="mb-3 fw-bold">Code Injection</h6>
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <label class="form-label">Custom Head Code</label>
+          <textarea name="custom_head_code" class="form-control font-monospace" rows="4" placeholder="<!-- Tracking scripts, meta tags, etc. -->">{{ settings.get('custom_head_code', '') }}</textarea>
+          <small class="text-muted">Injected before &lt;/head&gt;. Use for analytics, meta tags, custom CSS.</small>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Custom Footer Code</label>
+          <textarea name="custom_footer_code" class="form-control font-monospace" rows="4" placeholder="<!-- Chat widgets, tracking pixels, etc. -->">{{ settings.get('custom_footer_code', '') }}</textarea>
+          <small class="text-muted">Injected before &lt;/body&gt;. Use for chat widgets, tracking pixels, custom JS.</small>
+        </div>
+      </div>
+
       <button type="submit" class="btn btn-primary">Save Settings</button>
     </form>
   </div>

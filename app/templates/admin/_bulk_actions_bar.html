@@ -1,0 +1,19 @@
+{# Reusable bulk actions bar for list pages. Include at top of table card. #}
+{# Required: bulk_url variable for the bulk action POST endpoint #}
+<div class="bulk-actions-bar d-none align-items-center gap-2 mb-3 p-2 rounded" id="bulkActionsBar" style="background:var(--surface-alt, #131d2d);">
+  <span class="text-muted"><strong id="bulkCount">0</strong> selected</span>
+  <select class="form-select form-select-sm" id="bulkAction" style="width:auto;min-width:160px;">
+    <option value="">— Bulk Action —</option>
+    <option value="publish">Publish</option>
+    <option value="draft">Set to Draft</option>
+    <option value="trash">Move to Trash</option>
+    <option value="delete">Delete Permanently</option>
+  </select>
+  <form method="post" action="{{ bulk_url }}" id="bulkForm" class="d-inline">
+    {{ csrf_input() }}
+    <input type="hidden" name="action" id="bulkActionInput" value="">
+    <input type="hidden" name="ids" id="bulkIdsInput" value="">
+    <button type="submit" class="btn btn-sm btn-primary" id="bulkApplyBtn" disabled>Apply</button>
+  </form>
+  <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" id="bulkCancelBtn">Cancel</button>
+</div>

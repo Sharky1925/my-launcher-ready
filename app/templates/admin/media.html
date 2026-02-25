@@ -3,18 +3,36 @@
 {% block content %}
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body">
-    <form method="post" action="{{ url_for('admin.media_upload') }}" enctype="multipart/form-data" class="d-flex gap-2">
-            {{ csrf_input() }}
-      <input type="file" name="file" class="form-control" required accept="image/*,.pdf">
-      <button class="btn btn-primary text-nowrap"><i class="fa-solid fa-upload me-1"></i>Upload</button>
+    <form method="post" action="{{ url_for('admin.media_upload') }}" enctype="multipart/form-data" id="uploadForm">
+      {{ csrf_input() }}
+      <div id="dropZone" class="text-center p-4 mb-2 rounded" style="border: 2px dashed var(--border); cursor: pointer;">
+        <i class="fa-solid fa-cloud-arrow-up fa-2x mb-2" style="color: var(--accent);"></i>
+        <p class="mb-1">Drag &amp; drop files here or click to browse</p>
+        <small class="text-muted">Images, PDFs — max 10MB each</small>
+        <input type="file" name="file" class="d-none" id="fileInput" accept="image/*,.pdf" multiple>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload me-1"></i>Upload</button>
     </form>
   </div>
 </div>
 
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex gap-2 align-items-center">
+      <input type="search" class="form-control form-control-sm" id="mediaSearch" placeholder="Search files..." style="max-width: 280px;">
+      <select class="form-select form-select-sm" id="mediaFilter" style="max-width: 180px;">
+        <option value="">All Types</option>
+        <option value="image">Images</option>
+        <option value="application/pdf">PDFs</option>
+      </select>
+    </div>
+  </div>
+</div>
+
 {% if items %}
-<div class="row g-3">
+<div class="row g-3" id="mediaGrid">
   {% for m in items %}
-  <div class="col-md-3 col-sm-4 col-6">
+  <div class="col-md-3 col-sm-4 col-6 media-card" data-filename="{{ m.filename|lower }}" data-mime="{{ m.mime_type or '' }}">
     <div class="card border-0 shadow-sm h-100">
       {% if m.mime_type and m.mime_type.startswith('image') %}
       <img src="{{ url_for('admin.uploaded_file', filename=m.file_path) }}" class="card-img-top media-thumb" alt="{{ m.alt_text or m.filename }}" loading="lazy" decoding="async">
@@ -26,10 +44,16 @@
       <div class="card-body p-2">
         <small class="text-truncate d-block" title="{{ m.filename }}">{{ m.filename }}</small>
         <small class="text-muted">{{ (m.file_size / 1024)|round(1) }} KB</small>
-        <form method="post" action="{{ url_for('admin.media_delete', id=m.id) }}" class="mt-1 confirm-delete">
-            {{ csrf_input() }}
-          <button class="btn btn-sm btn-outline-danger w-100"><i class="fa-solid fa-trash me-1"></i>Delete</button>
-        </form>
+        <div class="mt-1">
+          <input type="text" class="form-control form-control-sm mb-1" value="{{ m.alt_text or '' }}" placeholder="Alt text" data-media-id="{{ m.id }}" onchange="updateAlt(this)">
+        </div>
+        <div class="d-flex gap-1 mt-1">
+          <button class="btn btn-sm btn-outline-secondary flex-grow-1" onclick="copyUrl('{{ url_for('admin.uploaded_file', filename=m.file_path) }}')" title="Copy URL"><i class="fa-solid fa-link"></i></button>
+          <form method="post" action="{{ url_for('admin.media_delete', id=m.id) }}" class="confirm-delete">
+              {{ csrf_input() }}
+            <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -41,4 +65,59 @@
   <p>No files uploaded yet</p>
 </div>
 {% endif %}
+
+{% include 'admin/_media_picker_modal.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}">
+(function() {
+  var dropZone = document.getElementById('dropZone');
+  var fileInput = document.getElementById('fileInput');
+  var form = document.getElementById('uploadForm');
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', function() { fileInput.click(); });
+    dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.style.borderColor = '#4f7bff'; });
+    dropZone.addEventListener('dragleave', function() { dropZone.style.borderColor = ''; });
+    dropZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      dropZone.style.borderColor = '';
+      fileInput.files = e.dataTransfer.files;
+      if (fileInput.files.length) form.submit();
+    });
+  }
+  // Search & filter
+  var search = document.getElementById('mediaSearch');
+  var filter = document.getElementById('mediaFilter');
+  function applyFilter() {
+    var q = (search ? search.value : '').toLowerCase();
+    var mime = filter ? filter.value : '';
+    document.querySelectorAll('.media-card').forEach(function(card) {
+      var fn = card.getAttribute('data-filename') || '';
+      var mt = card.getAttribute('data-mime') || '';
+      var matchQ = !q || fn.indexOf(q) !== -1;
+      var matchM = !mime || mt.indexOf(mime) !== -1;
+      card.style.display = (matchQ && matchM) ? '' : 'none';
+    });
+  }
+  if (search) search.addEventListener('input', applyFilter);
+  if (filter) filter.addEventListener('change', applyFilter);
+})();
+
+function copyUrl(url) {
+  navigator.clipboard.writeText(window.location.origin + url).then(function() {
+    alert('URL copied!');
+  });
+}
+
+function updateAlt(input) {
+  var id = input.getAttribute('data-media-id');
+  var csrfToken = document.querySelector('[name=_csrf_token]');
+  if (!csrfToken) return;
+  var fd = new FormData();
+  fd.append('alt_text', input.value);
+  fd.append('_csrf_token', csrfToken.value);
+  fetch('/admin/media/' + id + '/edit', { method: 'POST', body: fd });
+}
+</script>
 {% endblock %}

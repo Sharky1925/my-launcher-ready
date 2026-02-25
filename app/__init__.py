@@ -340,13 +340,19 @@ def create_app(config_overrides=None):
             nav_professional = Service.query.filter_by(
                 service_type='professional',
                 workflow_status=WORKFLOW_PUBLISHED,
+            ).filter(
+                db.or_(Service.is_trashed == False, Service.is_trashed == None)
             ).order_by(Service.sort_order).all()
             nav_repair = Service.query.filter_by(
                 service_type='repair',
                 workflow_status=WORKFLOW_PUBLISHED,
+            ).filter(
+                db.or_(Service.is_trashed == False, Service.is_trashed == None)
             ).order_by(Service.sort_order).all()
             nav_industries = Industry.query.filter_by(
                 workflow_status=WORKFLOW_PUBLISHED,
+            ).filter(
+                db.or_(Industry.is_trashed == False, Industry.is_trashed == None)
             ).order_by(Industry.sort_order).all()
             nav_professional = _normalize_icon_attr(nav_professional, 'fa-solid fa-gear')
             nav_repair = _normalize_icon_attr(nav_repair, 'fa-solid fa-wrench')

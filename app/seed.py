@@ -92,6 +92,7 @@ def ensure_phase2_schema():
     """Best-effort additive schema updates for phase-2 workflow and roles."""
     dialect = db.engine.dialect.name
     datetime_type = 'TIMESTAMP WITHOUT TIME ZONE' if dialect == 'postgresql' else 'DATETIME'
+    bool_default_false = "BOOLEAN NOT NULL DEFAULT FALSE" if dialect == 'postgresql' else "BOOLEAN DEFAULT 0"
     table_specs = {
         'user': [
             ('role', f"VARCHAR(30) NOT NULL DEFAULT '{ROLE_ADMIN}'"),
@@ -102,6 +103,11 @@ def ensure_phase2_schema():
             ('reviewed_at', datetime_type),
             ('approved_at', datetime_type),
             ('published_at', datetime_type),
+            ('seo_title', 'VARCHAR(200)'),
+            ('seo_description', 'VARCHAR(500)'),
+            ('og_image', 'VARCHAR(500)'),
+            ('is_trashed', bool_default_false),
+            ('trashed_at', datetime_type),
         ],
         'service': [
             ('workflow_status', f"VARCHAR(20) NOT NULL DEFAULT '{WORKFLOW_DRAFT}'"),
@@ -110,6 +116,11 @@ def ensure_phase2_schema():
             ('approved_at', datetime_type),
             ('published_at', datetime_type),
             ('updated_at', datetime_type),
+            ('seo_title', 'VARCHAR(200)'),
+            ('seo_description', 'VARCHAR(500)'),
+            ('og_image', 'VARCHAR(500)'),
+            ('is_trashed', bool_default_false),
+            ('trashed_at', datetime_type),
         ],
         'industry': [
             ('workflow_status', f"VARCHAR(20) NOT NULL DEFAULT '{WORKFLOW_DRAFT}'"),
@@ -118,6 +129,33 @@ def ensure_phase2_schema():
             ('approved_at', datetime_type),
             ('published_at', datetime_type),
             ('updated_at', datetime_type),
+            ('seo_title', 'VARCHAR(200)'),
+            ('seo_description', 'VARCHAR(500)'),
+            ('og_image', 'VARCHAR(500)'),
+            ('is_trashed', bool_default_false),
+            ('trashed_at', datetime_type),
+        ],
+        'team_member': [
+            ('is_trashed', bool_default_false),
+            ('trashed_at', datetime_type),
+        ],
+        'testimonial': [
+            ('is_trashed', bool_default_false),
+            ('trashed_at', datetime_type),
+        ],
+        'media': [
+            ('width', 'INTEGER'),
+            ('height', 'INTEGER'),
+            ('folder', "VARCHAR(200) DEFAULT ''"),
+        ],
+        'contact_submission': [
+            ('lead_status', "VARCHAR(30) DEFAULT 'new'"),
+            ('lead_notes', 'TEXT'),
+            ('source_page', 'VARCHAR(300)'),
+            ('utm_source', 'VARCHAR(200)'),
+            ('utm_medium', 'VARCHAR(200)'),
+            ('utm_campaign', 'VARCHAR(200)'),
+            ('referrer_url', 'VARCHAR(500)'),
         ],
     }
 

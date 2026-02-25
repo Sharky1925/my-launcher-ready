@@ -1,0 +1,48 @@
+{# Reusable SEO fieldset for content forms #}
+<div class="card border-0 shadow-sm mt-3">
+  <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#seoFieldset" aria-expanded="false">
+    <h6 class="mb-0 fw-bold"><i class="fa-solid fa-magnifying-glass-chart me-2"></i>SEO Settings</h6>
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+  <div class="collapse" id="seoFieldset">
+    <div class="card-body pt-0">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label">SEO Title</label>
+          <input type="text" name="seo_title" class="form-control" maxlength="200" value="{{ item.seo_title if item and item.seo_title else '' }}" id="seo-title-input">
+          <div class="d-flex justify-content-between mt-1">
+            <small class="text-muted">Overrides the page &lt;title&gt; tag. Leave empty to use the item title.</small>
+            <small class="text-muted"><span id="seo-title-count">{{ (item.seo_title or '')|length if item else 0 }}</span>/60</small>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label">SEO Description</label>
+          <textarea name="seo_description" class="form-control" rows="2" maxlength="500" id="seo-desc-input">{{ item.seo_description if item and item.seo_description else '' }}</textarea>
+          <div class="d-flex justify-content-between mt-1">
+            <small class="text-muted">Overrides the meta description. Leave empty to use the default.</small>
+            <small class="text-muted"><span id="seo-desc-count">{{ (item.seo_description or '')|length if item else 0 }}</span>/160</small>
+          </div>
+        </div>
+        <div class="col-12">
+          <label class="form-label">OG Image URL</label>
+          <input type="text" name="og_image" class="form-control" maxlength="500" value="{{ item.og_image if item and item.og_image else '' }}">
+          <small class="text-muted">Full URL or upload path for social sharing image. Leave empty for default.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script nonce="{{ csp_nonce }}">
+(function(){
+  var titleInput = document.getElementById('seo-title-input');
+  var titleCount = document.getElementById('seo-title-count');
+  var descInput = document.getElementById('seo-desc-input');
+  var descCount = document.getElementById('seo-desc-count');
+  if(titleInput && titleCount){
+    titleInput.addEventListener('input', function(){ titleCount.textContent = titleInput.value.length; });
+  }
+  if(descInput && descCount){
+    descInput.addEventListener('input', function(){ descCount.textContent = descInput.value.length; });
+  }
+})();
+</script>

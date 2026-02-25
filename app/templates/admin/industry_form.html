@@ -5,7 +5,7 @@
   <div class="card-body">
     {% set current_status = request.form.get('workflow_status', item.workflow_status if item and item.workflow_status else 'draft') %}
     {% set current_schedule = request.form.get('scheduled_publish_at', format_datetime_local(item.scheduled_publish_at) if item else '') %}
-    <form method="post">
+    <form method="post" id="industryForm">
       {{ csrf_input() }}
       <div class="row g-3">
         <div class="col-md-8">
@@ -95,12 +95,47 @@
           >
           <small class="text-muted">Optional. Requires Publisher/Admin role.</small>
         </div>
+        {% if item %}
+        <div class="col-md-6">
+          <label class="form-label">Change Note</label>
+          <input type="text" name="change_note" class="form-control" placeholder="Brief description of changes" maxlength="260">
+        </div>
+        {% endif %}
         <div class="col-12">
           <button type="submit" class="btn btn-primary">{{ 'Update' if item else 'Create' }} Industry</button>
           <a href="{{ url_for('admin.industries') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+          <span class="text-muted ms-3 small" id="autosaveIndicator"></span>
         </div>
       </div>
     </form>
+    {% include 'admin/_seo_fields.html' %}
+    {% if item and versions is defined and versions %}
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-header bg-transparent border-0 d-flex align-items-center justify-content-between" style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#versionHistory" aria-expanded="false">
+        <h6 class="mb-0 fw-bold"><i class="fa-solid fa-clock-rotate-left me-2"></i>Version History ({{ versions|length }})</h6>
+        <i class="fa-solid fa-chevron-down"></i>
+      </div>
+      <div class="collapse" id="versionHistory">
+        <div class="card-body pt-0">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead><tr><th>#</th><th>Note</th><th>Date</th><th></th></tr></thead>
+              <tbody>
+                {% for v in versions %}
+                <tr>
+                  <td>v{{ v.version_number }}</td>
+                  <td>{{ v.change_note or '—' }}</td>
+                  <td>{{ v.created_at.strftime('%Y-%m-%d %H:%M') if v.created_at else '—' }}</td>
+                  <td><form method="post" action="{{ url_for('admin.industry_restore', id=v.id) }}" class="d-inline" onsubmit="return confirm('Restore version {{ v.version_number }}?')">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-outline-warning"><i class="fa-solid fa-rotate-left"></i></button></form></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
@@ -120,4 +155,21 @@
   }
 })();
 </script>
+{% if item %}
+<script nonce="{{ csp_nonce }}">
+(function(){
+  var indicator = document.getElementById('autosaveIndicator');
+  var form = document.getElementById('industryForm');
+  if (!form || !indicator) return;
+  setInterval(function(){
+    var fd = new FormData(form);
+    fd.append('_autosave', '1');
+    fetch('{{ url_for("admin.industry_autosave", id=item.id) }}', {method:'POST',body:fd})
+    .then(function(r){return r.json()})
+    .then(function(d){if(d.ok) indicator.textContent='Draft saved '+new Date().toLocaleTimeString()})
+    .catch(function(){});
+  }, 60000);
+})();
+</script>
+{% endif %}
 {% endblock %}

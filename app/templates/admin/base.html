@@ -564,6 +564,7 @@
       {% endif %}
       <div class="sidebar-sep"></div>
       {% if current_user.has_permission('content:manage') %}
+      <a class="nav-link {% if request.endpoint in ['admin.menu_editor', 'admin.menu_item_edit'] %}active{% endif %}" href="{{ url_for('admin.menu_editor') }}"><i class="fa-solid fa-bars"></i>Navigation</a>
       <a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}"><i class="fa-solid fa-file-pen"></i>Page Content</a>
       {% endif %}
       <div class="sidebar-sep"></div>
@@ -646,6 +647,7 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.industries', 'admin.industry_add', 'admin.industry_edit'] %}active{% endif %}" href="{{ url_for('admin.industries') }}">Industries</a></li>
           {% endif %}
           {% if current_user.has_permission('content:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.menu_editor', 'admin.menu_item_edit'] %}active{% endif %}" href="{{ url_for('admin.menu_editor') }}">Navigation</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.content_list', 'admin.content_edit'] %}active{% endif %}" href="{{ url_for('admin.content_list') }}">Page Content</a></li>
           {% endif %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}" target="_blank" rel="noopener">View Site</a></li>
@@ -659,6 +661,7 @@
     <div class="top-bar">
       <h5>{% block page_title %}Dashboard{% endblock %}</h5>
       <div class="top-actions">
+        <button class="btn btn-sm btn-outline-secondary" onclick="document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',metaKey:true}))" title="Cmd+K"><i class="fa-solid fa-magnifying-glass me-1"></i><kbd style="font-size:.65rem;opacity:.7">&#8984;K</kbd></button>
         <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square me-1"></i>View Site</a>
         <span class="user-pill">{{ current_user.username }} · {{ role_labels.get(current_user.role_key, current_user.role_key|title) }}</span>
         <form method="POST" action="{{ url_for('admin.logout') }}" class="logout-inline-block-form">{{ csrf_input() }}<button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button></form>
@@ -679,6 +682,25 @@
     {% block content %}{% endblock %}
   </main>
 
+  <!-- Command Palette Modal -->
+  <div class="modal fade" id="commandPalette" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+        <div class="modal-body p-3">
+          <input type="search" class="form-control mb-2" id="cmdSearch" placeholder="Search or jump to..." autocomplete="off" autofocus>
+          <div id="cmdResults" style="max-height: 320px; overflow-y: auto;"></div>
+          <div class="d-flex flex-wrap gap-1 mt-2" id="cmdQuickActions">
+            <a href="{{ url_for('admin.post_add') }}" class="btn btn-sm btn-outline-secondary">New Post</a>
+            <a href="{{ url_for('admin.service_add') }}" class="btn btn-sm btn-outline-secondary">New Service</a>
+            <a href="{{ url_for('admin.industry_add') }}" class="btn btn-sm btn-outline-secondary">New Industry</a>
+            <a href="{{ url_for('admin.settings') }}" class="btn btn-sm btn-outline-secondary">Settings</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener">View Site</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script nonce="{{ csp_nonce }}">
   document.querySelectorAll('form.confirm-delete').forEach(function(f){
@@ -686,6 +708,51 @@
       if(!confirm('Are you sure you want to delete this item?'))e.preventDefault();
     });
   });
+  // Command palette (Cmd+K / Ctrl+K)
+  (function(){
+    var palette = document.getElementById('commandPalette');
+    var searchInput = document.getElementById('cmdSearch');
+    var resultsDiv = document.getElementById('cmdResults');
+    if (!palette) return;
+    var bsModal = null;
+    function getModal() {
+      if (!bsModal) bsModal = new bootstrap.Modal(palette);
+      return bsModal;
+    }
+    document.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        getModal().show();
+        setTimeout(function(){ searchInput.focus(); searchInput.select(); }, 100);
+      }
+    });
+    var debounceTimer;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(doSearch, 300);
+    });
+    function doSearch() {
+      var q = searchInput.value.trim();
+      if (q.length < 2) { resultsDiv.innerHTML = ''; return; }
+      var csrfToken = document.querySelector('[name=_csrf_token]');
+      fetch('/admin/api/search?q=' + encodeURIComponent(q), {
+        headers: { 'X-CSRF-Token': csrfToken ? csrfToken.value : '' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var html = '';
+        (data.results || []).forEach(function(item) {
+          html += '<a href="' + item.url + '" class="d-block p-2 rounded mb-1 text-decoration-none" style="border:1px solid var(--border);background:rgba(7,13,23,.6);">';
+          html += '<strong style="font-size:.82rem;">' + item.title + '</strong>';
+          html += '<span class="d-block text-muted" style="font-size:.72rem;">' + item.type + (item.status ? ' · ' + item.status : '') + '</span>';
+          html += '</a>';
+        });
+        if (!html) html = '<div class="text-muted small text-center py-2">No results</div>';
+        resultsDiv.innerHTML = html;
+      })
+      .catch(function() { resultsDiv.innerHTML = ''; });
+    }
+  })();
   </script>
   {% block extra_js %}{% endblock %}
 </body>

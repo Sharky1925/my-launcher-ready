@@ -1,33 +1,53 @@
 {% extends "admin/base.html" %}
 {% block page_title %}Team Members{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between mb-3">
-  <span></span>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <a href="{{ url_for('admin.team') }}" class="btn btn-sm {% if not request.args.get('trash') %}btn-primary{% else %}btn-outline-secondary{% endif %}">Active</a>
+    <a href="{{ url_for('admin.team', trash=1) }}" class="btn btn-sm {% if request.args.get('trash') %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}"><i class="fa-solid fa-trash me-1"></i>Trash</a>
+  </div>
   <a href="{{ url_for('admin.team_add') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i>Add Member</a>
 </div>
+{% if not request.args.get('trash') %}
+{% include 'admin/_bulk_actions_bar.html' with context %}
+{% endif %}
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <form method="post" action="{{ url_for('admin.team_bulk') }}" id="bulkForm">
+    {{ csrf_input() }}
     <table class="table table-hover mb-0">
-      <thead><tr><th>Name</th><th>Position</th><th>Order</th><th>Actions</th></tr></thead>
+      <thead><tr>
+        {% if not request.args.get('trash') %}<th><input type="checkbox" id="bulkSelectAll"></th>{% endif %}
+        <th>Name</th><th>Position</th><th>Order</th><th>Actions</th>
+      </tr></thead>
       <tbody>
         {% for m in items %}
         <tr>
+          {% if not request.args.get('trash') %}<td><input type="checkbox" name="ids" value="{{ m.id }}" class="bulk-checkbox"></td>{% endif %}
           <td>{{ m.name }}</td>
           <td>{{ m.position }}</td>
           <td>{{ m.sort_order }}</td>
           <td>
+            {% if request.args.get('trash') %}
+            <form method="post" action="{{ url_for('admin.team_trash_restore', id=m.id) }}" class="d-inline">{{ csrf_input() }}<button class="btn btn-sm btn-outline-success" title="Restore"><i class="fa-solid fa-rotate-left"></i></button></form>
+            <form method="post" action="{{ url_for('admin.team_delete', id=m.id) }}" class="d-inline confirm-delete">{{ csrf_input() }}<button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button></form>
+            {% else %}
             <a href="{{ url_for('admin.team_edit', id=m.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
-            <form method="post" action="{{ url_for('admin.team_delete', id=m.id) }}" class="d-inline confirm-delete">
-            {{ csrf_input() }}
-              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
-            </form>
+            <form method="post" action="{{ url_for('admin.team_delete', id=m.id) }}" class="d-inline confirm-delete">{{ csrf_input() }}<button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button></form>
+            {% endif %}
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="4" class="text-center text-muted py-3">No team members yet</td></tr>
+        <tr><td colspan="{{ 5 if not request.args.get('trash') else 4 }}" class="text-center text-muted py-3">{{ 'Trash is empty' if request.args.get('trash') else 'No team members yet' }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
+    </form>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+{% if not request.args.get('trash') %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/bulk-actions.js') }}"></script>
+{% endif %}
 {% endblock %}

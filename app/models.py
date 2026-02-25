@@ -275,6 +275,11 @@ class Service(db.Model):
     is_featured = db.Column(db.Boolean, default=False, index=True)
     sort_order = db.Column(db.Integer, default=0)
     profile_json = db.Column(db.Text)
+    seo_title = db.Column(db.String(200))
+    seo_description = db.Column(db.String(500))
+    og_image = db.Column(db.String(500))
+    is_trashed = db.Column(db.Boolean, default=False, index=True)
+    trashed_at = db.Column(db.DateTime)
     workflow_status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
     scheduled_publish_at = db.Column(db.DateTime, index=True)
     reviewed_at = db.Column(db.DateTime)
@@ -292,6 +297,8 @@ class TeamMember(db.Model):
     photo = db.Column(db.String(300))
     linkedin = db.Column(db.String(300))
     sort_order = db.Column(db.Integer, default=0)
+    is_trashed = db.Column(db.Boolean, default=False, index=True)
+    trashed_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
 
 
@@ -302,6 +309,8 @@ class Testimonial(db.Model):
     content = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Integer, default=5)
     is_featured = db.Column(db.Boolean, default=False, index=True)
+    is_trashed = db.Column(db.Boolean, default=False, index=True)
+    trashed_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=utc_now_naive)
 
 
@@ -321,6 +330,11 @@ class Post(db.Model):
     featured_image = db.Column(db.String(300))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     is_published = db.Column(db.Boolean, default=False, index=True)
+    seo_title = db.Column(db.String(200))
+    seo_description = db.Column(db.String(500))
+    og_image = db.Column(db.String(500))
+    is_trashed = db.Column(db.Boolean, default=False, index=True)
+    trashed_at = db.Column(db.DateTime)
     workflow_status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
     scheduled_publish_at = db.Column(db.DateTime, index=True)
     reviewed_at = db.Column(db.DateTime)
@@ -337,7 +351,34 @@ class Media(db.Model):
     file_size = db.Column(db.Integer)
     mime_type = db.Column(db.String(100))
     alt_text = db.Column(db.String(300))
+    width = db.Column(db.Integer)
+    height = db.Column(db.Integer)
+    folder = db.Column(db.String(200), default='')
     created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+
+LEAD_STATUS_NEW = 'new'
+LEAD_STATUS_CONTACTED = 'contacted'
+LEAD_STATUS_QUALIFIED = 'qualified'
+LEAD_STATUS_PROPOSAL = 'proposal'
+LEAD_STATUS_WON = 'won'
+LEAD_STATUS_LOST = 'lost'
+LEAD_STATUSES = (
+    LEAD_STATUS_NEW,
+    LEAD_STATUS_CONTACTED,
+    LEAD_STATUS_QUALIFIED,
+    LEAD_STATUS_PROPOSAL,
+    LEAD_STATUS_WON,
+    LEAD_STATUS_LOST,
+)
+LEAD_STATUS_LABELS = {
+    LEAD_STATUS_NEW: 'New',
+    LEAD_STATUS_CONTACTED: 'Contacted',
+    LEAD_STATUS_QUALIFIED: 'Qualified',
+    LEAD_STATUS_PROPOSAL: 'Proposal',
+    LEAD_STATUS_WON: 'Won',
+    LEAD_STATUS_LOST: 'Lost',
+}
 
 
 class ContactSubmission(db.Model):
@@ -348,6 +389,13 @@ class ContactSubmission(db.Model):
     subject = db.Column(db.String(300))
     message = db.Column(db.Text, nullable=False)
     is_read = db.Column(db.Boolean, default=False)
+    lead_status = db.Column(db.String(30), default=LEAD_STATUS_NEW, index=True)
+    lead_notes = db.Column(db.Text)
+    source_page = db.Column(db.String(300))
+    utm_source = db.Column(db.String(200))
+    utm_medium = db.Column(db.String(200))
+    utm_campaign = db.Column(db.String(200))
+    referrer_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=utc_now_naive)
 
 
@@ -497,6 +545,11 @@ class Industry(db.Model):
     solutions = db.Column(db.Text)   # pipe-separated: "solution1|solution2|solution3"
     stats = db.Column(db.Text)       # pipe-separated: "label1:value1|label2:value2"
     sort_order = db.Column(db.Integer, default=0)
+    seo_title = db.Column(db.String(200))
+    seo_description = db.Column(db.String(500))
+    og_image = db.Column(db.String(500))
+    is_trashed = db.Column(db.Boolean, default=False, index=True)
+    trashed_at = db.Column(db.DateTime)
     workflow_status = db.Column(db.String(20), nullable=False, default=WORKFLOW_DRAFT, index=True)
     scheduled_publish_at = db.Column(db.DateTime, index=True)
     reviewed_at = db.Column(db.DateTime)
@@ -955,6 +1008,108 @@ class AcpAuditEvent(db.Model):
     __table_args__ = (
         db.Index('ix_acp_audit_domain_created', 'domain', 'created_at'),
         db.Index('ix_acp_audit_entity_created', 'entity_type', 'entity_id', 'created_at'),
+    )
+
+
+class PostVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False, index=True)
+    version_number = db.Column(db.Integer, nullable=False)
+    snapshot_json = db.Column(db.Text, nullable=False, default='{}')
+    change_note = db.Column(db.String(260))
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    post = db.relationship('Post', backref=db.backref('versions', lazy=True, order_by='PostVersion.version_number.desc()'))
+
+    __table_args__ = (
+        db.UniqueConstraint('post_id', 'version_number', name='uq_post_version_post_number'),
+        db.Index('ix_post_version_post_created', 'post_id', 'created_at'),
+    )
+
+
+class ServiceVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=False, index=True)
+    version_number = db.Column(db.Integer, nullable=False)
+    snapshot_json = db.Column(db.Text, nullable=False, default='{}')
+    change_note = db.Column(db.String(260))
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    service = db.relationship('Service', backref=db.backref('versions', lazy=True, order_by='ServiceVersion.version_number.desc()'))
+
+    __table_args__ = (
+        db.UniqueConstraint('service_id', 'version_number', name='uq_service_version_service_number'),
+        db.Index('ix_service_version_service_created', 'service_id', 'created_at'),
+    )
+
+
+class IndustryVersion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'), nullable=False, index=True)
+    version_number = db.Column(db.Integer, nullable=False)
+    snapshot_json = db.Column(db.Text, nullable=False, default='{}')
+    change_note = db.Column(db.String(260))
+    created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    industry = db.relationship('Industry', backref=db.backref('versions', lazy=True, order_by='IndustryVersion.version_number.desc()'))
+
+    __table_args__ = (
+        db.UniqueConstraint('industry_id', 'version_number', name='uq_industry_version_industry_number'),
+        db.Index('ix_industry_version_industry_created', 'industry_id', 'created_at'),
+    )
+
+
+class MenuItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    menu_location = db.Column(db.String(30), nullable=False, default='header', index=True)  # header, footer, mobile
+    parent_id = db.Column(db.Integer, db.ForeignKey('menu_item.id'), index=True)
+    label = db.Column(db.String(200), nullable=False)
+    link_type = db.Column(db.String(30), nullable=False, default='custom_url')  # page, service, industry, custom_url, route
+    target_slug = db.Column(db.String(200))
+    custom_url = db.Column(db.String(500))
+    icon_class = db.Column(db.String(100))
+    sort_order = db.Column(db.Integer, default=0)
+    is_visible = db.Column(db.Boolean, default=True, index=True)
+    open_in_new_tab = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=utc_now_naive)
+
+    children = db.relationship('MenuItem', backref=db.backref('parent', remote_side='MenuItem.id'), lazy=True, order_by='MenuItem.sort_order')
+
+    __table_args__ = (
+        db.Index('ix_menu_item_location_order', 'menu_location', 'sort_order'),
+    )
+
+
+class PageView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    path = db.Column(db.String(500), nullable=False, index=True)
+    page_type = db.Column(db.String(40), index=True)  # service, industry, post, page
+    entity_id = db.Column(db.Integer, index=True)
+    ip_hash = db.Column(db.String(64))
+    user_agent = db.Column(db.String(300))
+    referrer = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+
+    __table_args__ = (
+        db.Index('ix_page_view_path_created', 'path', 'created_at'),
+        db.Index('ix_page_view_type_entity', 'page_type', 'entity_id'),
+    )
+
+
+class NotificationPreference(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    event_type = db.Column(db.String(60), nullable=False)  # new_contact, new_ticket, content_published
+    channel = db.Column(db.String(20), nullable=False, default='email')  # email, in_app
+    is_enabled = db.Column(db.Boolean, default=True)
+
+    user = db.relationship('User', backref=db.backref('notification_preferences', lazy=True))
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'event_type', 'channel', name='uq_notification_pref_user_event_channel'),
     )
 
 

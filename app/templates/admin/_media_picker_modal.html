@@ -1,0 +1,28 @@
+{# Reusable media picker modal. Include in any form that needs image selection from media library. #}
+<div class="modal fade" id="mediaPickerModal" tabindex="-1" aria-labelledby="mediaPickerLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content" style="background:var(--surface, #0e1623);color:var(--text, #eff7ff);">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="mediaPickerLabel"><i class="fa-solid fa-images me-2"></i>Select Media</h5>
+        <div class="d-flex gap-2 ms-auto align-items-center">
+          <input type="text" class="form-control form-control-sm" id="mediaPickerSearch" placeholder="Search..." style="width:200px;">
+          <select class="form-select form-select-sm" id="mediaPickerFilter" style="width:140px;">
+            <option value="">All Types</option>
+            <option value="image">Images</option>
+            <option value="application/pdf">PDFs</option>
+          </select>
+        </div>
+        <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2" id="mediaPickerGrid">
+          <div class="text-center text-muted py-4">Loading media...</div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="mediaPickerSelect" disabled>Select</button>
+      </div>
+    </div>
+  </div>
+</div>

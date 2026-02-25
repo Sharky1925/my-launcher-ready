@@ -1,16 +1,29 @@
 {% extends "admin/base.html" %}
 {% block page_title %}Industries{% endblock %}
 {% block content %}
-<div class="mb-3">
-  <a href="{{ url_for('admin.industry_add') }}" class="btn btn-primary"><i class="fa-solid fa-plus me-1"></i>Add Industry</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <a href="{{ url_for('admin.industries') }}" class="btn btn-sm {% if not request.args.get('trash') %}btn-primary{% else %}btn-outline-secondary{% endif %}">Active</a>
+    <a href="{{ url_for('admin.industries', trash=1) }}" class="btn btn-sm {% if request.args.get('trash') %}btn-outline-danger{% else %}btn-outline-secondary{% endif %}"><i class="fa-solid fa-trash me-1"></i>Trash</a>
+  </div>
+  <a href="{{ url_for('admin.industry_add') }}" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus me-1"></i>Add Industry</a>
 </div>
+{% if not request.args.get('trash') %}
+{% include 'admin/_bulk_actions_bar.html' with context %}
+{% endif %}
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <form method="post" action="{{ url_for('admin.industries_bulk') }}" id="bulkForm">
+    {{ csrf_input() }}
     <table class="table table-hover mb-0">
-      <thead><tr><th>Title</th><th>Slug</th><th>Workflow</th><th>Scheduled (UTC)</th><th>Icon</th><th>Order</th><th>Actions</th></tr></thead>
+      <thead><tr>
+        {% if not request.args.get('trash') %}<th><input type="checkbox" id="bulkSelectAll"></th>{% endif %}
+        <th>Title</th><th>Slug</th><th>Workflow</th><th>Scheduled (UTC)</th><th>Icon</th><th>Order</th><th>Actions</th>
+      </tr></thead>
       <tbody>
         {% for item in items %}
         <tr>
+          {% if not request.args.get('trash') %}<td><input type="checkbox" name="ids" value="{{ item.id }}" class="bulk-checkbox"></td>{% endif %}
           <td><i class="{{ item.icon_class }} me-2"></i>{{ item.title }}</td>
           <td><code>{{ item.slug }}</code></td>
           <td><span class="badge {{ workflow_status_badge(item.workflow_status) }}">{{ workflow_status_label(item.workflow_status) }}</span></td>
@@ -18,18 +31,27 @@
           <td><code>{{ item.icon_class }}</code></td>
           <td>{{ item.sort_order }}</td>
           <td>
+            {% if request.args.get('trash') %}
+            <form method="post" action="{{ url_for('admin.industry_trash_restore', id=item.id) }}" class="d-inline">{{ csrf_input() }}<button class="btn btn-sm btn-outline-success" title="Restore"><i class="fa-solid fa-rotate-left"></i></button></form>
+            <form method="post" action="{{ url_for('admin.industry_delete', id=item.id) }}" class="d-inline confirm-delete">{{ csrf_input() }}<button class="btn btn-sm btn-outline-danger" title="Delete permanently"><i class="fa-solid fa-trash"></i></button></form>
+            {% else %}
             <a href="{{ url_for('admin.industry_edit', id=item.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
-            <form method="post" action="{{ url_for('admin.industry_delete', id=item.id) }}" class="d-inline confirm-delete">
-              {{ csrf_input() }}
-              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
-            </form>
+            <form method="post" action="{{ url_for('admin.industry_clone', id=item.id) }}" class="d-inline">{{ csrf_input() }}<button class="btn btn-sm btn-outline-secondary" title="Duplicate"><i class="fa-solid fa-copy"></i></button></form>
+            <form method="post" action="{{ url_for('admin.industry_delete', id=item.id) }}" class="d-inline confirm-delete">{{ csrf_input() }}<button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button></form>
+            {% endif %}
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-center text-muted py-3">No industries yet</td></tr>
+        <tr><td colspan="{{ 9 if not request.args.get('trash') else 8 }}" class="text-center text-muted py-3">{{ 'Trash is empty' if request.args.get('trash') else 'No industries yet' }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
+    </form>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+{% if not request.args.get('trash') %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/bulk-actions.js') }}"></script>
+{% endif %}
 {% endblock %}

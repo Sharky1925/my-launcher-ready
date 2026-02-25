@@ -1763,7 +1763,9 @@ def services_repair_track():
 
 @main_bp.route('/services/<slug>')
 def service_detail(slug):
-    service = Service.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).first()
+    service = Service.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).filter(
+        db.or_(Service.is_trashed == False, Service.is_trashed == None)
+    ).first()
     if service is None and slug in SERVICE_SLUG_ALIASES:
         aliased_service = Service.query.filter_by(
             slug=SERVICE_SLUG_ALIASES[slug],
@@ -1835,7 +1837,9 @@ def blog():
     category_slug = clean_text(request.args.get('category', ''), 120)
     search = clean_text(request.args.get('q', ''), 120)
 
-    query = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED)
+    query = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+        db.or_(Post.is_trashed == False, Post.is_trashed == None)
+    )
 
     if category_slug:
         cat = Category.query.filter_by(slug=category_slug).first()
@@ -1854,7 +1858,9 @@ def blog():
 
 @main_bp.route('/blog/<slug>')
 def post(slug):
-    post = Post.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).first_or_404()
+    post = Post.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).filter(
+        db.or_(Post.is_trashed == False, Post.is_trashed == None)
+    ).first_or_404()
     recent_posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(Post.id != post.id)\
         .order_by(Post.created_at.desc()).limit(3).all()
     return render_template('post.html', post=post, recent_posts=recent_posts)
@@ -1872,7 +1878,9 @@ def industries():
 
 @main_bp.route('/industries/<slug>')
 def industry_detail(slug):
-    industry = Industry.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).first()
+    industry = Industry.query.filter_by(slug=slug, workflow_status=WORKFLOW_PUBLISHED).filter(
+        db.or_(Industry.is_trashed == False, Industry.is_trashed == None)
+    ).first()
     if industry is None and slug in INDUSTRY_SLUG_ALIASES:
         aliased_industry = Industry.query.filter_by(
             slug=INDUSTRY_SLUG_ALIASES[slug],
@@ -2554,7 +2562,12 @@ def contact():
             email=email,
             phone=phone,
             subject=subject,
-            message=message
+            message=message,
+            source_page=clean_text(request.referrer or '', 500),
+            utm_source=clean_text(request.args.get('utm_source', ''), 200),
+            utm_medium=clean_text(request.args.get('utm_medium', ''), 200),
+            utm_campaign=clean_text(request.args.get('utm_campaign', ''), 200),
+            referrer_url=clean_text(request.referrer or '', 500),
         )
         db.session.add(submission)
 
@@ -2631,7 +2644,9 @@ def sitemap_xml():
     ]
 
     try:
-        services = Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Service.sort_order.asc(), Service.id.asc()).all()
+        services = Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+            db.or_(Service.is_trashed == False, Service.is_trashed == None)
+        ).order_by(Service.sort_order.asc(), Service.id.asc()).all()
         for service in services:
             entries.append(
                 build_sitemap_entry(
@@ -2642,7 +2657,9 @@ def sitemap_xml():
                 )
             )
 
-        industries = Industry.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Industry.sort_order.asc(), Industry.id.asc()).all()
+        industries = Industry.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+            db.or_(Industry.is_trashed == False, Industry.is_trashed == None)
+        ).order_by(Industry.sort_order.asc(), Industry.id.asc()).all()
         for industry in industries:
             entries.append(
                 build_sitemap_entry(
@@ -2653,7 +2670,9 @@ def sitemap_xml():
                 )
             )
 
-        posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).order_by(Post.updated_at.desc(), Post.id.desc()).all()
+        posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+            db.or_(Post.is_trashed == False, Post.is_trashed == None)
+        ).order_by(Post.updated_at.desc(), Post.id.desc()).all()
         for post_item in posts:
             entries.append(
                 build_sitemap_entry(

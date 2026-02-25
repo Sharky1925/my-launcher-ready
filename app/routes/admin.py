@@ -34,6 +34,12 @@ try:
         SecurityEvent,
         Industry,
         ContentBlock,
+        PostVersion,
+        ServiceVersion,
+        IndustryVersion,
+        MenuItem,
+        PageView,
+        NotificationPreference,
         AcpPageDocument,
         AcpPageVersion,
         AcpPageRouteBinding,
@@ -54,6 +60,9 @@ try:
         AcpEnvironment,
         AcpPromotionEvent,
         AcpAuditEvent,
+        LEAD_STATUSES,
+        LEAD_STATUS_LABELS,
+        LEAD_STATUS_NEW,
         WORKFLOW_DRAFT,
         WORKFLOW_REVIEW,
         WORKFLOW_APPROVED,
@@ -125,6 +134,12 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         SecurityEvent,
         Industry,
         ContentBlock,
+        PostVersion,
+        ServiceVersion,
+        IndustryVersion,
+        MenuItem,
+        PageView,
+        NotificationPreference,
         AcpPageDocument,
         AcpPageVersion,
         AcpPageRouteBinding,
@@ -145,6 +160,9 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         AcpEnvironment,
         AcpPromotionEvent,
         AcpAuditEvent,
+        LEAD_STATUSES,
+        LEAD_STATUS_LABELS,
+        LEAD_STATUS_NEW,
         WORKFLOW_DRAFT,
         WORKFLOW_REVIEW,
         WORKFLOW_APPROVED,
@@ -341,6 +359,37 @@ ADMIN_PERMISSION_MAP = {
     'admin.user_add': 'users:manage',
     'admin.user_edit': 'users:manage',
     'admin.user_delete': 'users:manage',
+    # New CMS enhancement routes
+    'admin.post_restore': 'content:manage',
+    'admin.service_restore': 'content:manage',
+    'admin.industry_restore': 'content:manage',
+    'admin.post_clone': 'content:manage',
+    'admin.service_clone': 'content:manage',
+    'admin.industry_clone': 'content:manage',
+    'admin.post_trash_restore': 'content:manage',
+    'admin.service_trash_restore': 'content:manage',
+    'admin.industry_trash_restore': 'content:manage',
+    'admin.testimonial_trash_restore': 'content:manage',
+    'admin.team_trash_restore': 'content:manage',
+    'admin.posts_bulk': 'content:manage',
+    'admin.services_bulk': 'content:manage',
+    'admin.industries_bulk': 'content:manage',
+    'admin.testimonials_bulk': 'content:manage',
+    'admin.team_bulk': 'content:manage',
+    'admin.contacts_bulk': 'support:manage',
+    'admin.media_picker_api': 'content:manage',
+    'admin.media_edit': 'content:manage',
+    'admin.post_autosave': 'content:manage',
+    'admin.service_autosave': 'content:manage',
+    'admin.industry_autosave': 'content:manage',
+    'admin.contact_status_update': 'support:manage',
+    'admin.contacts_export': 'support:manage',
+    'admin.menu_editor': 'content:manage',
+    'admin.menu_item_edit': 'content:manage',
+    'admin.menu_item_delete': 'content:manage',
+    'admin.menu_reorder': 'content:manage',
+    'admin.admin_search_api': 'dashboard:view',
+    'admin.analytics_top_pages_api': 'dashboard:view',
 }
 
 
@@ -1979,7 +2028,10 @@ def dashboard():
 @admin_bp.route('/services')
 @login_required
 def services():
-    items = Service.query.order_by(Service.sort_order, Service.id).all()
+    if request.args.get('trash'):
+        items = Service.query.filter(Service.is_trashed == True).order_by(Service.sort_order, Service.id).all()
+    else:
+        items = Service.query.filter(db.or_(Service.is_trashed == False, Service.is_trashed == None)).order_by(Service.sort_order, Service.id).all()
     return render_template('admin/services.html', items=items)
 
 
@@ -2016,6 +2068,9 @@ def service_add():
                 return render_template('admin/service_form.html', item=None, workflow_options=workflow_options)
 
         image = save_upload(request.files.get('image')) if request.files.get('image') else None
+        seo_title = clean_text(request.form.get('seo_title', ''), 200)
+        seo_description = clean_text(request.form.get('seo_description', ''), 500)
+        og_image_val = clean_text(request.form.get('og_image', ''), 500)
         item = Service(
             title=title,
             slug=slug,
@@ -2026,6 +2081,9 @@ def service_add():
             is_featured='is_featured' in request.form,
             sort_order=sort_order,
             profile_json=profile_json_raw or None,
+            seo_title=seo_title or None,
+            seo_description=seo_description or None,
+            og_image=og_image_val or None,
         )
         ok, workflow_error = apply_workflow_form_fields(
             item,
@@ -2082,6 +2140,10 @@ def service_edit(id):
                 flash('Invalid JSON in service profile.', 'danger')
                 return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
 
+        seo_title = clean_text(request.form.get('seo_title', ''), 200)
+        seo_description = clean_text(request.form.get('seo_description', ''), 500)
+        og_image_val = clean_text(request.form.get('og_image', ''), 500)
+        change_note = clean_text(request.form.get('change_note', ''), 260)
         item.title = title
         item.slug = slug
         item.description = description
@@ -2090,6 +2152,9 @@ def service_edit(id):
         item.is_featured = 'is_featured' in request.form
         item.sort_order = sort_order
         item.profile_json = profile_json_raw or None
+        item.seo_title = seo_title or None
+        item.seo_description = seo_description or None
+        item.og_image = og_image_val or None
         ok, workflow_error = apply_workflow_form_fields(
             item,
             request.form,
@@ -2106,6 +2171,8 @@ def service_edit(id):
                 return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
             item.image = uploaded_image
         try:
+            db.session.flush()
+            _create_service_version(item, change_note, current_user)
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
@@ -2113,15 +2180,22 @@ def service_edit(id):
             return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
         flash('Service updated.', 'success')
         return redirect(url_for('admin.services'))
-    return render_template('admin/service_form.html', item=item, workflow_options=workflow_options)
+    versions = ServiceVersion.query.filter_by(service_id=item.id).order_by(ServiceVersion.version_number.desc()).limit(20).all() if item else []
+    return render_template('admin/service_form.html', item=item, workflow_options=workflow_options, versions=versions)
 
 
 @admin_bp.route('/services/<int:id>/delete', methods=['POST'])
 @login_required
 def service_delete(id):
-    db.session.delete(db.get_or_404(Service, id))
+    item = db.get_or_404(Service, id)
+    if item.is_trashed:
+        db.session.delete(item)
+        flash('Service permanently deleted.', 'success')
+    else:
+        item.is_trashed = True
+        item.trashed_at = utc_now_naive()
+        flash('Service moved to trash.', 'success')
     db.session.commit()
-    flash('Service deleted.', 'success')
     return redirect(url_for('admin.services'))
 
 
@@ -2129,7 +2203,10 @@ def service_delete(id):
 @admin_bp.route('/team')
 @login_required
 def team():
-    items = TeamMember.query.order_by(TeamMember.sort_order).all()
+    if request.args.get('trash'):
+        items = TeamMember.query.filter(TeamMember.is_trashed == True).order_by(TeamMember.sort_order).all()
+    else:
+        items = TeamMember.query.filter(db.or_(TeamMember.is_trashed == False, TeamMember.is_trashed == None)).order_by(TeamMember.sort_order).all()
     return render_template('admin/team.html', items=items)
 
 
@@ -2198,9 +2275,15 @@ def team_edit(id):
 @admin_bp.route('/team/<int:id>/delete', methods=['POST'])
 @login_required
 def team_delete(id):
-    db.session.delete(db.get_or_404(TeamMember, id))
+    item = db.get_or_404(TeamMember, id)
+    if item.is_trashed:
+        db.session.delete(item)
+        flash('Team member permanently deleted.', 'success')
+    else:
+        item.is_trashed = True
+        item.trashed_at = utc_now_naive()
+        flash('Team member moved to trash.', 'success')
     db.session.commit()
-    flash('Team member deleted.', 'success')
     return redirect(url_for('admin.team'))
 
 
@@ -2208,7 +2291,10 @@ def team_delete(id):
 @admin_bp.route('/testimonials')
 @login_required
 def testimonials():
-    items = Testimonial.query.order_by(Testimonial.created_at.desc()).all()
+    if request.args.get('trash'):
+        items = Testimonial.query.filter(Testimonial.is_trashed == True).order_by(Testimonial.created_at.desc()).all()
+    else:
+        items = Testimonial.query.filter(db.or_(Testimonial.is_trashed == False, Testimonial.is_trashed == None)).order_by(Testimonial.created_at.desc()).all()
     return render_template('admin/testimonials.html', items=items)
 
 
@@ -2267,9 +2353,15 @@ def testimonial_edit(id):
 @admin_bp.route('/testimonials/<int:id>/delete', methods=['POST'])
 @login_required
 def testimonial_delete(id):
-    db.session.delete(db.get_or_404(Testimonial, id))
+    item = db.get_or_404(Testimonial, id)
+    if item.is_trashed:
+        db.session.delete(item)
+        flash('Testimonial permanently deleted.', 'success')
+    else:
+        item.is_trashed = True
+        item.trashed_at = utc_now_naive()
+        flash('Testimonial moved to trash.', 'success')
     db.session.commit()
-    flash('Testimonial deleted.', 'success')
     return redirect(url_for('admin.testimonials'))
 
 
@@ -2325,7 +2417,10 @@ def category_delete(id):
 @admin_bp.route('/posts')
 @login_required
 def posts():
-    items = Post.query.order_by(Post.updated_at.desc(), Post.created_at.desc()).all()
+    if request.args.get('trash'):
+        items = Post.query.filter(Post.is_trashed == True).order_by(Post.updated_at.desc(), Post.created_at.desc()).all()
+    else:
+        items = Post.query.filter(db.or_(Post.is_trashed == False, Post.is_trashed == None)).order_by(Post.updated_at.desc(), Post.created_at.desc()).all()
     return render_template('admin/posts.html', items=items)
 
 
@@ -2364,6 +2459,9 @@ def post_add():
             return render_template('admin/post_form.html', item=None, categories=cats, workflow_options=workflow_options)
 
         image = save_upload(request.files.get('featured_image')) if request.files.get('featured_image') else None
+        seo_title = clean_text(request.form.get('seo_title', ''), 200)
+        seo_description = clean_text(request.form.get('seo_description', ''), 500)
+        og_image_val = clean_text(request.form.get('og_image', ''), 500)
         item = Post(
             title=title,
             slug=slug,
@@ -2371,6 +2469,9 @@ def post_add():
             content=content,
             featured_image=image,
             category_id=category_id,
+            seo_title=seo_title or None,
+            seo_description=seo_description or None,
+            og_image=og_image_val or None,
         )
         ok, workflow_error = apply_workflow_form_fields(
             item,
@@ -2432,11 +2533,18 @@ def post_edit(id):
             cats = Category.query.all()
             return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
 
+        seo_title = clean_text(request.form.get('seo_title', ''), 200)
+        seo_description = clean_text(request.form.get('seo_description', ''), 500)
+        og_image_val = clean_text(request.form.get('og_image', ''), 500)
+        change_note = clean_text(request.form.get('change_note', ''), 260)
         item.title = title
         item.slug = slug
         item.excerpt = excerpt
         item.content = content
         item.category_id = category_id
+        item.seo_title = seo_title or None
+        item.seo_description = seo_description or None
+        item.og_image = og_image_val or None
         ok, workflow_error = apply_workflow_form_fields(
             item,
             request.form,
@@ -2455,6 +2563,8 @@ def post_edit(id):
                 return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
             item.featured_image = uploaded_image
         try:
+            db.session.flush()
+            _create_post_version(item, change_note, current_user)
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
@@ -2464,15 +2574,22 @@ def post_edit(id):
         flash('Post updated.', 'success')
         return redirect(url_for('admin.posts'))
     cats = Category.query.all()
-    return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options)
+    versions = PostVersion.query.filter_by(post_id=item.id).order_by(PostVersion.version_number.desc()).limit(20).all() if item else []
+    return render_template('admin/post_form.html', item=item, categories=cats, workflow_options=workflow_options, versions=versions)
 
 
 @admin_bp.route('/posts/<int:id>/delete', methods=['POST'])
 @login_required
 def post_delete(id):
-    db.session.delete(db.get_or_404(Post, id))
+    item = db.get_or_404(Post, id)
+    if item.is_trashed:
+        db.session.delete(item)
+        flash('Post permanently deleted.', 'success')
+    else:
+        item.is_trashed = True
+        item.trashed_at = utc_now_naive()
+        flash('Post moved to trash.', 'success')
     db.session.commit()
-    flash('Post deleted.', 'success')
     return redirect(url_for('admin.posts'))
 
 
@@ -2529,19 +2646,23 @@ def settings():
                 return redirect(url_for('admin.settings'))
 
         keys = ['company_name', 'tagline', 'phone', 'email', 'address',
-                'facebook', 'twitter', 'linkedin', 'meta_title', 'meta_description', 'footer_text']
+                'facebook', 'twitter', 'linkedin', 'meta_title', 'meta_description', 'footer_text',
+                'custom_head_code', 'custom_footer_code', 'zip_code']
         length_limits = {
             'company_name': 200,
             'tagline': 300,
             'phone': 80,
             'email': 200,
             'address': 400,
+            'zip_code': 20,
             'facebook': 300,
             'twitter': 300,
             'linkedin': 300,
             'meta_title': 300,
             'meta_description': 500,
             'footer_text': 300,
+            'custom_head_code': 10000,
+            'custom_footer_code': 10000,
         }
         for key in keys:
             value = clean_text(request.form.get(key, ''), length_limits.get(key, 400))
@@ -2848,8 +2969,14 @@ def user_delete(id):
 @admin_bp.route('/contacts')
 @login_required
 def contacts():
-    items = ContactSubmission.query.order_by(ContactSubmission.created_at.desc()).all()
-    return render_template('admin/contacts.html', items=items)
+    query = ContactSubmission.query
+    status_filter = request.args.get('status', '').strip()
+    if status_filter and status_filter in LEAD_STATUSES:
+        query = query.filter(ContactSubmission.lead_status == status_filter)
+    items = query.order_by(ContactSubmission.created_at.desc()).all()
+    return render_template('admin/contacts.html', items=items,
+                           lead_statuses=LEAD_STATUS_LABELS,
+                           lead_status_labels=LEAD_STATUS_LABELS)
 
 
 @admin_bp.route('/contacts/<int:id>')
@@ -2859,7 +2986,8 @@ def contact_view(id):
     if not item.is_read:
         item.is_read = True
         db.session.commit()
-    return render_template('admin/contact_view.html', item=item)
+    return render_template('admin/contact_view.html', item=item,
+                           lead_status_labels=LEAD_STATUS_LABELS)
 
 
 @admin_bp.route('/contacts/<int:id>/delete', methods=['POST'])
@@ -3088,7 +3216,10 @@ def support_ticket_review(id):
 @admin_bp.route('/industries')
 @login_required
 def industries():
-    items = Industry.query.order_by(Industry.sort_order, Industry.id).all()
+    if request.args.get('trash'):
+        items = Industry.query.filter(Industry.is_trashed == True).order_by(Industry.sort_order, Industry.id).all()
+    else:
+        items = Industry.query.filter(db.or_(Industry.is_trashed == False, Industry.is_trashed == None)).order_by(Industry.sort_order, Industry.id).all()
     return render_template('admin/industries.html', items=items)
 
 
@@ -3118,11 +3249,17 @@ def industry_add():
             flash('An industry with that title already exists.', 'danger')
             return render_template('admin/industry_form.html', item=None, workflow_options=workflow_options)
 
+        seo_title = clean_text(request.form.get('seo_title', ''), 200)
+        seo_description = clean_text(request.form.get('seo_description', ''), 500)
+        og_image_val = clean_text(request.form.get('og_image', ''), 500)
         item = Industry(
             title=title, slug=slug, description=description,
             icon_class=icon_class, hero_description=hero_description,
             challenges=challenges, solutions=solutions,
             stats=stats, sort_order=sort_order,
+            seo_title=seo_title or None,
+            seo_description=seo_description or None,
+            og_image=og_image_val or None,
         )
         ok, workflow_error = apply_workflow_form_fields(
             item,
@@ -3173,6 +3310,10 @@ def industry_edit(id):
             flash('Another industry already uses this title/slug.', 'danger')
             return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
 
+        seo_title = clean_text(request.form.get('seo_title', ''), 200)
+        seo_description = clean_text(request.form.get('seo_description', ''), 500)
+        og_image_val = clean_text(request.form.get('og_image', ''), 500)
+        change_note = clean_text(request.form.get('change_note', ''), 260)
         item.title = title
         item.slug = slug
         item.description = description
@@ -3182,6 +3323,9 @@ def industry_edit(id):
         item.solutions = solutions
         item.stats = stats
         item.sort_order = sort_order
+        item.seo_title = seo_title or None
+        item.seo_description = seo_description or None
+        item.og_image = og_image_val or None
         ok, workflow_error = apply_workflow_form_fields(
             item,
             request.form,
@@ -3192,6 +3336,8 @@ def industry_edit(id):
             flash(workflow_error, 'danger')
             return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
         try:
+            db.session.flush()
+            _create_industry_version(item, change_note, current_user)
             db.session.commit()
         except IntegrityError:
             db.session.rollback()
@@ -3199,15 +3345,22 @@ def industry_edit(id):
             return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
         flash('Industry updated.', 'success')
         return redirect(url_for('admin.industries'))
-    return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options)
+    versions = IndustryVersion.query.filter_by(industry_id=item.id).order_by(IndustryVersion.version_number.desc()).limit(20).all() if item else []
+    return render_template('admin/industry_form.html', item=item, workflow_options=workflow_options, versions=versions)
 
 
 @admin_bp.route('/industries/<int:id>/delete', methods=['POST'])
 @login_required
 def industry_delete(id):
-    db.session.delete(db.get_or_404(Industry, id))
+    item = db.get_or_404(Industry, id)
+    if item.is_trashed:
+        db.session.delete(item)
+        flash('Industry permanently deleted.', 'success')
+    else:
+        item.is_trashed = True
+        item.trashed_at = utc_now_naive()
+        flash('Industry moved to trash.', 'success')
     db.session.commit()
-    flash('Industry deleted.', 'success')
     return redirect(url_for('admin.industries'))
 
 
@@ -4811,3 +4964,605 @@ def acp_admin_mcp_operations_api():
         'items': [_serialize_acp_mcp_operation(item) for item in items],
         'count': len(items),
     })
+
+
+# ---------------------------------------------------------------------------
+# Version snapshot helpers
+# ---------------------------------------------------------------------------
+
+def _create_post_version(post, change_note, user):
+    last = PostVersion.query.filter_by(post_id=post.id).order_by(PostVersion.version_number.desc()).first()
+    next_num = (last.version_number + 1) if last else 1
+    snapshot = {
+        'title': post.title, 'slug': post.slug, 'excerpt': post.excerpt,
+        'content': post.content, 'featured_image': post.featured_image,
+        'category_id': post.category_id, 'workflow_status': post.workflow_status,
+        'seo_title': post.seo_title, 'seo_description': post.seo_description, 'og_image': post.og_image,
+    }
+    db.session.add(PostVersion(
+        post_id=post.id, version_number=next_num,
+        snapshot_json=json.dumps(snapshot, ensure_ascii=False),
+        change_note=change_note or None, created_by_id=user.id,
+    ))
+
+
+def _create_service_version(service, change_note, user):
+    last = ServiceVersion.query.filter_by(service_id=service.id).order_by(ServiceVersion.version_number.desc()).first()
+    next_num = (last.version_number + 1) if last else 1
+    snapshot = {
+        'title': service.title, 'slug': service.slug, 'description': service.description,
+        'icon_class': service.icon_class, 'image': service.image, 'service_type': service.service_type,
+        'is_featured': service.is_featured, 'sort_order': service.sort_order,
+        'profile_json': service.profile_json, 'workflow_status': service.workflow_status,
+        'seo_title': service.seo_title, 'seo_description': service.seo_description, 'og_image': service.og_image,
+    }
+    db.session.add(ServiceVersion(
+        service_id=service.id, version_number=next_num,
+        snapshot_json=json.dumps(snapshot, ensure_ascii=False),
+        change_note=change_note or None, created_by_id=user.id,
+    ))
+
+
+def _create_industry_version(industry, change_note, user):
+    last = IndustryVersion.query.filter_by(industry_id=industry.id).order_by(IndustryVersion.version_number.desc()).first()
+    next_num = (last.version_number + 1) if last else 1
+    snapshot = {
+        'title': industry.title, 'slug': industry.slug, 'description': industry.description,
+        'icon_class': industry.icon_class, 'hero_description': industry.hero_description,
+        'challenges': industry.challenges, 'solutions': industry.solutions, 'stats': industry.stats,
+        'sort_order': industry.sort_order, 'workflow_status': industry.workflow_status,
+        'seo_title': industry.seo_title, 'seo_description': industry.seo_description, 'og_image': industry.og_image,
+    }
+    db.session.add(IndustryVersion(
+        industry_id=industry.id, version_number=next_num,
+        snapshot_json=json.dumps(snapshot, ensure_ascii=False),
+        change_note=change_note or None, created_by_id=user.id,
+    ))
+
+
+# ---------------------------------------------------------------------------
+# Version restore routes
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/posts/version/<int:id>/restore', methods=['POST'])
+@login_required
+def post_restore(id):
+    version = db.get_or_404(PostVersion, id)
+    post = db.get_or_404(Post, version.post_id)
+    snapshot = json.loads(version.snapshot_json)
+    for key in ('title', 'slug', 'excerpt', 'content', 'featured_image', 'category_id',
+                'workflow_status', 'seo_title', 'seo_description', 'og_image'):
+        if key in snapshot:
+            setattr(post, key, snapshot[key])
+    _create_post_version(post, f'Restored from v{version.version_number}', current_user)
+    db.session.commit()
+    flash(f'Post restored to version {version.version_number}.', 'success')
+    return redirect(url_for('admin.post_edit', id=post.id))
+
+
+@admin_bp.route('/services/version/<int:id>/restore', methods=['POST'])
+@login_required
+def service_restore(id):
+    version = db.get_or_404(ServiceVersion, id)
+    service = db.get_or_404(Service, version.service_id)
+    snapshot = json.loads(version.snapshot_json)
+    for key in ('title', 'slug', 'description', 'icon_class', 'image', 'service_type',
+                'is_featured', 'sort_order', 'profile_json', 'workflow_status',
+                'seo_title', 'seo_description', 'og_image'):
+        if key in snapshot:
+            setattr(service, key, snapshot[key])
+    _create_service_version(service, f'Restored from v{version.version_number}', current_user)
+    db.session.commit()
+    flash(f'Service restored to version {version.version_number}.', 'success')
+    return redirect(url_for('admin.service_edit', id=service.id))
+
+
+@admin_bp.route('/industries/version/<int:id>/restore', methods=['POST'])
+@login_required
+def industry_restore(id):
+    version = db.get_or_404(IndustryVersion, id)
+    industry = db.get_or_404(Industry, version.industry_id)
+    snapshot = json.loads(version.snapshot_json)
+    for key in ('title', 'slug', 'description', 'icon_class', 'hero_description',
+                'challenges', 'solutions', 'stats', 'sort_order', 'workflow_status',
+                'seo_title', 'seo_description', 'og_image'):
+        if key in snapshot:
+            setattr(industry, key, snapshot[key])
+    _create_industry_version(industry, f'Restored from v{version.version_number}', current_user)
+    db.session.commit()
+    flash(f'Industry restored to version {version.version_number}.', 'success')
+    return redirect(url_for('admin.industry_edit', id=industry.id))
+
+
+# ---------------------------------------------------------------------------
+# Content clone / duplicate
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/posts/<int:id>/clone', methods=['POST'])
+@login_required
+def post_clone(id):
+    original = db.get_or_404(Post, id)
+    clone = Post(
+        title=f'{original.title} (Copy)', slug=f'{original.slug}-copy',
+        excerpt=original.excerpt, content=original.content,
+        featured_image=original.featured_image, category_id=original.category_id,
+        seo_title=original.seo_title, seo_description=original.seo_description,
+        og_image=original.og_image, workflow_status=WORKFLOW_DRAFT,
+    )
+    db.session.add(clone)
+    try:
+        db.session.commit()
+        flash('Post duplicated as draft.', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        clone.slug = f'{original.slug}-copy-{int(utc_now_naive().timestamp())}'
+        db.session.add(clone)
+        db.session.commit()
+        flash('Post duplicated as draft.', 'success')
+    return redirect(url_for('admin.post_edit', id=clone.id))
+
+
+@admin_bp.route('/services/<int:id>/clone', methods=['POST'])
+@login_required
+def service_clone(id):
+    original = db.get_or_404(Service, id)
+    clone = Service(
+        title=f'{original.title} (Copy)', slug=f'{original.slug}-copy',
+        description=original.description, icon_class=original.icon_class,
+        image=original.image, service_type=original.service_type,
+        is_featured=False, sort_order=original.sort_order,
+        profile_json=original.profile_json,
+        seo_title=original.seo_title, seo_description=original.seo_description,
+        og_image=original.og_image, workflow_status=WORKFLOW_DRAFT,
+    )
+    db.session.add(clone)
+    try:
+        db.session.commit()
+        flash('Service duplicated as draft.', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        clone.slug = f'{original.slug}-copy-{int(utc_now_naive().timestamp())}'
+        db.session.add(clone)
+        db.session.commit()
+        flash('Service duplicated as draft.', 'success')
+    return redirect(url_for('admin.service_edit', id=clone.id))
+
+
+@admin_bp.route('/industries/<int:id>/clone', methods=['POST'])
+@login_required
+def industry_clone(id):
+    original = db.get_or_404(Industry, id)
+    clone = Industry(
+        title=f'{original.title} (Copy)', slug=f'{original.slug}-copy',
+        description=original.description, icon_class=original.icon_class,
+        hero_description=original.hero_description,
+        challenges=original.challenges, solutions=original.solutions,
+        stats=original.stats, sort_order=original.sort_order,
+        seo_title=original.seo_title, seo_description=original.seo_description,
+        og_image=original.og_image, workflow_status=WORKFLOW_DRAFT,
+    )
+    db.session.add(clone)
+    try:
+        db.session.commit()
+        flash('Industry duplicated as draft.', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        clone.slug = f'{original.slug}-copy-{int(utc_now_naive().timestamp())}'
+        db.session.add(clone)
+        db.session.commit()
+        flash('Industry duplicated as draft.', 'success')
+    return redirect(url_for('admin.industry_edit', id=clone.id))
+
+
+# ---------------------------------------------------------------------------
+# Soft-delete restore routes
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/posts/<int:id>/restore', methods=['POST'])
+@login_required
+def post_trash_restore(id):
+    item = db.get_or_404(Post, id)
+    item.is_trashed = False
+    item.trashed_at = None
+    db.session.commit()
+    flash('Post restored from trash.', 'success')
+    return redirect(url_for('admin.posts'))
+
+
+@admin_bp.route('/services/<int:id>/restore', methods=['POST'])
+@login_required
+def service_trash_restore(id):
+    item = db.get_or_404(Service, id)
+    item.is_trashed = False
+    item.trashed_at = None
+    db.session.commit()
+    flash('Service restored from trash.', 'success')
+    return redirect(url_for('admin.services'))
+
+
+@admin_bp.route('/industries/<int:id>/restore', methods=['POST'])
+@login_required
+def industry_trash_restore(id):
+    item = db.get_or_404(Industry, id)
+    item.is_trashed = False
+    item.trashed_at = None
+    db.session.commit()
+    flash('Industry restored from trash.', 'success')
+    return redirect(url_for('admin.industries'))
+
+
+@admin_bp.route('/testimonials/<int:id>/restore', methods=['POST'])
+@login_required
+def testimonial_trash_restore(id):
+    item = db.get_or_404(Testimonial, id)
+    item.is_trashed = False
+    item.trashed_at = None
+    db.session.commit()
+    flash('Testimonial restored from trash.', 'success')
+    return redirect(url_for('admin.testimonials'))
+
+
+@admin_bp.route('/team/<int:id>/restore', methods=['POST'])
+@login_required
+def team_trash_restore(id):
+    item = db.get_or_404(TeamMember, id)
+    item.is_trashed = False
+    item.trashed_at = None
+    db.session.commit()
+    flash('Team member restored from trash.', 'success')
+    return redirect(url_for('admin.team'))
+
+
+# ---------------------------------------------------------------------------
+# Bulk operations
+# ---------------------------------------------------------------------------
+
+def _bulk_action(model, model_name):
+    action = clean_text(request.form.get('action', ''), 30)
+    ids_raw = clean_text(request.form.get('ids', ''), 2000)
+    if not action or not ids_raw:
+        flash('No action or items selected.', 'danger')
+        return
+    ids = [int(x) for x in ids_raw.split(',') if x.strip().isdigit()]
+    if not ids:
+        flash('No valid items selected.', 'danger')
+        return
+    items = model.query.filter(model.id.in_(ids)).all()
+    count = 0
+    for item in items:
+        if action == 'publish':
+            item.workflow_status = WORKFLOW_PUBLISHED
+            item.published_at = item.published_at or utc_now_naive()
+            if hasattr(item, 'is_published'):
+                item.is_published = True
+            count += 1
+        elif action == 'draft':
+            item.workflow_status = WORKFLOW_DRAFT
+            count += 1
+        elif action == 'trash' and hasattr(item, 'is_trashed'):
+            item.is_trashed = True
+            item.trashed_at = utc_now_naive()
+            count += 1
+        elif action == 'delete':
+            db.session.delete(item)
+            count += 1
+    db.session.commit()
+    flash(f'{count} {model_name}(s) updated.', 'success')
+
+
+@admin_bp.route('/posts/bulk', methods=['POST'])
+@login_required
+def posts_bulk():
+    _bulk_action(Post, 'post')
+    return redirect(url_for('admin.posts'))
+
+
+@admin_bp.route('/services/bulk', methods=['POST'])
+@login_required
+def services_bulk():
+    _bulk_action(Service, 'service')
+    return redirect(url_for('admin.services'))
+
+
+@admin_bp.route('/industries/bulk', methods=['POST'])
+@login_required
+def industries_bulk():
+    _bulk_action(Industry, 'industry')
+    return redirect(url_for('admin.industries'))
+
+
+@admin_bp.route('/testimonials/bulk', methods=['POST'])
+@login_required
+def testimonials_bulk():
+    _bulk_action(Testimonial, 'testimonial')
+    return redirect(url_for('admin.testimonials'))
+
+
+@admin_bp.route('/team/bulk', methods=['POST'])
+@login_required
+def team_bulk():
+    _bulk_action(TeamMember, 'team member')
+    return redirect(url_for('admin.team'))
+
+
+@admin_bp.route('/contacts/bulk', methods=['POST'])
+@login_required
+def contacts_bulk():
+    action = clean_text(request.form.get('action', ''), 30)
+    ids_raw = clean_text(request.form.get('ids', ''), 2000)
+    ids = [int(x) for x in ids_raw.split(',') if x.strip().isdigit()] if ids_raw else []
+    if not ids:
+        flash('No items selected.', 'danger')
+        return redirect(url_for('admin.contacts'))
+    items = ContactSubmission.query.filter(ContactSubmission.id.in_(ids)).all()
+    count = 0
+    for item in items:
+        if action == 'delete':
+            db.session.delete(item)
+            count += 1
+        elif action == 'mark_read':
+            item.is_read = True
+            count += 1
+    db.session.commit()
+    flash(f'{count} contact(s) updated.', 'success')
+    return redirect(url_for('admin.contacts'))
+
+
+# ---------------------------------------------------------------------------
+# Enhanced media library
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/media/api/picker')
+@login_required
+def media_picker_api():
+    q = clean_text(request.args.get('q', ''), 120)
+    mime_filter = clean_text(request.args.get('mime', ''), 60)
+    query = Media.query
+    if q:
+        query = query.filter(or_(
+            Media.filename.ilike(f'%{escape_like(q)}%'),
+            Media.alt_text.ilike(f'%{escape_like(q)}%'),
+        ))
+    if mime_filter:
+        query = query.filter(Media.mime_type.ilike(f'{escape_like(mime_filter)}%'))
+    items = query.order_by(Media.created_at.desc()).limit(60).all()
+    return jsonify({'items': [
+        {
+            'id': m.id, 'filename': m.filename,
+            'url': url_for('admin.uploaded_file', filename=m.file_path),
+            'mime_type': m.mime_type, 'alt_text': m.alt_text or '',
+            'file_size': m.file_size, 'width': m.width, 'height': m.height,
+        }
+        for m in items
+    ]})
+
+
+@admin_bp.route('/media/<int:id>/edit', methods=['POST'])
+@login_required
+def media_edit(id):
+    item = db.get_or_404(Media, id)
+    alt_text = clean_text(request.form.get('alt_text', ''), 300)
+    item.alt_text = alt_text
+    db.session.commit()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'ok': True, 'alt_text': item.alt_text})
+    flash('Alt text updated.', 'success')
+    return redirect(url_for('admin.media'))
+
+
+# ---------------------------------------------------------------------------
+# Auto-save endpoints
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/posts/<int:id>/autosave', methods=['POST'])
+@login_required
+def post_autosave(id):
+    item = db.get_or_404(Post, id)
+    item.title = clean_text(request.form.get('title', item.title), 300)
+    item.excerpt = clean_text(request.form.get('excerpt', ''), 2000)
+    content_raw = request.form.get('content', '')
+    if content_raw:
+        item.content = content_raw[:100000]
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@admin_bp.route('/services/<int:id>/autosave', methods=['POST'])
+@login_required
+def service_autosave(id):
+    item = db.get_or_404(Service, id)
+    item.title = clean_text(request.form.get('title', item.title), 200)
+    item.description = clean_text(request.form.get('description', ''), 10000)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@admin_bp.route('/industries/<int:id>/autosave', methods=['POST'])
+@login_required
+def industry_autosave(id):
+    item = db.get_or_404(Industry, id)
+    item.title = clean_text(request.form.get('title', item.title), 200)
+    item.description = clean_text(request.form.get('description', ''), 10000)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+# ---------------------------------------------------------------------------
+# Lead management
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/contacts/<int:id>/status', methods=['POST'])
+@login_required
+def contact_status_update(id):
+    item = db.get_or_404(ContactSubmission, id)
+    new_status = clean_text(request.form.get('lead_status', ''), 30)
+    if new_status in LEAD_STATUSES:
+        item.lead_status = new_status
+    notes = request.form.get('lead_notes', '')
+    if notes is not None:
+        item.lead_notes = clean_text(notes, 5000)
+    db.session.commit()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'ok': True})
+    flash('Lead status updated.', 'success')
+    return redirect(url_for('admin.contact_view', id=id))
+
+
+@admin_bp.route('/contacts/export')
+@login_required
+def contacts_export():
+    import csv
+    import io
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Name', 'Email', 'Phone', 'Subject', 'Lead Status', 'Source Page', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'Date'])
+    items = ContactSubmission.query.order_by(ContactSubmission.created_at.desc()).all()
+    for item in items:
+        writer.writerow([
+            item.id, item.name, item.email, item.phone or '', item.subject or '',
+            item.lead_status or 'new', item.source_page or '',
+            item.utm_source or '', item.utm_medium or '', item.utm_campaign or '',
+            item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '',
+        ])
+    from flask import Response
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=contacts_export.csv'},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Navigation / Menu Editor
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/menu', methods=['GET', 'POST'])
+@login_required
+def menu_editor():
+    if request.method == 'POST':
+        location = clean_text(request.form.get('menu_location', 'header'), 30)
+        label = clean_text(request.form.get('label', ''), 200)
+        link_type = clean_text(request.form.get('link_type', 'custom_url'), 30)
+        target_slug = clean_text(request.form.get('target_slug', ''), 200)
+        custom_url = clean_text(request.form.get('custom_url', ''), 500)
+        icon_class = clean_text(request.form.get('icon_class', ''), 100)
+        sort_order = parse_int(request.form.get('sort_order', 0), default=0, min_value=-10000, max_value=10000)
+        parent_id_raw = request.form.get('parent_id', '')
+        parent_id = parse_positive_int(parent_id_raw) if parent_id_raw else None
+
+        if not label:
+            flash('Label is required.', 'danger')
+        else:
+            item = MenuItem(
+                menu_location=location, label=label, link_type=link_type,
+                target_slug=target_slug or None, custom_url=custom_url or None,
+                icon_class=icon_class or None, sort_order=sort_order,
+                parent_id=parent_id, is_visible=True,
+            )
+            db.session.add(item)
+            db.session.commit()
+            flash('Menu item added.', 'success')
+        return redirect(url_for('admin.menu_editor'))
+
+    location = request.args.get('location', 'header')
+    items = MenuItem.query.filter_by(menu_location=location, parent_id=None).order_by(MenuItem.sort_order).all()
+    all_items = MenuItem.query.filter_by(menu_location=location).order_by(MenuItem.sort_order).all()
+    return render_template('admin/menu_editor.html', items=items, all_items=all_items, location=location)
+
+
+@admin_bp.route('/menu/<int:id>/edit', methods=['POST'])
+@login_required
+def menu_item_edit(id):
+    item = db.get_or_404(MenuItem, id)
+    item.label = clean_text(request.form.get('label', item.label), 200)
+    item.link_type = clean_text(request.form.get('link_type', item.link_type), 30)
+    item.target_slug = clean_text(request.form.get('target_slug', ''), 200) or None
+    item.custom_url = clean_text(request.form.get('custom_url', ''), 500) or None
+    item.icon_class = clean_text(request.form.get('icon_class', ''), 100) or None
+    item.sort_order = parse_int(request.form.get('sort_order', 0), default=0, min_value=-10000, max_value=10000)
+    item.is_visible = 'is_visible' in request.form
+    db.session.commit()
+    flash('Menu item updated.', 'success')
+    return redirect(url_for('admin.menu_editor', location=item.menu_location))
+
+
+@admin_bp.route('/menu/<int:id>/delete', methods=['POST'])
+@login_required
+def menu_item_delete(id):
+    item = db.get_or_404(MenuItem, id)
+    location = item.menu_location
+    db.session.delete(item)
+    db.session.commit()
+    flash('Menu item deleted.', 'success')
+    return redirect(url_for('admin.menu_editor', location=location))
+
+
+@admin_bp.route('/menu/reorder', methods=['POST'])
+@login_required
+def menu_reorder():
+    order_data = request.form.get('order', '')
+    if order_data:
+        try:
+            items_order = json.loads(order_data)
+            for entry in items_order:
+                item = db.session.get(MenuItem, entry.get('id'))
+                if item:
+                    item.sort_order = entry.get('sort_order', 0)
+            db.session.commit()
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return jsonify({'ok': True})
+
+
+# ---------------------------------------------------------------------------
+# Global search / Command palette
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/api/search')
+@login_required
+def admin_search_api():
+    q = clean_text(request.args.get('q', ''), 120).strip()
+    if not q or len(q) < 2:
+        return jsonify({'results': []})
+
+    results = []
+    like_q = f'%{escape_like(q)}%'
+
+    for post in Post.query.filter(Post.title.ilike(like_q)).limit(5).all():
+        results.append({'type': 'post', 'title': post.title, 'url': url_for('admin.post_edit', id=post.id), 'status': post.workflow_status})
+
+    for service in Service.query.filter(Service.title.ilike(like_q)).limit(5).all():
+        results.append({'type': 'service', 'title': service.title, 'url': url_for('admin.service_edit', id=service.id), 'status': service.workflow_status})
+
+    for industry in Industry.query.filter(Industry.title.ilike(like_q)).limit(5).all():
+        results.append({'type': 'industry', 'title': industry.title, 'url': url_for('admin.industry_edit', id=industry.id), 'status': industry.workflow_status})
+
+    for contact in ContactSubmission.query.filter(or_(
+        ContactSubmission.name.ilike(like_q),
+        ContactSubmission.email.ilike(like_q),
+    )).limit(5).all():
+        results.append({'type': 'contact', 'title': f'{contact.name} ({contact.email})', 'url': url_for('admin.contact_view', id=contact.id)})
+
+    for ticket in SupportTicket.query.filter(or_(
+        SupportTicket.ticket_number.ilike(like_q),
+        SupportTicket.subject.ilike(like_q),
+    )).limit(5).all():
+        results.append({'type': 'ticket', 'title': f'{ticket.ticket_number}: {ticket.subject}', 'url': url_for('admin.support_ticket_view', id=ticket.id)})
+
+    return jsonify({'results': results})
+
+
+# ---------------------------------------------------------------------------
+# Page view analytics
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/analytics/api/top-pages')
+@login_required
+def analytics_top_pages_api():
+    days = parse_int(request.args.get('days', 7), default=7, min_value=1, max_value=90)
+    since = utc_now_naive() - __import__('datetime').timedelta(days=days)
+    rows = db.session.query(
+        PageView.path,
+        func.count(PageView.id).label('views'),
+    ).filter(PageView.created_at >= since).group_by(PageView.path).order_by(func.count(PageView.id).desc()).limit(20).all()
+    return jsonify({'items': [{'path': r.path, 'views': r.views} for r in rows], 'days': days})

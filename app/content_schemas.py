@@ -224,4 +224,51 @@ CONTENT_SCHEMAS = {
             {'key': 'cities', 'label': 'Cities (one per line)', 'type': 'lines'},
         ]
     },
+    ('global', 'topbar'): {
+        'label': 'Global — Topbar Ticker Items',
+        'fields': [
+            {'key': 'items', 'label': 'Topbar Ticker Items', 'type': 'json',
+             'help': 'Array of {text, icon} for rotating topbar messages.'},
+        ]
+    },
+    ('global', 'cta_buttons'): {
+        'label': 'Global — CTA Button Labels',
+        'fields': [
+            {'key': 'call_now', 'label': 'Call Now Button Text', 'type': 'text'},
+            {'key': 'request_quote', 'label': 'Request Quote Button Text', 'type': 'text'},
+            {'key': 'remote_support', 'label': 'Remote Support Button Text', 'type': 'text'},
+            {'key': 'get_in_touch', 'label': 'Get in Touch Button Text', 'type': 'text'},
+        ]
+    },
+    ('global', 'nav_labels'): {
+        'label': 'Global — Navigation Labels',
+        'fields': [
+            {'key': 'it_services', 'label': 'IT Services Label', 'type': 'text'},
+            {'key': 'repair_services', 'label': 'Technical Repair Services Label', 'type': 'text'},
+            {'key': 'industries', 'label': 'Industries Label', 'type': 'text'},
+            {'key': 'about', 'label': 'About Label', 'type': 'text'},
+            {'key': 'home', 'label': 'Home Label', 'type': 'text'},
+        ]
+    },
+    ('global', 'structured_data'): {
+        'label': 'Global — Structured Data Overrides',
+        'fields': [
+            {'key': 'latitude', 'label': 'Latitude', 'type': 'text'},
+            {'key': 'longitude', 'label': 'Longitude', 'type': 'text'},
+            {'key': 'area_served', 'label': 'Area Served', 'type': 'text'},
+            {'key': 'price_range', 'label': 'Price Range', 'type': 'text'},
+            {'key': 'opening_hours', 'label': 'Opening Hours', 'type': 'json',
+             'help': 'Array of {days: [...], opens, closes}'},
+        ]
+    },
+    ('global', 'error_pages'): {
+        'label': 'Global — Error Page Content',
+        'fields': [
+            {'key': '404_title', 'label': '404 Page Title', 'type': 'text'},
+            {'key': '404_message', 'label': '404 Page Message', 'type': 'textarea'},
+            {'key': '404_cta', 'label': '404 CTA Text', 'type': 'text'},
+            {'key': '500_title', 'label': '500 Page Title', 'type': 'text'},
+            {'key': '500_message', 'label': '500 Page Message', 'type': 'textarea'},
+        ]
+    },
 }

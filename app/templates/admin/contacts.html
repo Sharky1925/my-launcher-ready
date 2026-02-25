@@ -1,18 +1,34 @@
 {% extends "admin/base.html" %}
 {% block page_title %}Contact Submissions{% endblock %}
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    {% if lead_statuses is defined %}
+    <a href="{{ url_for('admin.contacts') }}" class="btn btn-sm {% if not request.args.get('status') %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+    {% for key, label in lead_statuses.items() %}
+    <a href="{{ url_for('admin.contacts', status=key) }}" class="btn btn-sm {% if request.args.get('status') == key %}btn-primary{% else %}btn-outline-secondary{% endif %}">{{ label }}</a>
+    {% endfor %}
+    {% endif %}
+  </div>
+  <a href="{{ url_for('admin.contacts_export') }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-file-csv me-1"></i>Export CSV</a>
+</div>
+{% include 'admin/_bulk_actions_bar.html' with context %}
 <div class="card border-0 shadow-sm">
   <div class="card-body p-0">
+    <form method="post" action="{{ url_for('admin.contacts_bulk') }}" id="bulkForm">
+    {{ csrf_input() }}
     <table class="table table-hover mb-0">
-      <thead><tr><th>Name</th><th>Email</th><th>Subject</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr><th><input type="checkbox" id="bulkSelectAll"></th><th>Name</th><th>Email</th><th>Subject</th><th>Date</th><th>Status</th><th>Lead</th><th>Actions</th></tr></thead>
       <tbody>
         {% for c in items %}
         <tr>
+          <td><input type="checkbox" name="ids" value="{{ c.id }}" class="bulk-checkbox"></td>
           <td><a href="{{ url_for('admin.contact_view', id=c.id) }}" class="text-decoration-none">{{ c.name }}</a></td>
           <td>{{ c.email }}</td>
           <td>{{ c.subject or '-' }}</td>
           <td>{{ c.created_at.strftime('%b %d, %Y') }}</td>
           <td>{% if c.is_read %}<span class="badge bg-secondary">Read</span>{% else %}<span class="badge bg-primary">New</span>{% endif %}</td>
+          <td><span class="badge bg-secondary">{{ (lead_status_labels or {}).get(c.lead_status, c.lead_status or 'new') }}</span></td>
           <td>
             <a href="{{ url_for('admin.contact_view', id=c.id) }}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-eye"></i></a>
             <form method="post" action="{{ url_for('admin.contact_delete', id=c.id) }}" class="d-inline confirm-delete">
@@ -22,10 +38,14 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="text-center text-muted py-3">No submissions yet</td></tr>
+        <tr><td colspan="8" class="text-center text-muted py-3">No submissions yet</td></tr>
         {% endfor %}
       </tbody>
     </table>
+    </form>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/bulk-actions.js') }}"></script>
 {% endblock %}
