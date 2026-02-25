@@ -186,7 +186,10 @@
   <!-- Main Navbar -->
   <nav class="navbar navbar-expand-lg navbar-main">
     <div class="container">
-      <a class="navbar-brand" href="{{ url_for('main.index') }}">{{ site_settings.get('company_name', 'Right On Repair') }}</a>
+      <a class="navbar-brand brand-stack" href="{{ url_for('main.index') }}" aria-label="Right Tech Experts, Right On Repair">
+        <span class="brand-primary">Right Tech Experts</span>
+        <span class="brand-secondary">Right On Repair</span>
+      </a>
 
       <!-- Desktop CTA buttons — visible only on lg+ -->
       <div class="nav-cta-group d-none d-lg-flex">
@@ -309,7 +312,10 @@
   <div class="container">
     <div class="row g-5">
       <div class="col-lg-4">
-        <div class="brand-text">{{ site_settings.get('company_name', 'Right On Repair') }}</div>
+        <div class="brand-text brand-stack-footer" aria-label="Right Tech Experts, Right On Repair">
+          <span class="brand-primary">Right Tech Experts</span>
+          <span class="brand-secondary">Right On Repair</span>
+        </div>
         <p>{{ site_settings.get('tagline', 'Managed IT, cybersecurity, cloud architecture, software development, and technical repairs for local businesses. Local response, transparent communication.') }}</p>
         {% if site_settings.get('phone') or site_settings.get('email') or site_settings.get('address') %}
         <ul class="footer-contact-list">

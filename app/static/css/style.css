@@ -549,6 +549,32 @@ p { margin: 0 0 16px; }
   transform: translateY(-1px) scale(1.04);
   box-shadow: 0 16px 28px rgba(79, 123, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
+.navbar-main .navbar-brand.brand-stack {
+  display: inline-grid;
+  grid-template-columns: 28px auto;
+  column-gap: 10px;
+  row-gap: 1px;
+  align-items: center;
+}
+.navbar-main .navbar-brand.brand-stack::before {
+  grid-row: 1 / span 2;
+}
+.navbar-main .navbar-brand.brand-stack .brand-primary {
+  display: block;
+  font-size: 1.03rem;
+  font-weight: 800;
+  letter-spacing: -0.018em;
+  line-height: 1.05;
+}
+.navbar-main .navbar-brand.brand-stack .brand-secondary {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  opacity: 0.82;
+  line-height: 1.05;
+}
 /* Kill every Bootstrap nav variable */
 .navbar-main {
   --bs-nav-link-color: rgba(214, 227, 246, 0.72);
@@ -4076,6 +4102,32 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   color: var(--white); font-size: .7rem; font-weight: 800;
   box-shadow: 0 6px 14px rgba(79, 123, 255, 0.3);
 }
+.footer .brand-text.brand-stack-footer {
+  display: inline-grid;
+  grid-template-columns: 26px auto;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: center;
+}
+.footer .brand-text.brand-stack-footer::before {
+  grid-row: 1 / span 2;
+}
+.footer .brand-text.brand-stack-footer .brand-primary {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+.footer .brand-text.brand-stack-footer .brand-secondary {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  opacity: 0.82;
+  line-height: 1.05;
+}
 .footer ul { list-style: none; padding: 0; margin: 0; }
 .footer ul li { margin-bottom: 8px; }
 .footer ul li a {
@@ -7311,5 +7363,15 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
     width: 34px;
     height: 34px;
     border-radius: 9px;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .navbar-main .navbar-brand.brand-stack .brand-primary {
+    font-size: 0.95rem;
+  }
+  .navbar-main .navbar-brand.brand-stack .brand-secondary {
+    font-size: 0.54rem;
+    letter-spacing: 0.09em;
   }
 }
