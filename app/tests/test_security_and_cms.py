@@ -7,7 +7,7 @@ import pytest
 
 try:
     from app import notifications as notifications_module
-    from app.seed import backfill_phase2_defaults
+    from app.seed import backfill_phase2_defaults, seed_database
     from app.routes import admin as admin_routes
     from app.routes import main as main_routes
     from app import create_app
@@ -46,7 +46,7 @@ try:
     from app.utils import utc_now_naive
 except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd test runs
     import notifications as notifications_module
-    from seed import backfill_phase2_defaults
+    from seed import backfill_phase2_defaults, seed_database
     import routes.admin as admin_routes
     import routes.main as main_routes
     from __init__ import create_app
@@ -728,6 +728,24 @@ def test_readiness_endpoint_reports_ready(client):
     assert payload["checks"]["database"] is True
     assert payload["checks"]["site_settings_seeded"] is True
     assert payload["checks"]["admin_user_seeded"] is True
+
+
+def test_seed_database_creates_admin_when_content_exists_without_user(app):
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        db.session.add(Category(name="Technology", slug="technology"))
+        db.session.commit()
+
+        assert User.query.first() is None
+        assert Category.query.filter_by(slug="technology").count() == 1
+
+        seed_database()
+        db.session.expire_all()
+
+        admin = User.query.filter_by(username="admin").first()
+        assert admin is not None
+        assert Category.query.filter_by(slug="technology").count() == 1
 
 
 def test_contact_page_form_has_accessibility_autocomplete(client):

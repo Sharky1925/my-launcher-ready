@@ -521,6 +521,7 @@ def create_app(config_overrides=None):
                 from seed import seed_database
             seed_database()
         except Exception:
+            db.session.rollback()
             app.logger.exception('seed_database() failed — seeding skipped.')
         try:
             try:

@@ -992,6 +992,43 @@ def seed_database():
             db.session.rollback()
         return
 
+    # Some deployments can have pre-seeded content tables but no user row
+    # (for example, after manual restores or partial migrations). In that
+    # state, skip full catalog/content seeding and only restore an admin user.
+    has_existing_content = any(
+        (
+            db.session.query(SiteSetting.id).first() is not None,
+            db.session.query(Service.id).first() is not None,
+            db.session.query(TeamMember.id).first() is not None,
+            db.session.query(Testimonial.id).first() is not None,
+            db.session.query(Category.id).first() is not None,
+            db.session.query(Post.id).first() is not None,
+            db.session.query(Industry.id).first() is not None,
+            db.session.query(ContentBlock.id).first() is not None,
+        )
+    )
+    if has_existing_content:
+        if not env_password:
+            env_password = secrets.token_urlsafe(16)
+            print(
+                '[seed] ADMIN_PASSWORD not set. Created admin with a random password. '
+                'Set ADMIN_PASSWORD and restart to rotate it to a known value.'
+            )
+        admin = User(username='admin', email='admin@example.com', role=ROLE_OWNER)
+        admin.set_password(env_password)
+        db.session.add(admin)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+        try:
+            seed_acp_defaults(admin)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return
+
     # Admin user
     if not env_password:
         env_password = secrets.token_urlsafe(16)
