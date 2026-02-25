@@ -5,7 +5,7 @@ import json
 import logging
 from time import perf_counter
 from urllib.parse import urlparse, urlsplit
-from flask import Flask, abort, flash, g, has_request_context, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, has_request_context, make_response, redirect, render_template, request, session, url_for
 from flask_login import LoginManager
 from markupsafe import Markup, escape
 from sqlalchemy import text
@@ -513,7 +513,16 @@ def create_app(config_overrides=None):
 
     @app.errorhandler(404)
     def handle_not_found(error):
-        return render_template('errors/404.html'), 404
+        response = make_response(render_template('errors/404.html'), 404)
+        # Temporary diagnostics for reverse-proxy path mapping issues in production.
+        response.headers['X-Debug-Path'] = str(getattr(request, 'path', '') or '')[:240]
+        response.headers['X-Debug-Path-Info'] = str(request.environ.get('PATH_INFO', '') or '')[:240]
+        response.headers['X-Debug-Script-Name'] = str(request.environ.get('SCRIPT_NAME', '') or '')[:240]
+        response.headers['X-Debug-Forwarded-Prefix'] = str(request.headers.get('X-Forwarded-Prefix', '') or '')[:240]
+        response.headers['X-Debug-Forwarded-Uri'] = str(
+            request.headers.get('X-Forwarded-Uri') or request.headers.get('X-Original-Uri') or ''
+        )[:240]
+        return response
 
     @app.errorhandler(500)
     def handle_server_error(error):
