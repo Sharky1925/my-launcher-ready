@@ -24,6 +24,8 @@ try:
         Category,
         ContactSubmission,
         Post,
+        CmsPage,
+        CmsArticle,
         Service,
         ContentBlock,
         SiteSetting,
@@ -64,6 +66,8 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for direct app/ cwd t
         Category,
         ContactSubmission,
         Post,
+        CmsPage,
+        CmsArticle,
         Service,
         ContentBlock,
         SiteSetting,
@@ -2337,3 +2341,112 @@ def test_draft_service_is_hidden_from_public_routes(client, app):
     assert services_page.status_code == 200
     assert hidden_title not in services_page.get_data(as_text=True)
     assert client.get(f"/services/{hidden_slug}").status_code == 404
+
+
+def test_cms_page_admin_crud_and_public_delivery(client, app):
+    admin_login(client)
+
+    add_form = client.get("/admin/pages/add")
+    csrf_token = extract_csrf_token(add_form.get_data(as_text=True))
+    assert csrf_token
+
+    page_title = f"Custom CMS Page {uuid.uuid4().hex[:6]}"
+    create_response = client.post(
+        "/admin/pages/add",
+        data={
+            "_csrf_token": csrf_token,
+            "title": page_title,
+            "slug": "custom-cms-page",
+            "content": "<p>Hello CMS page</p>",
+            "is_published": "on",
+        },
+        follow_redirects=False,
+    )
+    assert create_response.status_code in (302, 303)
+
+    with app.app_context():
+        created = CmsPage.query.filter_by(title=page_title).first()
+        assert created is not None
+        page_id = created.id
+        page_slug = created.slug
+
+    public_response = client.get(f"/page/{page_slug}")
+    assert public_response.status_code == 200
+    assert "Hello CMS page" in public_response.get_data(as_text=True)
+
+    edit_form = client.get(f"/admin/pages/{page_id}/edit")
+    edit_token = extract_csrf_token(edit_form.get_data(as_text=True))
+    assert edit_token
+    edit_response = client.post(
+        f"/admin/pages/{page_id}/edit",
+        data={
+            "_csrf_token": edit_token,
+            "title": page_title,
+            "slug": page_slug,
+            "content": "<p>Updated CMS page content</p>",
+            "is_published": "on",
+        },
+        follow_redirects=False,
+    )
+    assert edit_response.status_code in (302, 303)
+
+    updated_public = client.get(f"/page/{page_slug}")
+    assert updated_public.status_code == 200
+    assert "Updated CMS page content" in updated_public.get_data(as_text=True)
+
+
+def test_cms_article_admin_crud_and_public_delivery(client, app):
+    admin_login(client)
+
+    add_form = client.get("/admin/articles/add")
+    csrf_token = extract_csrf_token(add_form.get_data(as_text=True))
+    assert csrf_token
+
+    article_title = f"Custom CMS Article {uuid.uuid4().hex[:6]}"
+    create_response = client.post(
+        "/admin/articles/add",
+        data={
+            "_csrf_token": csrf_token,
+            "title": article_title,
+            "slug": "custom-cms-article",
+            "excerpt": "Short summary",
+            "content": "<p>Hello CMS article</p>",
+            "is_published": "on",
+        },
+        follow_redirects=False,
+    )
+    assert create_response.status_code in (302, 303)
+
+    with app.app_context():
+        created = CmsArticle.query.filter_by(title=article_title).first()
+        assert created is not None
+        article_id = created.id
+
+    public_response = client.get(f"/article/{article_id}")
+    assert public_response.status_code == 200
+    html = public_response.get_data(as_text=True)
+    assert "Hello CMS article" in html
+    assert "Short summary" in html
+
+    edit_form = client.get(f"/admin/articles/{article_id}/edit")
+    edit_token = extract_csrf_token(edit_form.get_data(as_text=True))
+    assert edit_token
+    edit_response = client.post(
+        f"/admin/articles/{article_id}/edit",
+        data={
+            "_csrf_token": edit_token,
+            "title": article_title,
+            "slug": "custom-cms-article",
+            "excerpt": "Updated summary",
+            "content": "<p>Updated CMS article content</p>",
+            "is_published": "on",
+        },
+        follow_redirects=False,
+    )
+    assert edit_response.status_code in (302, 303)
+
+    updated_public = client.get(f"/article/{article_id}")
+    assert updated_public.status_code == 200
+    updated_html = updated_public.get_data(as_text=True)
+    assert "Updated CMS article content" in updated_html
+    assert "Updated summary" in updated_html

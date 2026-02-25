@@ -24,6 +24,8 @@ try:
         Testimonial,
         Category,
         Post,
+        CmsPage,
+        CmsArticle,
         Media,
         ContactSubmission,
         SiteSetting,
@@ -111,6 +113,7 @@ try:
         MCP_APPROVAL_STATUS_NOT_REQUIRED,
     )
     from ..utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
+    from ..forms import HAS_FLASK_WTF, CmsPageForm, CmsArticleForm
     from ..content_schemas import CONTENT_SCHEMAS
     from ..page_sync import run_page_route_sync
     from ..service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -124,6 +127,8 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         Testimonial,
         Category,
         Post,
+        CmsPage,
+        CmsArticle,
         Media,
         ContactSubmission,
         SiteSetting,
@@ -211,6 +216,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         MCP_APPROVAL_STATUS_NOT_REQUIRED,
     )
     from utils import utc_now_naive, clean_text, escape_like, is_valid_email, get_request_ip
+    from forms import HAS_FLASK_WTF, CmsPageForm, CmsArticleForm
     from content_schemas import CONTENT_SCHEMAS
     from page_sync import run_page_route_sync
     from service_seo_overrides import SERVICE_RESEARCH_OVERRIDES
@@ -292,6 +298,14 @@ ADMIN_PERMISSION_MAP = {
     'admin.post_add': 'content:manage',
     'admin.post_edit': 'content:manage',
     'admin.post_delete': 'content:manage',
+    'admin.cms_pages': 'content:manage',
+    'admin.cms_page_add': 'content:manage',
+    'admin.cms_page_edit': 'content:manage',
+    'admin.cms_page_delete': 'content:manage',
+    'admin.cms_articles': 'content:manage',
+    'admin.cms_article_add': 'content:manage',
+    'admin.cms_article_edit': 'content:manage',
+    'admin.cms_article_delete': 'content:manage',
     'admin.media': 'content:manage',
     'admin.media_upload': 'content:manage',
     'admin.media_delete': 'content:manage',
@@ -5388,6 +5402,294 @@ def industry_autosave(id):
 
 
 # ---------------------------------------------------------------------------
+# Lightweight CMS (Page / Article) routes
+# ---------------------------------------------------------------------------
+
+def _flatten_wtf_errors(errors):
+    messages = []
+    for field_name, field_errors in (errors or {}).items():
+        label = str(field_name).replace('_', ' ').strip().title() or 'Field'
+        for message in field_errors or ():
+            messages.append(f'{label}: {message}')
+    return messages
+
+
+def _cms_slug_from_input(raw_slug, fallback_title, max_length=220):
+    base = clean_text(raw_slug or fallback_title, max_length)
+    return slugify(base, lowercase=True)[:max_length]
+
+
+def _cms_page_payload(item=None, form=None):
+    if request.method == 'POST':
+        if form is not None:
+            return {
+                'title': clean_text(form.title.data, 200),
+                'slug': clean_text(form.slug.data, 200),
+                'content': form.content.data or '',
+                'is_published': bool(form.is_published.data),
+            }
+        return {
+            'title': clean_text(request.form.get('title', ''), 200),
+            'slug': clean_text(request.form.get('slug', ''), 200),
+            'content': request.form.get('content', ''),
+            'is_published': 'is_published' in request.form,
+        }
+    if item is None:
+        return {'title': '', 'slug': '', 'content': '', 'is_published': True}
+    return {
+        'title': item.title or '',
+        'slug': item.slug or '',
+        'content': item.content or '',
+        'is_published': bool(item.is_published),
+    }
+
+
+def _cms_article_payload(item=None, form=None):
+    if request.method == 'POST':
+        if form is not None:
+            return {
+                'title': clean_text(form.title.data, 220),
+                'slug': clean_text(form.slug.data, 220),
+                'excerpt': clean_text(form.excerpt.data, 600),
+                'content': form.content.data or '',
+                'is_published': bool(form.is_published.data),
+            }
+        return {
+            'title': clean_text(request.form.get('title', ''), 220),
+            'slug': clean_text(request.form.get('slug', ''), 220),
+            'excerpt': clean_text(request.form.get('excerpt', ''), 600),
+            'content': request.form.get('content', ''),
+            'is_published': 'is_published' in request.form,
+        }
+    if item is None:
+        return {'title': '', 'slug': '', 'excerpt': '', 'content': '', 'is_published': True}
+    return {
+        'title': item.title or '',
+        'slug': item.slug or '',
+        'excerpt': item.excerpt or '',
+        'content': item.content or '',
+        'is_published': bool(item.is_published),
+    }
+
+
+def _validate_cms_page_payload(payload):
+    errors = []
+    if not (payload.get('title') or '').strip():
+        errors.append('Title is required.')
+    if not (payload.get('content') or '').strip():
+        errors.append('Content is required.')
+    return errors
+
+
+def _validate_cms_article_payload(payload):
+    errors = []
+    if not (payload.get('title') or '').strip():
+        errors.append('Title is required.')
+    if not (payload.get('content') or '').strip():
+        errors.append('Content is required.')
+    return errors
+
+
+def _find_duplicate_slug(model, slug, item_id=None):
+    query = model.query.filter_by(slug=slug)
+    if item_id:
+        query = query.filter(model.id != item_id)
+    return query.first()
+
+
+def _flash_errors(errors):
+    for message in errors:
+        flash(message, 'danger')
+
+
+@admin_bp.route('/pages')
+@login_required
+def cms_pages():
+    items = CmsPage.query.order_by(CmsPage.updated_at.desc(), CmsPage.id.desc()).all()
+    return render_template('admin/cms_pages.html', items=items)
+
+
+@admin_bp.route('/pages/add', methods=['GET', 'POST'])
+@login_required
+def cms_page_add():
+    form = CmsPageForm() if HAS_FLASK_WTF and CmsPageForm else None
+    payload = _cms_page_payload(form=form)
+
+    if request.method == 'POST':
+        errors = []
+        if form is not None and not form.validate_on_submit():
+            errors.extend(_flatten_wtf_errors(form.errors))
+        errors.extend(_validate_cms_page_payload(payload))
+
+        slug = _cms_slug_from_input(payload.get('slug', ''), payload.get('title', ''), max_length=200)
+        if not slug:
+            errors.append('Slug could not be generated. Provide a title or slug.')
+        elif _find_duplicate_slug(CmsPage, slug):
+            errors.append('Slug is already in use by another page.')
+
+        if errors:
+            _flash_errors(errors)
+            return render_template('admin/cms_page_form.html', item=None, payload=payload)
+
+        item = CmsPage(
+            title=payload['title'],
+            slug=slug,
+            content=sanitize_html(payload['content'], max_length=200000),
+            author_id=current_user.id,
+            is_published=payload['is_published'],
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash('Page created.', 'success')
+        return redirect(url_for('admin.cms_pages'))
+
+    return render_template('admin/cms_page_form.html', item=None, payload=payload)
+
+
+@admin_bp.route('/pages/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def cms_page_edit(id):
+    item = db.get_or_404(CmsPage, id)
+    form = CmsPageForm(obj=item) if HAS_FLASK_WTF and CmsPageForm else None
+    payload = _cms_page_payload(item=item, form=form)
+
+    if request.method == 'POST':
+        errors = []
+        if form is not None and not form.validate_on_submit():
+            errors.extend(_flatten_wtf_errors(form.errors))
+        errors.extend(_validate_cms_page_payload(payload))
+
+        slug = _cms_slug_from_input(payload.get('slug', ''), payload.get('title', ''), max_length=200)
+        if not slug:
+            errors.append('Slug could not be generated. Provide a title or slug.')
+        elif _find_duplicate_slug(CmsPage, slug, item.id):
+            errors.append('Slug is already in use by another page.')
+
+        if errors:
+            _flash_errors(errors)
+            return render_template('admin/cms_page_form.html', item=item, payload=payload)
+
+        item.title = payload['title']
+        item.slug = slug
+        item.content = sanitize_html(payload['content'], max_length=200000)
+        item.is_published = payload['is_published']
+        item.author_id = item.author_id or current_user.id
+        item.updated_at = utc_now_naive()
+        db.session.commit()
+        flash('Page updated.', 'success')
+        return redirect(url_for('admin.cms_pages'))
+
+    return render_template('admin/cms_page_form.html', item=item, payload=payload)
+
+
+@admin_bp.route('/pages/<int:id>/delete', methods=['POST'])
+@login_required
+def cms_page_delete(id):
+    item = db.get_or_404(CmsPage, id)
+    db.session.delete(item)
+    db.session.commit()
+    flash('Page deleted.', 'success')
+    return redirect(url_for('admin.cms_pages'))
+
+
+@admin_bp.route('/articles')
+@login_required
+def cms_articles():
+    items = CmsArticle.query.order_by(CmsArticle.updated_at.desc(), CmsArticle.id.desc()).all()
+    return render_template('admin/cms_articles.html', items=items)
+
+
+@admin_bp.route('/articles/add', methods=['GET', 'POST'])
+@login_required
+def cms_article_add():
+    form = CmsArticleForm() if HAS_FLASK_WTF and CmsArticleForm else None
+    payload = _cms_article_payload(form=form)
+
+    if request.method == 'POST':
+        errors = []
+        if form is not None and not form.validate_on_submit():
+            errors.extend(_flatten_wtf_errors(form.errors))
+        errors.extend(_validate_cms_article_payload(payload))
+
+        slug = _cms_slug_from_input(payload.get('slug', ''), payload.get('title', ''), max_length=220)
+        if not slug:
+            errors.append('Slug could not be generated. Provide a title or slug.')
+        elif _find_duplicate_slug(CmsArticle, slug):
+            errors.append('Slug is already in use by another article.')
+
+        if errors:
+            _flash_errors(errors)
+            return render_template('admin/cms_article_form.html', item=None, payload=payload)
+
+        is_published = payload['is_published']
+        now = utc_now_naive()
+        item = CmsArticle(
+            title=payload['title'],
+            slug=slug,
+            excerpt=payload['excerpt'] or None,
+            content=sanitize_html(payload['content'], max_length=200000),
+            author_id=current_user.id,
+            is_published=is_published,
+            published_at=now if is_published else None,
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash('Article created.', 'success')
+        return redirect(url_for('admin.cms_articles'))
+
+    return render_template('admin/cms_article_form.html', item=None, payload=payload)
+
+
+@admin_bp.route('/articles/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def cms_article_edit(id):
+    item = db.get_or_404(CmsArticle, id)
+    form = CmsArticleForm(obj=item) if HAS_FLASK_WTF and CmsArticleForm else None
+    payload = _cms_article_payload(item=item, form=form)
+
+    if request.method == 'POST':
+        errors = []
+        if form is not None and not form.validate_on_submit():
+            errors.extend(_flatten_wtf_errors(form.errors))
+        errors.extend(_validate_cms_article_payload(payload))
+
+        slug = _cms_slug_from_input(payload.get('slug', ''), payload.get('title', ''), max_length=220)
+        if not slug:
+            errors.append('Slug could not be generated. Provide a title or slug.')
+        elif _find_duplicate_slug(CmsArticle, slug, item.id):
+            errors.append('Slug is already in use by another article.')
+
+        if errors:
+            _flash_errors(errors)
+            return render_template('admin/cms_article_form.html', item=item, payload=payload)
+
+        now = utc_now_naive()
+        item.title = payload['title']
+        item.slug = slug
+        item.excerpt = payload['excerpt'] or None
+        item.content = sanitize_html(payload['content'], max_length=200000)
+        item.is_published = payload['is_published']
+        item.author_id = item.author_id or current_user.id
+        item.published_at = (item.published_at or now) if item.is_published else None
+        item.updated_at = now
+        db.session.commit()
+        flash('Article updated.', 'success')
+        return redirect(url_for('admin.cms_articles'))
+
+    return render_template('admin/cms_article_form.html', item=item, payload=payload)
+
+
+@admin_bp.route('/articles/<int:id>/delete', methods=['POST'])
+@login_required
+def cms_article_delete(id):
+    item = db.get_or_404(CmsArticle, id)
+    db.session.delete(item)
+    db.session.commit()
+    flash('Article deleted.', 'success')
+    return redirect(url_for('admin.cms_articles'))
+
+
+# ---------------------------------------------------------------------------
 # Lead management
 # ---------------------------------------------------------------------------
 
@@ -5530,6 +5832,12 @@ def admin_search_api():
 
     for post in Post.query.filter(Post.title.ilike(like_q)).limit(5).all():
         results.append({'type': 'post', 'title': post.title, 'url': url_for('admin.post_edit', id=post.id), 'status': post.workflow_status})
+
+    for cms_page in CmsPage.query.filter(CmsPage.title.ilike(like_q)).limit(5).all():
+        results.append({'type': 'cms_page', 'title': cms_page.title, 'url': url_for('admin.cms_page_edit', id=cms_page.id), 'status': ('published' if cms_page.is_published else 'draft')})
+
+    for cms_article in CmsArticle.query.filter(CmsArticle.title.ilike(like_q)).limit(5).all():
+        results.append({'type': 'cms_article', 'title': cms_article.title, 'url': url_for('admin.cms_article_edit', id=cms_article.id), 'status': ('published' if cms_article.is_published else 'draft')})
 
     for service in Service.query.filter(Service.title.ilike(like_q)).limit(5).all():
         results.append({'type': 'service', 'title': service.title, 'url': url_for('admin.service_edit', id=service.id), 'status': service.workflow_status})

@@ -344,6 +344,34 @@ class Post(db.Model):
     updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
 
+class CmsPage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    content = db.Column(db.Text, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    is_published = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+    author = db.relationship('User', backref=db.backref('cms_pages', lazy=True))
+
+
+class CmsArticle(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(220), nullable=False)
+    slug = db.Column(db.String(220), unique=True, nullable=False, index=True)
+    excerpt = db.Column(db.String(600))
+    content = db.Column(db.Text, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    is_published = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    published_at = db.Column(db.DateTime, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now_naive, index=True)
+    updated_at = db.Column(db.DateTime, default=utc_now_naive, onupdate=utc_now_naive, index=True)
+
+    author = db.relationship('User', backref=db.backref('cms_articles', lazy=True))
+
+
 class Media(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(300), nullable=False)

@@ -558,6 +558,8 @@
       <a class="nav-link {% if request.endpoint in ['admin.team', 'admin.team_add', 'admin.team_edit'] %}active{% endif %}" href="{{ url_for('admin.team') }}"><i class="fa-solid fa-users"></i>Team</a>
       <a class="nav-link {% if request.endpoint in ['admin.testimonials', 'admin.testimonial_add', 'admin.testimonial_edit'] %}active{% endif %}" href="{{ url_for('admin.testimonials') }}"><i class="fa-solid fa-quote-right"></i>Testimonials</a>
       <a class="nav-link {% if request.endpoint in ['admin.posts', 'admin.post_add', 'admin.post_edit'] %}active{% endif %}" href="{{ url_for('admin.posts') }}"><i class="fa-solid fa-newspaper"></i>Blog Posts</a>
+      <a class="nav-link {% if request.endpoint in ['admin.cms_pages', 'admin.cms_page_add', 'admin.cms_page_edit'] %}active{% endif %}" href="{{ url_for('admin.cms_pages') }}"><i class="fa-solid fa-file-lines"></i>CMS Pages</a>
+      <a class="nav-link {% if request.endpoint in ['admin.cms_articles', 'admin.cms_article_add', 'admin.cms_article_edit'] %}active{% endif %}" href="{{ url_for('admin.cms_articles') }}"><i class="fa-solid fa-pen-to-square"></i>CMS Articles</a>
       <a class="nav-link {% if request.endpoint in ['admin.categories', 'admin.category_add'] %}active{% endif %}" href="{{ url_for('admin.categories') }}"><i class="fa-solid fa-tags"></i>Categories</a>
       <a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}"><i class="fa-solid fa-photo-film"></i>Media</a>
       <a class="nav-link {% if request.endpoint in ['admin.industries', 'admin.industry_add', 'admin.industry_edit'] %}active{% endif %}" href="{{ url_for('admin.industries') }}"><i class="fa-solid fa-building"></i>Industries</a>
@@ -642,6 +644,8 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.team', 'admin.team_add', 'admin.team_edit'] %}active{% endif %}" href="{{ url_for('admin.team') }}">Team</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.testimonials', 'admin.testimonial_add', 'admin.testimonial_edit'] %}active{% endif %}" href="{{ url_for('admin.testimonials') }}">Testimonials</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.posts', 'admin.post_add', 'admin.post_edit'] %}active{% endif %}" href="{{ url_for('admin.posts') }}">Blog Posts</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.cms_pages', 'admin.cms_page_add', 'admin.cms_page_edit'] %}active{% endif %}" href="{{ url_for('admin.cms_pages') }}">CMS Pages</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.cms_articles', 'admin.cms_article_add', 'admin.cms_article_edit'] %}active{% endif %}" href="{{ url_for('admin.cms_articles') }}">CMS Articles</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.categories', 'admin.category_add'] %}active{% endif %}" href="{{ url_for('admin.categories') }}">Categories</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}">Media</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.industries', 'admin.industry_add', 'admin.industry_edit'] %}active{% endif %}" href="{{ url_for('admin.industries') }}">Industries</a></li>

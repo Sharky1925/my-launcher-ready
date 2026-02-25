@@ -10,6 +10,15 @@ from flask_login import LoginManager
 from markupsafe import Markup, escape
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
+try:
+    from flask_migrate import Migrate
+except ModuleNotFoundError:  # pragma: no cover - dependency may not be installed yet
+    class Migrate:  # type: ignore[override]
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def init_app(self, *args, **kwargs):
+            return None
 
 try:
     from .config import Config
@@ -42,6 +51,7 @@ except ImportError:  # pragma: no cover - fallback when running from app/ as scr
 
 login_manager = LoginManager()
 login_manager.login_view = 'admin.login'
+migrate = Migrate()
 _ICON_CLASS_RE = re.compile(r"^fa-(solid|regular|brands)\s+fa-[a-z0-9-]+$")
 _ICON_CLASS_ALIASES = {
     'fa-ranking-star': 'fa-chart-line',
@@ -396,6 +406,7 @@ def create_app(config_overrides=None):
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
 
     @app.before_request

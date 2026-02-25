@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} — {{ site_settings.get('company_name', 'Right On Repair') }}{% endblock %}
+{% block meta_description %}{{ (page.content | striptags | truncate(155, True)) }}{% endblock %}
+
+{% block content %}
+<section class="page-header page-header--compact page-header--landing-tight">
+  <div class="container">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li class="breadcrumb-item active">{{ page.title }}</li>
+      </ol>
+    </nav>
+    <h1>{{ page.title }}</h1>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <article class="card p-4 p-lg-5">
+      {{ page.content | safe }}
+    </article>
+  </div>
+</section>
+{% endblock %}

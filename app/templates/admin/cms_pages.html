@@ -1,0 +1,58 @@
+{% extends "admin/base.html" %}
+{% block page_title %}CMS Pages{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h2 class="mb-0">CMS Pages</h2>
+  <a href="{{ url_for('admin.cms_page_add') }}" class="btn btn-primary">
+    <i class="fa-solid fa-plus me-1"></i>New Page
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Slug</th>
+            <th>Status</th>
+            <th>Author</th>
+            <th>Updated</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.title }}</td>
+            <td><code>{{ item.slug }}</code></td>
+            <td>
+              {% if item.is_published %}
+              <span class="badge bg-success">Published</span>
+              {% else %}
+              <span class="badge bg-secondary">Draft</span>
+              {% endif %}
+            </td>
+            <td>{{ item.author.username if item.author else "-" }}</td>
+            <td>{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else "-" }}</td>
+            <td class="text-end">
+              <a href="{{ url_for('main.cms_page', slug=item.slug) }}" class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener">View</a>
+              <a href="{{ url_for('admin.cms_page_edit', id=item.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <form method="POST" action="{{ url_for('admin.cms_page_delete', id=item.id) }}" class="d-inline" onsubmit="return confirm('Delete this page?');">
+                {{ csrf_input() }}
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No CMS pages yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

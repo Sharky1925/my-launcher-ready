@@ -17,6 +17,8 @@ try:
         Testimonial,
         Category,
         Post,
+        CmsPage,
+        CmsArticle,
         ContactSubmission,
         Industry,
         SiteSetting,
@@ -51,6 +53,8 @@ except ImportError:  # pragma: no cover - fallback when running from app/ cwd
         Testimonial,
         Category,
         Post,
+        CmsPage,
+        CmsArticle,
         ContactSubmission,
         Industry,
         SiteSetting,
@@ -1916,6 +1920,19 @@ def post(slug):
     recent_posts = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(Post.id != post.id)\
         .order_by(Post.created_at.desc()).limit(3).all()
     return render_template('post.html', post=post, recent_posts=recent_posts)
+
+
+@main_bp.route('/page/<slug>')
+def cms_page(slug):
+    normalized_slug = _normalize_slug(slug)
+    page = CmsPage.query.filter_by(slug=normalized_slug, is_published=True).first_or_404()
+    return render_template('cms/page.html', page=page)
+
+
+@main_bp.route('/article/<int:article_id>')
+def cms_article(article_id):
+    article = CmsArticle.query.filter_by(id=article_id, is_published=True).first_or_404()
+    return render_template('cms/article.html', article=article)
 
 
 @main_bp.route('/industries')

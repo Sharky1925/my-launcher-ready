@@ -7,7 +7,7 @@ A professional IT Services website with a Flask backend and optional admin panel
 - **Public Website**: Professional IT services company site with Home, About, Services, Blog, and Contact pages
 - **Optional Admin Panel**: Built-in dashboard at `/admin` (can be ignored if you use a headless CMS)
 - **Headless Sync API**: Push/pull content from external headless CMS platforms (WordPress, Strapi, Directus, Contentful, etc.)
-- **Content Types**: Services, Team Members, Blog Posts, Testimonials, Media Library, Contact Submissions, Site Settings
+- **Content Types**: Services, Team Members, Blog Posts, CMS Pages, CMS Articles, Testimonials, Media Library, Contact Submissions, Site Settings
 
 ## Quick Start (Local Development)
 
@@ -38,6 +38,21 @@ pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
+### Database Migrations (Flask-Migrate)
+
+```bash
+cd app
+source venv/bin/activate
+
+# one-time
+export FLASK_APP=run.py
+flask db init
+
+# after model changes
+flask db migrate -m "describe change"
+flask db upgrade
+```
+
 ## Managing Content
 
 **Services**: Add, edit, and reorder IT services displayed on the website. Mark services as "Featured" to show them on the homepage.
@@ -45,6 +60,8 @@ python -m pytest -q
 **Team Members**: Manage your team with photos, bios, positions, and LinkedIn profiles.
 
 **Blog Posts**: Create and publish blog posts with a rich text editor (TinyMCE). Organize posts into categories.
+
+**CMS Pages / CMS Articles**: Use `/admin/pages` and `/admin/articles` for lightweight headless-friendly content. Public delivery routes are `/page/<slug>` and `/article/<int:article_id>`.
 
 **Testimonials**: Add client reviews with ratings. Featured testimonials appear on the homepage.
 
@@ -183,7 +200,7 @@ curl "http://127.0.0.1:5000/blog?q=security"
 
 ## Tech Stack
 
-- **Backend**: Flask 3.1, Flask-SQLAlchemy, Flask-Login
+- **Backend**: Flask 3.1, Flask-SQLAlchemy, Flask-Login, Flask-Migrate, Flask-WTF
 - **Database**: SQLite (local), PostgreSQL (production)
 - **Frontend**: Bootstrap 5.3, Font Awesome 6, TinyMCE 6
 

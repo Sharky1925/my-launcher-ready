@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ "Edit CMS Article" if item else "New CMS Article" }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <strong>{{ "Edit CMS Article" if item else "Create CMS Article" }}</strong>
+  </div>
+  <div class="card-body">
+    <form method="POST" class="row g-3">
+      {{ csrf_input() }}
+      <div class="col-md-8">
+        <label class="form-label">Title</label>
+        <input type="text" name="title" class="form-control" maxlength="220" required value="{{ payload.title }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Slug</label>
+        <input type="text" name="slug" class="form-control" maxlength="220" value="{{ payload.slug }}" placeholder="auto-generated-from-title">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Excerpt</label>
+        <input type="text" name="excerpt" class="form-control" maxlength="600" value="{{ payload.excerpt }}" placeholder="Short summary for article cards">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Content</label>
+        <textarea name="content" class="form-control" rows="14" required>{{ payload.content }}</textarea>
+      </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="isPublished" name="is_published" {% if payload.is_published %}checked{% endif %}>
+          <label class="form-check-label" for="isPublished">Published</label>
+        </div>
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{{ "Save Changes" if item else "Create Article" }}</button>
+        <a href="{{ url_for('admin.cms_articles') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
