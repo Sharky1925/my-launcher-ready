@@ -120,7 +120,12 @@
     <div class="cta-inner">
       <h2>{{ ind_cta.get('title', "Don't See Your Industry?") }}</h2>
       <p>{{ ind_cta.get('subtitle', "We work across all sectors. Let's discuss your unique technology needs.") }}</p>
-      <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Get a Free Consultation <i class="fa-solid fa-arrow-right"></i></a>
+      <div class="cta-actions cta-actions-dual">
+        {% if site_settings.get('phone') %}
+        <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}" class="btn btn-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+        {% endif %}
+        <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Get a Free Consultation <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
     </div>
   </div>
 </section>

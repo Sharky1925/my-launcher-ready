@@ -217,6 +217,9 @@
         {% include "_hero_slogan.html" %}
         <p class="industry-hero-description">{{ meta_desc }}</p>
         <div class="hero-buttons industry-hero-actions">
+          {% if site_settings.get('phone') %}
+          <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}" class="btn btn-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+          {% endif %}
           <a href="{{ url_for('main.request_quote') }}" class="btn btn-primary">Request A Quote <i class="fa-solid fa-magnifying-glass-chart"></i></a>
           <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support">Remote Support <i class="fa-solid fa-life-ring"></i></a>
           <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger"><i class="fa-solid fa-envelope"></i> Send Message</a>
@@ -660,6 +663,9 @@
       <h2>Request A Quote</h2>
       <p>Get a scoped plan for {{ service.title | lower }}, with clear priorities, timeline options, and next steps.</p>
       <div class="cta-actions cta-actions-dual">
+        {% if site_settings.get('phone') %}
+        <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}" class="btn btn-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+        {% endif %}
         <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request A Quote</a>
         <a href="{{ url_for('main.contact', subject='Service Consultation: ' ~ service.title) }}" class="btn btn-danger"><i class="fa-solid fa-envelope"></i> Send Message</a>
       </div>

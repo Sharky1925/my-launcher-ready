@@ -150,7 +150,12 @@
     <div class="cta-inner">
       <h2>Ready to Transform Your {{ industry.title }} IT?</h2>
       <p>Let's build a technology strategy tailored to your industry.</p>
-      <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Request a Proposal <i class="fa-solid fa-arrow-right"></i></a>
+      <div class="cta-actions cta-actions-dual">
+        {% if site_settings.get('phone') %}
+        <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}" class="btn btn-call"><i class="fa-solid fa-phone"></i> Call Now</a>
+        {% endif %}
+        <a href="{{ url_for('main.contact') }}" class="btn btn-primary">Request a Proposal <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
     </div>
   </div>
 </section>
