@@ -974,40 +974,6 @@ def seed_database():
     env_password = os.environ.get('ADMIN_PASSWORD') or ''
     env_username = (os.environ.get('ADMIN_USERNAME') or 'admin').strip() or 'admin'
     env_email = (os.environ.get('ADMIN_EMAIL') or 'admin@example.com').strip() or 'admin@example.com'
-
-    # Always sync admin credentials with env vars on startup.
-    # If a named admin user is missing, restore one so operators always have
-    # a deterministic break-glass login.
-    if env_password:
-        try:
-            target_admin = User.query.filter_by(username=env_username).first()
-            if not target_admin:
-                target_email = env_email
-                email_owner = User.query.filter_by(email=target_email).first()
-                if email_owner and email_owner.username != env_username:
-                    local, _, domain = target_email.partition('@')
-                    local = local or env_username
-                    domain = domain or 'example.com'
-                    target_email = f'{local}+{secrets.token_hex(4)}@{domain}'
-                target_admin = User(username=env_username, email=target_email, role=ROLE_OWNER)
-                db.session.add(target_admin)
-            target_admin.set_password(env_password)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-
-    existing_user = User.query.order_by(User.id.asc()).first()
-    if existing_user:
-        try:
-            seed_acp_defaults(existing_user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-        return
-
-    # Some deployments can have pre-seeded content tables but no user row
-    # (for example, after manual restores or partial migrations). In that
-    # state, skip full catalog/content seeding and only restore an admin user.
     has_existing_content = any(
         (
             db.session.query(SiteSetting.id).first() is not None,
@@ -1020,6 +986,55 @@ def seed_database():
             db.session.query(ContentBlock.id).first() is not None,
         )
     )
+
+    def _allocate_admin_email(preferred_email):
+        candidate = (preferred_email or 'admin@example.com').strip() or 'admin@example.com'
+        owner = User.query.filter_by(email=candidate).first()
+        if owner and owner.username != env_username:
+            local, _, domain = candidate.partition('@')
+            local = local or env_username
+            domain = domain or 'example.com'
+            candidate = f'{local}+{secrets.token_hex(4)}@{domain}'
+        return candidate
+
+    # Always sync admin credentials with env vars on startup.
+    # If a named admin user is missing, restore one so operators always have
+    # a deterministic break-glass login.
+    if env_password:
+        try:
+            target_admin = User.query.filter_by(username=env_username).first()
+            if target_admin:
+                target_admin.set_password(env_password)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    existing_user = User.query.order_by(User.id.asc()).first()
+    if existing_user and has_existing_content:
+        # Preserve content-first environments while still allowing deterministic
+        # break-glass admin access from env vars.
+        if env_password and not User.query.filter_by(username=env_username).first():
+            try:
+                recovery_admin = User(
+                    username=env_username,
+                    email=_allocate_admin_email(env_email),
+                    role=ROLE_OWNER,
+                )
+                recovery_admin.set_password(env_password)
+                db.session.add(recovery_admin)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        try:
+            seed_acp_defaults(existing_user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        return
+
+    # Some deployments can have pre-seeded content tables but no user row
+    # (for example, after manual restores or partial migrations). In that
+    # state, skip full catalog/content seeding and only restore an admin user.
     if has_existing_content:
         if not env_password:
             env_password = secrets.token_urlsafe(16)
@@ -1027,7 +1042,7 @@ def seed_database():
                 '[seed] ADMIN_PASSWORD not set. Created admin with a random password. '
                 'Set ADMIN_PASSWORD and restart to rotate it to a known value.'
             )
-        admin = User(username='admin', email='admin@example.com', role=ROLE_OWNER)
+        admin = User(username=env_username, email=_allocate_admin_email(env_email), role=ROLE_OWNER)
         admin.set_password(env_password)
         db.session.add(admin)
         try:
@@ -1042,16 +1057,19 @@ def seed_database():
             db.session.rollback()
         return
 
-    # Admin user
+    # Admin user for empty-content bootstrap.
     if not env_password:
         env_password = secrets.token_urlsafe(16)
         print(
             '[seed] ADMIN_PASSWORD not set. Seeded admin with a random password. '
             'Set ADMIN_PASSWORD and restart to rotate it to a known value.'
         )
-    admin = User(username='admin', email='admin@example.com', role=ROLE_OWNER)
+    admin = User.query.filter_by(username=env_username).first()
+    if not admin:
+        admin = User(username=env_username, email=_allocate_admin_email(env_email), role=ROLE_OWNER)
+        db.session.add(admin)
+    admin.role = ROLE_OWNER
     admin.set_password(env_password)
-    db.session.add(admin)
 
     # Site settings
     defaults = {
