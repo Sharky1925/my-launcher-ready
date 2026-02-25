@@ -87,7 +87,7 @@
         </div>
       </div>
       <div class="remote-dashboard-actions">
-        <a href="{{ url_for('main.contact') }}?subject=Support+Message" class="btn btn-cta-message"><i class="fa-solid fa-paper-plane"></i> Send Us a Message</a>
+        <a href="{{ url_for('main.contact') }}?subject=Support+Message" class="btn btn-danger"><i class="fa-solid fa-envelope"></i> Send Message</a>
         {% if site_settings.get('phone') %}
         <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-cta-call"><i class="fa-solid fa-phone"></i> Call Now</a>
         {% endif %}
@@ -396,7 +396,7 @@
             <li><i class="fa-solid fa-circle-check"></i>Direct support communication without long email chains.</li>
           </ul>
           <div class="remote-auth-actions">
-            <a href="{{ url_for('main.contact') }}?subject=Support+Message" class="btn btn-cta-message"><i class="fa-solid fa-paper-plane"></i> Send Us a Message</a>
+            <a href="{{ url_for('main.contact') }}?subject=Support+Message" class="btn btn-danger"><i class="fa-solid fa-envelope"></i> Send Message</a>
             {% if site_settings.get('phone') %}
             <a href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') }}" class="btn btn-cta-call"><i class="fa-solid fa-phone"></i> Call Now</a>
             {% endif %}

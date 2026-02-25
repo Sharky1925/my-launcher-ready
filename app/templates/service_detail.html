@@ -219,7 +219,7 @@
         <div class="hero-buttons industry-hero-actions">
           <a href="{{ url_for('main.request_quote') }}" class="btn btn-primary">Request A Quote <i class="fa-solid fa-magnifying-glass-chart"></i></a>
           <a href="{{ url_for('main.remote_support') }}" class="btn btn-remote-support">Remote Support <i class="fa-solid fa-life-ring"></i></a>
-          <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-cta-message">Send Message <i class="fa-solid fa-envelope"></i></a>
+          <a href="{{ url_for('main.contact', subject='Support Message') }}" class="btn btn-danger"><i class="fa-solid fa-envelope"></i> Send Message</a>
         </div>
         {% if hero_badges %}
         <div class="service-hero-badges">
@@ -661,7 +661,7 @@
       <p>Get a scoped plan for {{ service.title | lower }}, with clear priorities, timeline options, and next steps.</p>
       <div class="cta-actions cta-actions-dual">
         <a href="{{ url_for('main.request_quote') }}" class="btn btn-quote"><i class="fa-solid fa-file-invoice-dollar"></i> Request A Quote</a>
-        <a href="{{ url_for('main.contact', subject='Service Consultation: ' ~ service.title) }}" class="btn btn-remote-support"><i class="fa-solid fa-paper-plane"></i> Send Message</a>
+        <a href="{{ url_for('main.contact', subject='Service Consultation: ' ~ service.title) }}" class="btn btn-danger"><i class="fa-solid fa-envelope"></i> Send Message</a>
       </div>
     </div>
   </div>

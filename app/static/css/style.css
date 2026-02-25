@@ -1082,6 +1082,39 @@ p { margin: 0 0 16px; }
 }
 .btn-white:hover { box-shadow: 0 18px 36px rgba(14, 27, 52, 0.3); color: var(--blue-500); }
 
+/* Keep navbar CTA buttons compact and perfectly aligned. */
+.nav-cta-group .btn-nav-call,
+.nav-cta-group .btn-nav-quote,
+.nav-cta-group .btn-nav-remote,
+.nav-cta-group .btn-nav-cta,
+.mobile-nav-ctas .btn-nav-call,
+.mobile-nav-ctas .btn-nav-quote,
+.mobile-nav-ctas .btn-nav-remote,
+.mobile-nav-ctas .btn-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 7px 14px;
+  font-size: .8rem;
+  border-radius: 8px;
+  gap: 5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.nav-cta-group .btn-nav-call i,
+.nav-cta-group .btn-nav-quote i,
+.nav-cta-group .btn-nav-remote i,
+.nav-cta-group .btn-nav-cta i,
+.mobile-nav-ctas .btn-nav-call i,
+.mobile-nav-ctas .btn-nav-quote i,
+.mobile-nav-ctas .btn-nav-remote i,
+.mobile-nav-ctas .btn-nav-cta i {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 /* ============================================================
    BADGE
    ============================================================ */

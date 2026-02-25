@@ -191,11 +191,11 @@
       <!-- Desktop CTA buttons — visible only on lg+ -->
       <div class="nav-cta-group d-none d-lg-flex">
         {% if site_settings.get('phone') %}
-        <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
+        <a class="btn btn-call btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
         {% endif %}
-        <a class="btn-nav-quote" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-lines"></i> Request a Quote</a>
-        <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
-        <a class="btn-nav-cta" href="{{ url_for('main.contact', subject='Support Message') }}"><i class="fa-solid fa-envelope"></i> Send Message</a>
+        <a class="btn btn-quote btn-nav-quote" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-lines"></i> Request a Quote</a>
+        <a class="btn btn-remote-support btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+        <a class="btn btn-danger btn-nav-cta" href="{{ url_for('main.contact', subject='Support Message') }}"><i class="fa-solid fa-envelope"></i> Send Message</a>
         <button type="button" class="theme-toggle" id="theme-toggle-desktop" aria-label="Toggle theme">
           <i class="fa-solid fa-sun theme-icon-sun"></i>
           <i class="fa-solid fa-moon theme-icon-moon"></i>
@@ -271,11 +271,11 @@
                 <button type="submit"><i class="fa-solid fa-magnifying-glass me-1"></i>Track</button>
               </form>
               {% if site_settings.get('phone') %}
-              <a class="btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
+              <a class="btn btn-call btn-nav-call" href="tel:{{ site_settings.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}"><i class="fa-solid fa-phone"></i> Call Now</a>
               {% endif %}
-              <a class="btn-nav-quote" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-lines"></i> Request a Quote</a>
-              <a class="btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
-              <a class="btn-nav-cta" href="{{ url_for('main.contact', subject='Support Message') }}"><i class="fa-solid fa-envelope"></i> Send Message</a>
+              <a class="btn btn-quote btn-nav-quote" href="{{ url_for('main.request_quote') }}"><i class="fa-solid fa-file-lines"></i> Request a Quote</a>
+              <a class="btn btn-remote-support btn-nav-remote" href="{{ url_for('main.remote_support') }}"><i class="fa-solid fa-life-ring"></i> Remote Support</a>
+              <a class="btn btn-danger btn-nav-cta" href="{{ url_for('main.contact', subject='Support Message') }}"><i class="fa-solid fa-envelope"></i> Send Message</a>
             </div>
           </li>
         </ul>
