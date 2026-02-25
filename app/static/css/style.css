@@ -755,12 +755,12 @@ p { margin: 0 0 16px; }
 .btn-nav-cta,
 .btn-nav-remote {
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  font-size: .72rem; font-weight: 700; padding: 5px 11px;
-  border-radius: 7px; position: relative; overflow: hidden;
+  font-size: .8rem; font-weight: 700; padding: 7px 14px;
+  border-radius: 8px; position: relative; overflow: hidden;
   transition: transform .3s var(--ease-smooth), box-shadow .3s var(--ease-smooth), border-color .3s var(--ease-smooth), filter .3s var(--ease-smooth); cursor: pointer;
   text-decoration: none; white-space: nowrap;
   border: 1px solid transparent;
-  min-height: 30px;
+  min-height: 36px;
   transform: translateZ(0);
   letter-spacing: 0.01em;
 }
@@ -1197,10 +1197,10 @@ p { margin: 0 0 16px; }
   width: 100%;
   height: 100%;
   justify-content: center;
-  min-height: 40px;
-  padding: 8px 14px;
+  min-height: 48px;
+  padding: 11px 18px;
   border-radius: 9px;
-  font-size: 0.84rem;
+  font-size: 0.92rem;
   line-height: 1.25;
   letter-spacing: 0.012em;
   white-space: normal;
@@ -1210,7 +1210,7 @@ p { margin: 0 0 16px; }
   filter: saturate(1.2) brightness(1.04);
 }
 .hero-buttons .btn i {
-  font-size: 0.9rem;
+  font-size: 1rem;
   flex: 0 0 auto;
 }
 .hero-buttons .btn:hover {
@@ -2179,9 +2179,15 @@ main .container {
 .cta-strip h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; color: var(--white); margin-bottom: 12px; }
 .cta-strip p { font-size: .95rem; color: rgba(255, 255, 255, 0.75); max-width: 480px; margin: 0 auto 28px; }
 .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; align-items: stretch; }
-.cta-actions .btn { min-width: 200px; justify-content: center; }
+.cta-actions .btn {
+  min-width: 228px;
+  min-height: 52px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  justify-content: center;
+}
 .cta-actions-dual { gap: 16px; }
-.cta-actions-dual .btn { min-width: 200px; }
+.cta-actions-dual .btn { min-width: 228px; }
 
 /* Old CTA section */
 .cta-section {
@@ -2274,7 +2280,9 @@ main .container {
 
 .btn-cta-message,
 .btn-cta-call {
-  min-width: 220px;
+  min-width: 240px;
+  min-height: 52px;
+  padding: 12px 24px;
   justify-content: center;
 }
 .btn-cta-message {
@@ -5362,10 +5370,10 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   .hero-actions .btn { width: 100%; justify-content: center; }
   .hero-buttons { grid-template-columns: 1fr; }
   .hero-buttons .btn {
-    min-height: 38px;
+    min-height: 44px;
     white-space: normal;
-    padding: 8px 12px;
-    font-size: 0.82rem;
+    padding: 10px 14px;
+    font-size: 0.9rem;
   }
   .cta-actions .btn { width: 100%; min-width: 0; }
   .hero-visual { margin-top: 16px; }
@@ -7023,9 +7031,9 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   gap: 8px;
 }
 .hero-buttons .btn {
-  min-height: 38px;
-  padding: 7px 12px;
-  font-size: 0.8rem;
+  min-height: 46px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
   box-shadow: 0 8px 20px rgba(14, 32, 64, 0.24);
   filter: none;
 }
