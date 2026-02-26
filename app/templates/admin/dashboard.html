@@ -1,170 +1,93 @@
 {% extends "admin/base.html" %}
-{% block page_title %}CMS Control Center{% endblock %}
+{% block page_title %}CMS Dashboard{% endblock %}
 
 {% block extra_css %}
 <style nonce="{{ csp_nonce }}">
-  .dashboard-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: #b9ccdf;
-    margin-bottom: 8px;
-    font-weight: 700;
+  .dashboard-intro .card-body {
+    padding: 1.2rem;
   }
-  .dashboard-kicker::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: linear-gradient(132deg, #4f7bff, #34d399);
-    box-shadow: 0 0 0 5px rgba(79, 123, 255, 0.16);
-  }
-  .dashboard-hero .card-body {
-    padding: clamp(1rem, 2.2vw, 1.45rem);
-  }
-  .dashboard-hero h2 {
-    margin-bottom: 8px;
-    font-size: clamp(1.25rem, 2.6vw, 1.82rem);
+  .dashboard-intro h2 {
+    margin: 0 0 .4rem;
+    font-size: clamp(1.2rem, 2vw, 1.55rem);
     font-weight: 800;
   }
-  .dashboard-hero p {
+  .dashboard-intro p {
     margin: 0;
     color: var(--text-muted);
-    max-width: 64ch;
+    max-width: 62ch;
     font-size: .88rem;
   }
+  .quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 1rem;
+  }
+  .quick-actions .btn {
+    padding: 7px 12px;
+    font-size: .76rem;
+  }
+
   .dashboard-search .input-group-text,
   .dashboard-search .form-control {
-    background: rgba(7, 13, 23, .74);
+    background: rgba(7, 13, 23, .72);
     border-color: var(--border);
     color: var(--text);
-  }
-  .dashboard-search .form-control {
-    font-size: .84rem;
   }
   .dashboard-search .input-group-text {
     color: #8fb9ff;
   }
+  .dashboard-search .form-control {
+    font-size: .84rem;
+  }
   .dashboard-search .btn {
-    min-width: 92px;
+    min-width: 90px;
   }
 
-  .kpi-grid {
-    margin-top: 12px;
-  }
   .kpi-card {
     border: 1px solid var(--border);
-    border-radius: 14px;
-    background: rgba(7, 13, 23, 0.62);
-    padding: .86rem .88rem;
+    border-radius: 12px;
+    background: rgba(7, 13, 23, .6);
+    padding: .82rem .86rem;
     min-height: 92px;
   }
-  .kpi-label {
-    color: #9eb4cc;
+  .kpi-card .label {
     font-size: .7rem;
-    letter-spacing: .06em;
-    text-transform: uppercase;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: #a9bed6;
     margin-bottom: 6px;
   }
-  .kpi-value {
-    font-size: 1.3rem;
-    line-height: 1.1;
-    font-weight: 800;
-    color: #f2f8ff;
+  .kpi-card .value {
     margin: 0;
+    font-size: 1.34rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #f5f9ff;
   }
-  .kpi-meta {
-    margin-top: 6px;
-    font-size: .73rem;
+  .kpi-card .meta {
+    margin-top: 5px;
+    font-size: .72rem;
     color: var(--text-muted);
   }
 
-  .health-score-ring {
-    width: 100%;
-    border-radius: 14px;
-    padding: .75rem;
-    background: rgba(10, 18, 32, 0.7);
-    border: 1px solid var(--border);
-    margin-bottom: 12px;
-  }
-  .health-score-label {
-    font-size: .7rem;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: #b9ccdf;
-    font-weight: 700;
-  }
-  .health-score-value {
-    margin-top: 4px;
-    font-size: 1.6rem;
-    font-weight: 800;
-    line-height: 1;
-    color: #ffffff;
-  }
-  .health-score-track {
-    height: 8px;
-    margin-top: 10px;
-    border-radius: 999px;
-    background: rgba(17, 27, 42, .9);
-    border: 1px solid rgba(116, 160, 255, .24);
-    overflow: hidden;
-  }
-  .health-score-fill {
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #ef5f78 0%, #f59e0b 40%, #34d399 100%);
-  }
-
-  .dashboard-section-title {
-    font-size: .84rem;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: #b9ccdf;
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
-
-  .queue-columns {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-  }
-  .queue-block {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: .76rem;
-    background: rgba(7, 13, 23, 0.58);
-  }
-  .queue-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: .78rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-    color: #dbe8f7;
-  }
   .queue-list {
     display: grid;
     gap: 8px;
   }
   .queue-item {
-    border: 1px solid rgba(116, 160, 255, .2);
+    border: 1px solid rgba(116, 160, 255, .22);
     border-radius: 10px;
-    background: rgba(10, 17, 30, 0.76);
-    padding: .56rem .6rem;
+    background: rgba(9, 16, 28, .72);
+    padding: .58rem .64rem;
   }
   .queue-item a {
     display: block;
   }
   .queue-item strong {
     display: block;
-    font-size: .77rem;
+    font-size: .78rem;
     line-height: 1.25;
     margin-bottom: 2px;
   }
@@ -174,159 +97,13 @@
     color: var(--text-muted);
   }
 
-  .health-checks {
-    display: grid;
-    gap: 10px;
-  }
-  .health-check {
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: .68rem .7rem;
-    background: rgba(7, 13, 23, .6);
-  }
-  .health-check-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 3px;
-  }
-  .health-check-title {
-    font-size: .78rem;
-    font-weight: 700;
-    color: #e6f1ff;
-  }
-  .health-check p {
-    margin: 0;
-    font-size: .72rem;
-    color: var(--text-muted);
-  }
-  .check-badge {
-    border-radius: 999px;
-    padding: 4px 8px;
-    font-size: .68rem;
-    font-weight: 700;
-    letter-spacing: .02em;
-  }
-  .check-badge.good {
-    background: rgba(52, 211, 153, 0.2);
-    color: #bcfce4;
-  }
-  .check-badge.warn {
-    background: rgba(245, 158, 11, 0.2);
-    color: #ffefc4;
-  }
-  .check-badge.critical {
-    background: rgba(239, 95, 120, 0.22);
-    color: #ffd5de;
-  }
-  .missing-settings {
-    margin-top: 8px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .missing-settings span {
-    font-size: .66rem;
+  .section-title {
+    font-size: .84rem;
     text-transform: uppercase;
-    letter-spacing: .05em;
-    border-radius: 999px;
-    border: 1px solid rgba(239, 95, 120, 0.44);
-    background: rgba(239, 95, 120, 0.14);
-    color: #ffd6de;
-    padding: 4px 8px;
+    letter-spacing: .08em;
+    color: #b9ccdf;
     font-weight: 700;
-  }
-
-  .stack-list {
-    display: grid;
-    gap: 8px;
-  }
-  .stack-row {
-    display: grid;
-    grid-template-columns: minmax(88px, 120px) minmax(0, 1fr) auto;
-    gap: 8px;
-    align-items: center;
-    font-size: .77rem;
-  }
-  .stack-row .label {
-    color: #cedef0;
-    font-weight: 700;
-  }
-  .stack-bar {
-    height: 8px;
-    border-radius: 999px;
-    background: rgba(17, 27, 42, .94);
-    border: 1px solid rgba(116, 160, 255, .2);
-    overflow: hidden;
-  }
-  .stack-fill {
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, rgba(79, 123, 255, .9), rgba(52, 211, 153, .9));
-  }
-  .stack-value {
-    color: var(--text-muted);
-    font-size: .72rem;
-    min-width: 16px;
-    text-align: right;
-  }
-
-  .activity-feed {
-    display: grid;
-    gap: 8px;
-  }
-  .activity-item {
-    border: 1px solid var(--border);
-    background: rgba(8, 15, 27, .66);
-    border-radius: 10px;
-    padding: .6rem .66rem;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 10px;
-    align-items: center;
-  }
-  .activity-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .78rem;
-    background: rgba(79, 123, 255, .22);
-    color: #d9e8ff;
-  }
-  .activity-icon.warning {
-    background: rgba(245, 158, 11, .2);
-    color: #ffefc4;
-  }
-  .activity-icon.success {
-    background: rgba(52, 211, 153, .2);
-    color: #bcfce4;
-  }
-  .activity-icon.info {
-    background: rgba(56, 189, 248, .22);
-    color: #c9f3ff;
-  }
-  .activity-icon.primary {
-    background: rgba(79, 123, 255, .22);
-    color: #d9e8ff;
-  }
-  .activity-text strong {
-    display: block;
-    font-size: .78rem;
-    line-height: 1.22;
-  }
-  .activity-text span {
-    display: block;
-    font-size: .72rem;
-    color: var(--text-muted);
-  }
-  .activity-time {
-    font-size: .68rem;
-    color: #9eb4cc;
-    white-space: nowrap;
+    margin-bottom: 10px;
   }
 
   .search-groups {
@@ -337,7 +114,7 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     background: rgba(7, 13, 23, 0.58);
-    padding: .68rem;
+    padding: .7rem;
   }
   .search-group h6 {
     margin-bottom: 8px;
@@ -366,117 +143,68 @@
     font-size: .7rem;
     color: var(--text-muted);
   }
-
-  @media (max-width: 1199px) {
-    .queue-columns {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-  @media (max-width: 767px) {
-    .queue-columns {
-      grid-template-columns: 1fr;
-    }
-    .stack-row {
-      grid-template-columns: minmax(80px, 108px) minmax(0, 1fr) auto;
-    }
-    .activity-item {
-      grid-template-columns: auto minmax(0, 1fr);
-    }
-    .activity-time {
-      grid-column: 2;
-    }
-  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="card dashboard-hero mb-4">
+<div class="card dashboard-intro mb-4">
   <div class="card-body">
-    <div class="row g-3 align-items-start">
-      <div class="col-xl-8">
-        <div class="dashboard-kicker">Integrated CMS and Operations</div>
-        <h2>Unified Control Center</h2>
-        <p>Manage services, industries, content, leads, support tickets, and security signals in one operational dashboard.</p>
-      </div>
-      <div class="col-xl-4">
+    <h2>Simple CMS Dashboard</h2>
+    <p>Daily work is front and center here. Advanced configuration tools are still available under the <strong>Advanced Tools</strong> menu in the sidebar.</p>
+    <div class="quick-actions">
+      {% if current_user.has_permission('content:manage') %}
+      <a href="{{ url_for('admin.cms_pages') }}" class="btn btn-outline-primary btn-sm">Manage Pages</a>
+      <a href="{{ url_for('admin.cms_articles') }}" class="btn btn-outline-primary btn-sm">Manage Articles</a>
+      <a href="{{ url_for('admin.services') }}" class="btn btn-outline-primary btn-sm">Manage Services</a>
+      <a href="{{ url_for('admin.media') }}" class="btn btn-outline-primary btn-sm">Media Library</a>
+      {% endif %}
+      {% if current_user.has_permission('support:manage') %}
+      <a href="{{ url_for('admin.contacts') }}" class="btn btn-outline-secondary btn-sm">Leads Inbox</a>
+      <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-outline-secondary btn-sm">Support Queue</a>
+      {% endif %}
+      {% if current_user.has_permission('settings:manage') %}
+      <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-secondary btn-sm">Settings</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="section-title">Search Content</div>
         <form method="GET" action="{{ url_for('admin.dashboard') }}" class="dashboard-search">
-          <div class="input-group mb-2">
+          <div class="input-group">
             <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
             <input
               type="search"
               name="q"
               value="{{ search_query }}"
               class="form-control"
-              placeholder="Search services, posts, leads, tickets..."
+              placeholder="Search services, industries, posts, leads, tickets..."
               aria-label="Search CMS entities"
             >
-          </div>
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Search</button>
-            {% if search_query %}
-            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
-            {% endif %}
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
           </div>
         </form>
-        <form method="GET" action="{{ url_for('admin.dashboard') }}" class="dashboard-search mt-2">
-          <div class="input-group mb-2">
+      </div>
+      <div class="col-lg-4">
+        <div class="section-title">Find Ticket</div>
+        <form method="GET" action="{{ url_for('admin.dashboard') }}" class="dashboard-search">
+          <div class="input-group">
             <span class="input-group-text"><i class="fa-solid fa-ticket"></i></span>
             <input
               type="search"
               name="ticket_number"
               value="{{ ticket_lookup_query }}"
               class="form-control"
-              placeholder="Find ticket by number (RS-...)"
+              placeholder="RS-..."
               aria-label="Search ticket by number"
             >
+            <button type="submit" class="btn btn-outline-primary btn-sm">Find</button>
           </div>
-          <button type="submit" class="btn btn-outline-primary btn-sm w-100">Find Ticket</button>
         </form>
-      </div>
-    </div>
-
-    <div class="row g-3 kpi-grid">
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="kpi-card">
-          <div class="kpi-label">Health Score</div>
-          <p class="kpi-value">{{ health_score }}</p>
-          <div class="kpi-meta">Composite CMS + ops status</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="kpi-card">
-          <div class="kpi-label">Unread Leads</div>
-          <p class="kpi-value">{{ stats.contacts }}</p>
-          <div class="kpi-meta">{{ stats.contacts_24h }} in last 24h</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="kpi-card">
-          <div class="kpi-label">Open Tickets</div>
-          <p class="kpi-value">{{ stats.support_tickets }}</p>
-          <div class="kpi-meta">{{ stats.support_waiting }} waiting client</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="kpi-card">
-          <div class="kpi-label">Quote Queue</div>
-          <p class="kpi-value">{{ stats.quote_open }}</p>
-          <div class="kpi-meta">{{ stats.support_open }} support queue</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="kpi-card">
-          <div class="kpi-label">Content Items</div>
-          <p class="kpi-value">{{ stats.services + stats.industries + stats.posts }}</p>
-          <div class="kpi-meta">Services + industries + posts</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="kpi-card">
-          <div class="kpi-label">Security 24h</div>
-          <p class="kpi-value">{{ stats.security_events_24h }}</p>
-          <div class="kpi-meta">{{ stats.active_admin_buckets }} active login buckets</div>
-        </div>
       </div>
     </div>
   </div>
@@ -485,11 +213,11 @@
 {% if ticket_lookup_query %}
 <div class="card mb-4">
   <div class="card-body">
-    <div class="dashboard-section-title mb-2">Ticket Lookup</div>
+    <div class="section-title mb-2">Ticket Lookup</div>
     {% if ticket_lookup_result %}
     <a href="{{ url_for('admin.support_ticket_view', id=ticket_lookup_result.id) }}" class="text-decoration-none queue-item d-block">
       <strong>{{ ticket_lookup_result.ticket_number }} · {{ ticket_lookup_result.subject }}</strong>
-      <span>{{ ticket_lookup_result.client.full_name }} · {{ support_ticket_status_label(ticket_lookup_result.status) }}</span>
+      <span>{{ ticket_lookup_result.client.full_name }} · {{ ticket_lookup_result.status.replace('_', ' ').title() }}</span>
     </a>
     {% else %}
     <div class="text-muted small">No ticket found for <code>{{ ticket_lookup_query }}</code>.</div>
@@ -498,178 +226,102 @@
 </div>
 {% endif %}
 
-<div class="row g-4 mb-4">
-  <div class="col-xxl-8">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="dashboard-section-title mb-0">Operational Queues</div>
-          <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-outline-primary btn-sm">Manage Queue</a>
-        </div>
-        <div class="queue-columns">
-          <div class="queue-block">
-            <div class="queue-title">
-              <span><i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>Urgent Tickets</span>
-              <span class="badge bg-danger-subtle">{{ urgent_tickets|length }}</span>
-            </div>
-            <div class="queue-list">
-              {% for item in urgent_tickets %}
-              <div class="queue-item">
-                <a href="{{ url_for('admin.support_ticket_view', id=item.id) }}">
-                  <strong>{{ item.ticket_number }} · {{ item.subject }}</strong>
-                  <span>{{ item.priority|upper }} · {{ item.status.replace('_', ' ').title() }}</span>
-                </a>
-              </div>
-              {% else %}
-              <div class="queue-item"><span>No urgent tickets in queue.</span></div>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="queue-block">
-            <div class="queue-title">
-              <span><i class="fa-solid fa-envelope-open-text me-1 text-info"></i>Unread Leads</span>
-              <span class="badge bg-primary">{{ unread_contacts|length }}</span>
-            </div>
-            <div class="queue-list">
-              {% for item in unread_contacts %}
-              <div class="queue-item">
-                <a href="{{ url_for('admin.contact_view', id=item.id) }}">
-                  <strong>{{ item.subject or 'New contact submission' }}</strong>
-                  <span>{{ item.name }} · {{ item.email }}</span>
-                </a>
-              </div>
-              {% else %}
-              <div class="queue-item"><span>Inbox is clear.</span></div>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="queue-block">
-            <div class="queue-title">
-              <span><i class="fa-solid fa-pen-ruler me-1 text-warning"></i>Stale Drafts (14d+)</span>
-              <span class="badge bg-warning text-dark">{{ stale_drafts|length }}</span>
-            </div>
-            <div class="queue-list">
-              {% for item in stale_drafts %}
-              <div class="queue-item">
-                <a href="{{ url_for('admin.post_edit', id=item.id) }}">
-                  <strong>{{ item.title }}</strong>
-                  <span>Updated {{ item.updated_at.strftime('%b %d, %Y') }}</span>
-                </a>
-              </div>
-              {% else %}
-              <div class="queue-item"><span>No stale drafts detected.</span></div>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-      </div>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div class="label">Health Score</div>
+      <p class="value">{{ health_score }}</p>
+      <div class="meta">Overall CMS and ops</div>
     </div>
   </div>
-
-  <div class="col-xxl-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <div class="dashboard-section-title">CMS Health</div>
-        <div class="health-score-ring">
-          <div class="health-score-label">Platform Health Score</div>
-          <div class="health-score-value">{{ health_score }} / 100</div>
-          <div class="health-score-track">
-            <div class="health-score-fill js-width-fill" data-width="{{ health_score }}"></div>
-          </div>
-        </div>
-
-        <div class="health-checks">
-          {% for check in health_checks %}
-          <a href="{{ check.href }}" class="health-check text-decoration-none">
-            <div class="health-check-top">
-              <span class="health-check-title">{{ check.label }}</span>
-              <span class="check-badge {{ check.state }}">{{ check.issues }} issue{% if check.issues != 1 %}s{% endif %}</span>
-            </div>
-            <p>{{ check.description }}</p>
-          </a>
-          {% endfor %}
-        </div>
-
-        {% if missing_setting_keys %}
-        <div class="mt-3">
-          <div class="small text-muted mb-1">Missing critical settings</div>
-          <div class="missing-settings">
-            {% for key in missing_setting_keys %}
-            <span>{{ key.replace('_', ' ') }}</span>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-      </div>
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div class="label">Unread Leads</div>
+      <p class="value">{{ stats.contacts }}</p>
+      <div class="meta">{{ stats.contacts_24h }} in 24h</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div class="label">Open Tickets</div>
+      <p class="value">{{ stats.support_tickets }}</p>
+      <div class="meta">{{ stats.support_waiting }} waiting on client</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="kpi-card">
+      <div class="label">Content Items</div>
+      <p class="value">{{ stats.services + stats.industries + stats.posts }}</p>
+      <div class="meta">Services + industries + posts</div>
     </div>
   </div>
 </div>
 
 <div class="row g-4 mb-4">
-  <div class="col-xl-6">
+  <div class="col-xl-4">
     <div class="card h-100">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="dashboard-section-title mb-0">Support Status Stack</div>
-          <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-outline-secondary btn-sm">Open Tickets</a>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="section-title mb-0">Urgent Tickets</div>
+          <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-sm btn-outline-primary">Queue</a>
         </div>
-        <div class="stack-list">
-          {% for item in ticket_status %}
-          <div class="stack-row">
-            <span class="label">{{ item.label }}</span>
-            <div class="stack-bar"><div class="stack-fill js-width-fill" data-width="{{ item.pct }}"></div></div>
-            <span class="stack-value">{{ item.count }}</span>
+        <div class="queue-list">
+          {% for item in urgent_tickets %}
+          <div class="queue-item">
+            <a href="{{ url_for('admin.support_ticket_view', id=item.id) }}">
+              <strong>{{ item.ticket_number }} · {{ item.subject }}</strong>
+              <span>{{ item.priority|upper }} · {{ item.status.replace('_', ' ').title() }}</span>
+            </a>
           </div>
+          {% else %}
+          <div class="queue-item"><span>No urgent tickets.</span></div>
           {% endfor %}
         </div>
       </div>
     </div>
   </div>
 
-  <div class="col-xl-6">
+  <div class="col-xl-4">
     <div class="card h-100">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div class="dashboard-section-title mb-0">Service Demand and Security</div>
-          <a href="{{ url_for('admin.security_events') }}" class="btn btn-outline-secondary btn-sm">Security Events</a>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="section-title mb-0">Unread Leads</div>
+          <a href="{{ url_for('admin.contacts') }}" class="btn btn-sm btn-outline-primary">Inbox</a>
         </div>
-        <div class="row g-3">
-          <div class="col-lg-7">
-            <div class="small text-muted mb-2">Most requested services from ticket intake</div>
-            <div class="queue-list">
-              {% for service in popular_services %}
-              <div class="queue-item">
-                <strong>{{ service.title }}</strong>
-                <span>{{ service.count }} ticket{% if service.count != 1 %}s{% endif %}</span>
-              </div>
-              {% else %}
-              <div class="queue-item"><span>No service-linked ticket data yet.</span></div>
-              {% endfor %}
-            </div>
+        <div class="queue-list">
+          {% for item in unread_contacts %}
+          <div class="queue-item">
+            <a href="{{ url_for('admin.contact_view', id=item.id) }}">
+              <strong>{{ item.subject or 'New contact submission' }}</strong>
+              <span>{{ item.name }} · {{ item.email }}</span>
+            </a>
           </div>
-          <div class="col-lg-5">
-            <div class="small text-muted mb-2">Security snapshot (24h)</div>
-            <div class="queue-list">
-              <div class="queue-item">
-                <strong>Turnstile failures</strong>
-                <span>{{ stats.security_turnstile_24h }} events</span>
-              </div>
-              <div class="queue-item">
-                <strong>Rate-limited attempts</strong>
-                <span>{{ stats.security_rate_limited_24h }} events</span>
-              </div>
-              <div class="queue-item">
-                <strong>Admin auth buckets</strong>
-                <span>{{ stats.active_admin_buckets }} active</span>
-              </div>
-              <div class="queue-item">
-                <strong>Resolved tickets (7d)</strong>
-                <span>{{ stats.resolved_7d }} completed</span>
-              </div>
-            </div>
+          {% else %}
+          <div class="queue-item"><span>Inbox is clear.</span></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="section-title mb-0">Stale Drafts</div>
+          <a href="{{ url_for('admin.posts') }}" class="btn btn-sm btn-outline-primary">Posts</a>
+        </div>
+        <div class="queue-list">
+          {% for item in stale_drafts %}
+          <div class="queue-item">
+            <a href="{{ url_for('admin.post_edit', id=item.id) }}">
+              <strong>{{ item.title }}</strong>
+              <span>Updated {{ item.updated_at.strftime('%b %d, %Y') }}</span>
+            </a>
           </div>
+          {% else %}
+          <div class="queue-item"><span>No stale drafts.</span></div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -681,12 +333,12 @@
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
-        <div class="dashboard-section-title mb-1">Unified Search Results</div>
+        <div class="section-title mb-1">Search Results</div>
         <div class="small text-muted">
           Query: <code>{{ search_query }}</code> · {{ search_total }} result{% if search_total != 1 %}s{% endif %}
         </div>
       </div>
-      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">Clear Search</a>
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
     </div>
     {% if search_total > 0 %}
     <div class="search-groups">
@@ -695,76 +347,47 @@
         <h6><i class="fa-solid fa-gear me-1"></i>Services</h6>
         <ul>
           {% for item in search_results.services %}
-          <li>
-            <a href="{{ url_for('admin.service_edit', id=item.id) }}">
-              <strong>{{ item.title }}</strong>
-              <span>{{ item.slug }}</span>
-            </a>
-          </li>
+          <li><a href="{{ url_for('admin.service_edit', id=item.id) }}"><strong>{{ item.title }}</strong><span>{{ item.slug }}</span></a></li>
           {% endfor %}
         </ul>
       </div>
       {% endif %}
-
       {% if search_results.industries %}
       <div class="search-group">
         <h6><i class="fa-solid fa-building me-1"></i>Industries</h6>
         <ul>
           {% for item in search_results.industries %}
-          <li>
-            <a href="{{ url_for('admin.industry_edit', id=item.id) }}">
-              <strong>{{ item.title }}</strong>
-              <span>{{ item.slug }}</span>
-            </a>
-          </li>
+          <li><a href="{{ url_for('admin.industry_edit', id=item.id) }}"><strong>{{ item.title }}</strong><span>{{ item.slug }}</span></a></li>
           {% endfor %}
         </ul>
       </div>
       {% endif %}
-
       {% if search_results.posts %}
       <div class="search-group">
         <h6><i class="fa-solid fa-newspaper me-1"></i>Posts</h6>
         <ul>
           {% for item in search_results.posts %}
-          <li>
-            <a href="{{ url_for('admin.post_edit', id=item.id) }}">
-              <strong>{{ item.title }}</strong>
-              <span>{{ workflow_status_label(item.workflow_status) }}</span>
-            </a>
-          </li>
+          <li><a href="{{ url_for('admin.post_edit', id=item.id) }}"><strong>{{ item.title }}</strong><span>{{ workflow_status_label(item.workflow_status) }}</span></a></li>
           {% endfor %}
         </ul>
       </div>
       {% endif %}
-
       {% if search_results.contacts %}
       <div class="search-group">
         <h6><i class="fa-solid fa-envelope me-1"></i>Contacts</h6>
         <ul>
           {% for item in search_results.contacts %}
-          <li>
-            <a href="{{ url_for('admin.contact_view', id=item.id) }}">
-              <strong>{{ item.subject or 'Contact submission' }}</strong>
-              <span>{{ item.name }} · {{ item.email }}</span>
-            </a>
-          </li>
+          <li><a href="{{ url_for('admin.contact_view', id=item.id) }}"><strong>{{ item.subject or 'Contact submission' }}</strong><span>{{ item.name }} · {{ item.email }}</span></a></li>
           {% endfor %}
         </ul>
       </div>
       {% endif %}
-
       {% if search_results.tickets %}
       <div class="search-group">
         <h6><i class="fa-solid fa-ticket me-1"></i>Support Tickets</h6>
         <ul>
           {% for item in search_results.tickets %}
-          <li>
-            <a href="{{ url_for('admin.support_ticket_view', id=item.id) }}">
-              <strong>{{ item.ticket_number }} · {{ item.subject }}</strong>
-              <span>{{ item.client.full_name }} · {{ item.status.replace('_', ' ').title() }}</span>
-            </a>
-          </li>
+          <li><a href="{{ url_for('admin.support_ticket_view', id=item.id) }}"><strong>{{ item.ticket_number }} · {{ item.subject }}</strong><span>{{ item.client.full_name }} · {{ item.status.replace('_', ' ').title() }}</span></a></li>
           {% endfor %}
         </ul>
       </div>
@@ -837,35 +460,4 @@
     </div>
   </div>
 </div>
-
-<div class="card mt-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h6 class="mb-0">Unified Activity Feed</h6>
-    <a href="{{ url_for('admin.security_events') }}" class="btn btn-sm btn-outline-secondary">Audit Logs</a>
-  </div>
-  <div class="card-body">
-    <div class="activity-feed">
-      {% for event in activity_feed %}
-      <a href="{{ event.href }}" class="activity-item text-decoration-none">
-        <span class="activity-icon {{ event.tone }}"><i class="{{ event.icon }}"></i></span>
-        <span class="activity-text">
-          <strong>{{ event.title }}</strong>
-          <span>{{ event.meta }}</span>
-        </span>
-        <span class="activity-time">{{ event.at.strftime('%b %d · %H:%M') if event.at else '' }}</span>
-      </a>
-      {% else %}
-      <div class="text-muted small">No recent activity.</div>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-
-<script nonce="{{ csp_nonce }}">
-  document.querySelectorAll('.js-width-fill[data-width]').forEach(function (element) {
-    const raw = Number(element.dataset.width || 0);
-    const clamped = Math.max(0, Math.min(100, raw));
-    element.style.width = clamped + '%';
-  });
-</script>
 {% endblock %}
