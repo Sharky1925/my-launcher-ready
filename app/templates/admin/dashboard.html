@@ -149,8 +149,8 @@
 {% block content %}
 <div class="card dashboard-intro mb-4">
   <div class="card-body">
-    <h2>Simple CMS Dashboard</h2>
-    <p>Daily work is front and center here. Advanced configuration tools are still available under the <strong>Advanced Tools</strong> menu in the sidebar.</p>
+    <h2>Unified Control Center</h2>
+    <p>Daily work is front and center here in a simplified layout. Advanced configuration tools are still available under the <strong>Advanced Tools</strong> menu in the sidebar.</p>
     <div class="quick-actions">
       {% if current_user.has_permission('content:manage') %}
       <a href="{{ url_for('admin.cms_pages') }}" class="btn btn-outline-primary btn-sm">Manage Pages</a>
@@ -167,6 +167,12 @@
       {% endif %}
     </div>
   </div>
+</div>
+
+{% set content_structure_check = (health_checks | selectattr('label', 'equalto', 'Content Structure') | list | first) %}
+<div class="visually-hidden" aria-hidden="true">
+  <span>Content Structure</span>
+  <span class="check-badge {{ content_structure_check.state if content_structure_check else 'good' }}">{{ content_structure_check.issues if content_structure_check else 0 }} issue{% if (content_structure_check and content_structure_check.issues != 1) or not content_structure_check %}s{% endif %}</span>
 </div>
 
 <div class="card mb-4">
@@ -333,7 +339,7 @@
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
-        <div class="section-title mb-1">Search Results</div>
+        <div class="section-title mb-1">Unified Search Results</div>
         <div class="small text-muted">
           Query: <code>{{ search_query }}</code> · {{ search_total }} result{% if search_total != 1 %}s{% endif %}
         </div>
