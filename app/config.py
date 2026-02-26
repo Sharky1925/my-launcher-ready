@@ -128,6 +128,10 @@ class Config:
     HEADLESS_SYNC_ENABLED = _as_bool(os.environ.get('HEADLESS_SYNC_ENABLED'), True)
     HEADLESS_SYNC_TOKEN = (os.environ.get('HEADLESS_SYNC_TOKEN') or '').strip()
     HEADLESS_SYNC_MAX_ITEMS = max(1, _as_int(os.environ.get('HEADLESS_SYNC_MAX_ITEMS'), 250))
+    HEADLESS_DELIVERY_REQUIRE_TOKEN = _as_bool(os.environ.get('HEADLESS_DELIVERY_REQUIRE_TOKEN'), False)
+    HEADLESS_DELIVERY_TOKEN = (os.environ.get('HEADLESS_DELIVERY_TOKEN') or '').strip()
+    HEADLESS_DELIVERY_DEFAULT_LIMIT = max(1, _as_int(os.environ.get('HEADLESS_DELIVERY_DEFAULT_LIMIT'), 24))
+    HEADLESS_DELIVERY_MAX_LIMIT = max(1, _as_int(os.environ.get('HEADLESS_DELIVERY_MAX_LIMIT'), 100))
     CSRF_EXEMPT_ENDPOINTS = ('main.headless_sync_upsert',)
     _trusted_hosts = [h.strip() for h in os.environ.get('TRUSTED_HOSTS', '').split(',') if h.strip()]
     TRUSTED_HOSTS = _trusted_hosts or None

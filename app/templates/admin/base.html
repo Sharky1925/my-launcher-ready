@@ -588,6 +588,7 @@
       <a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}"><i class="fa-solid fa-photo-film"></i>Media</a>
       {% endif %}
       {% if current_user.has_permission('settings:manage') %}
+      <a class="nav-link {% if request.endpoint == 'admin.headless_hub' %}active{% endif %}" href="{{ url_for('admin.headless_hub') }}"><i class="fa-solid fa-cloud-arrow-down"></i>Headless CMS</a>
       <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}"><i class="fa-solid fa-sliders"></i>Settings</a>
       {% endif %}
 
@@ -698,6 +699,7 @@
           <li class="nav-item"><a class="nav-link {% if request.endpoint in ['admin.media', 'admin.media_upload'] %}active{% endif %}" href="{{ url_for('admin.media') }}">Media</a></li>
           {% endif %}
           {% if current_user.has_permission('settings:manage') %}
+          <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.headless_hub' %}active{% endif %}" href="{{ url_for('admin.headless_hub') }}">Headless CMS</a></li>
           <li class="nav-item"><a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Settings</a></li>
           {% endif %}
           <li class="nav-item">
@@ -816,6 +818,7 @@
             <a href="{{ url_for('admin.post_add') }}" class="btn btn-sm btn-outline-secondary">New Post</a>
             <a href="{{ url_for('admin.service_add') }}" class="btn btn-sm btn-outline-secondary">New Service</a>
             <a href="{{ url_for('admin.industry_add') }}" class="btn btn-sm btn-outline-secondary">New Industry</a>
+            <a href="{{ url_for('admin.headless_hub') }}" class="btn btn-sm btn-outline-secondary">Headless Hub</a>
             <a href="{{ url_for('admin.settings') }}" class="btn btn-sm btn-outline-secondary">Settings</a>
             <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener">View Site</a>
           </div>

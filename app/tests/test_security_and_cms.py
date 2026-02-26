@@ -442,6 +442,7 @@ def test_acp_delivery_api_returns_only_published_documents(client, app):
 
 def test_acp_phase1_admin_sections_render(client):
     admin_login(client)
+    assert client.get("/admin/headless").status_code == 200
     assert client.get("/admin/acp/content-types").status_code == 200
     assert client.get("/admin/acp/content-entries").status_code == 200
     assert client.get("/admin/acp/theme").status_code == 200
@@ -659,6 +660,197 @@ def test_acp_phase1_delivery_content_and_theme_endpoints(client, app):
 
     draft_theme_resp = client.get(f"/api/delivery/theme/{draft_theme_key}")
     assert draft_theme_resp.status_code == 404
+
+
+def test_headless_hub_renders_and_saves_delivery_settings(client, app):
+    admin_login(client)
+
+    page = client.get("/admin/headless")
+    assert page.status_code == 200
+    html = page.get_data(as_text=True)
+    assert "Headless CMS Control Hub" in html
+    csrf_token = extract_csrf_token(html)
+    assert csrf_token
+
+    response = client.post(
+        "/admin/headless",
+        data={
+            "_csrf_token": csrf_token,
+            "headless_delivery_require_token": "1",
+            "headless_delivery_default_limit": "17",
+            "headless_delivery_max_limit": "55",
+            "headless_delivery_token": "delivery-token-123",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code in (302, 303)
+
+    with app.app_context():
+        saved = {item.key: item.value for item in SiteSetting.query.all()}
+        assert saved.get("headless_delivery_require_token") == "1"
+        assert saved.get("headless_delivery_default_limit") == "17"
+        assert saved.get("headless_delivery_max_limit") == "55"
+        assert saved.get("headless_delivery_token") == "delivery-token-123"
+
+
+def test_delivery_api_exposes_published_cms_collections(client, app):
+    suffix = uuid.uuid4().hex[:8]
+    with app.app_context():
+        author = User.query.filter_by(username="admin").first()
+        assert author is not None
+
+        published_page_slug = f"delivery-page-{suffix}"
+        draft_page_slug = f"delivery-page-draft-{suffix}"
+        published_article_slug = f"delivery-article-{suffix}"
+        draft_article_slug = f"delivery-article-draft-{suffix}"
+        service_slug = f"delivery-service-{suffix}"
+        industry_slug = f"delivery-industry-{suffix}"
+        post_slug = f"delivery-post-{suffix}"
+        category_slug = f"delivery-category-{suffix}"
+
+        db.session.add(CmsPage(
+            title="Delivery Page Published",
+            slug=published_page_slug,
+            content="Published CMS page body",
+            author_id=author.id,
+            is_published=True,
+        ))
+        db.session.add(CmsPage(
+            title="Delivery Page Draft",
+            slug=draft_page_slug,
+            content="Draft CMS page body",
+            author_id=author.id,
+            is_published=False,
+        ))
+        db.session.add(CmsArticle(
+            title="Delivery Article Published",
+            slug=published_article_slug,
+            excerpt="Published article excerpt",
+            content="Published article body",
+            author_id=author.id,
+            is_published=True,
+            published_at=utc_now_naive(),
+        ))
+        db.session.add(CmsArticle(
+            title="Delivery Article Draft",
+            slug=draft_article_slug,
+            excerpt="Draft article excerpt",
+            content="Draft article body",
+            author_id=author.id,
+            is_published=False,
+        ))
+        db.session.add(Service(
+            title="Delivery Service Published",
+            slug=service_slug,
+            description="Published delivery service description",
+            workflow_status=WORKFLOW_PUBLISHED,
+            is_trashed=False,
+            published_at=utc_now_naive(),
+        ))
+        db.session.add(Industry(
+            title="Delivery Industry Published",
+            slug=industry_slug,
+            description="Published delivery industry description",
+            workflow_status=WORKFLOW_PUBLISHED,
+            is_trashed=False,
+            published_at=utc_now_naive(),
+        ))
+        category = Category(name=f"Delivery Category {suffix}", slug=category_slug)
+        db.session.add(category)
+        db.session.flush()
+        db.session.add(Post(
+            title="Delivery Post Published",
+            slug=post_slug,
+            excerpt="Published delivery post excerpt",
+            content="Published delivery post body",
+            category_id=category.id,
+            workflow_status=WORKFLOW_PUBLISHED,
+            is_trashed=False,
+            is_published=True,
+            published_at=utc_now_naive(),
+        ))
+        db.session.commit()
+
+    index_resp = client.get("/api/delivery")
+    assert index_resp.status_code == 200
+    index_payload = index_resp.get_json()
+    assert index_payload["ok"] is True
+    assert "cms_pages" in index_payload["collections"]
+
+    pages_resp = client.get("/api/delivery/cms/pages")
+    assert pages_resp.status_code == 200
+    page_slugs = {item["slug"] for item in pages_resp.get_json()["items"]}
+    assert published_page_slug in page_slugs
+    assert draft_page_slug not in page_slugs
+
+    page_detail_resp = client.get(f"/api/delivery/cms/pages/{published_page_slug}")
+    assert page_detail_resp.status_code == 200
+    assert page_detail_resp.get_json()["slug"] == published_page_slug
+    assert page_detail_resp.get_json()["content"]
+
+    articles_resp = client.get("/api/delivery/cms/articles")
+    assert articles_resp.status_code == 200
+    article_slugs = {item["slug"] for item in articles_resp.get_json()["items"]}
+    assert published_article_slug in article_slugs
+    assert draft_article_slug not in article_slugs
+
+    article_detail_resp = client.get(f"/api/delivery/cms/articles/{published_article_slug}")
+    assert article_detail_resp.status_code == 200
+    assert article_detail_resp.get_json()["slug"] == published_article_slug
+    assert article_detail_resp.get_json()["content"]
+
+    services_resp = client.get("/api/delivery/services")
+    assert services_resp.status_code == 200
+    assert any(item["slug"] == service_slug for item in services_resp.get_json()["items"])
+
+    industries_resp = client.get("/api/delivery/industries")
+    assert industries_resp.status_code == 200
+    assert any(item["slug"] == industry_slug for item in industries_resp.get_json()["items"])
+
+    posts_resp = client.get("/api/delivery/posts")
+    assert posts_resp.status_code == 200
+    assert any(item["slug"] == post_slug for item in posts_resp.get_json()["items"])
+
+
+def test_delivery_api_token_protection_with_env_configuration(tmp_path, monkeypatch):
+    token = f"delivery-token-{uuid.uuid4().hex[:8]}"
+    secured_app = build_test_app(
+        tmp_path,
+        monkeypatch,
+        {
+            "HEADLESS_DELIVERY_REQUIRE_TOKEN": True,
+            "HEADLESS_DELIVERY_TOKEN": token,
+        },
+    )
+    secured_client = secured_app.test_client()
+
+    unauthorized = secured_client.get("/api/delivery")
+    assert unauthorized.status_code == 401
+    assert unauthorized.get_json()["ok"] is False
+
+    wrong_token = secured_client.get("/api/delivery", headers={"Authorization": "Bearer wrong"})
+    assert wrong_token.status_code == 401
+
+    authorized = secured_client.get("/api/delivery", headers={"X-Delivery-Token": token})
+    assert authorized.status_code == 200
+    assert authorized.get_json()["ok"] is True
+
+
+def test_delivery_api_returns_503_when_token_required_but_missing(tmp_path, monkeypatch):
+    secured_app = build_test_app(
+        tmp_path,
+        monkeypatch,
+        {
+            "HEADLESS_DELIVERY_REQUIRE_TOKEN": True,
+            "HEADLESS_DELIVERY_TOKEN": "",
+        },
+    )
+    secured_client = secured_app.test_client()
+
+    response = secured_client.get("/api/delivery")
+    assert response.status_code == 503
+    payload = response.get_json()
+    assert payload["ok"] is False
 
 
 def test_headless_sync_returns_503_when_token_not_configured(client):

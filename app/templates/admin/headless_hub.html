@@ -1,0 +1,195 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Headless CMS Hub{% endblock %}
+
+{% block extra_css %}
+<style nonce="{{ csp_nonce }}">
+  .hh-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .hh-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(10, 17, 30, 0.72);
+    padding: 14px;
+  }
+  .hh-label {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #afc2d7;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .hh-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #f0f6ff;
+    line-height: 1.15;
+  }
+  .hh-meta {
+    margin-top: 6px;
+    font-size: .78rem;
+    color: var(--text-muted);
+  }
+  .hh-endpoints code {
+    word-break: break-all;
+  }
+  .hh-quick {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="mb-2">Headless CMS Control Hub</h5>
+    <p class="text-muted mb-0">
+      Manage delivery API security, pagination, and endpoint availability from one place while keeping your current frontend design unchanged.
+    </p>
+  </div>
+</div>
+
+{% if delivery_auth_warning %}
+<div class="alert alert-warning">
+  Delivery API token protection is enabled, but no token is configured in settings or environment variables.
+</div>
+{% endif %}
+
+<div class="hh-grid mb-4">
+  <div class="hh-card">
+    <div class="hh-label">Delivery Auth</div>
+    <div class="hh-value">{% if require_token %}Required{% else %}Public{% endif %}</div>
+    <div class="hh-meta">{% if effective_delivery_token %}Token configured{% else %}No token configured{% endif %}</div>
+  </div>
+  <div class="hh-card">
+    <div class="hh-label">Delivery Limits</div>
+    <div class="hh-value">{{ default_limit }} / {{ max_limit }}</div>
+    <div class="hh-meta">Default / Max items per API page</div>
+  </div>
+  <div class="hh-card">
+    <div class="hh-label">Headless Sync</div>
+    <div class="hh-value">{% if sync_enabled %}Enabled{% else %}Disabled{% endif %}</div>
+    <div class="hh-meta">Token: {% if sync_token_configured %}Configured{% else %}Missing{% endif %} · Max batch {{ sync_max_items }}</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">Delivery API Configuration</h6>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+      {{ csrf_input() }}
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <label class="form-label">Default Page Size</label>
+          <input type="number" min="1" name="headless_delivery_default_limit" class="form-control" value="{{ default_limit }}">
+          <small class="text-muted">Env fallback: {{ config_default_limit }}</small>
+        </div>
+        <div class="col-lg-4">
+          <label class="form-label">Maximum Page Size</label>
+          <input type="number" min="1" name="headless_delivery_max_limit" class="form-control" value="{{ max_limit }}">
+          <small class="text-muted">Env fallback: {{ config_max_limit }}</small>
+        </div>
+        <div class="col-lg-4">
+          <label class="form-label">Delivery Token (Optional)</label>
+          <input type="text" name="headless_delivery_token" class="form-control" placeholder="Set or rotate token">
+          <small class="text-muted">
+            {% if site_delivery_token %}A site-level token is currently set.{% elif env_delivery_token %}Using environment token fallback.{% else %}No token set.{% endif %}
+          </small>
+        </div>
+        <div class="col-12 d-flex flex-wrap gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" id="deliveryRequireToken" name="headless_delivery_require_token" {% if require_token %}checked{% endif %}>
+            <label class="form-check-label" for="deliveryRequireToken">Require token for all <code>/api/delivery/*</code> requests</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="1" id="clearDeliveryToken" name="clear_headless_delivery_token">
+            <label class="form-check-label" for="clearDeliveryToken">Clear stored site-level delivery token</label>
+          </div>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Save Headless Settings</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-4 hh-endpoints">
+  <div class="card-header">
+    <h6 class="mb-0">Delivery Endpoints</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead>
+          <tr><th>Collection</th><th>Path</th><th>Example URL</th></tr>
+        </thead>
+        <tbody>
+          {% for item in endpoints %}
+          <tr>
+            <td><strong>{{ item.label }}</strong></td>
+            <td><code>{{ item.path }}</code></td>
+            <td><code>{{ item.url }}</code></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="hh-grid mb-4">
+  <div class="hh-card">
+    <div class="hh-label">CMS Pages</div>
+    <div class="hh-value">{{ counts.cms_pages_published }}</div>
+    <div class="hh-meta">Published records</div>
+  </div>
+  <div class="hh-card">
+    <div class="hh-label">CMS Articles</div>
+    <div class="hh-value">{{ counts.cms_articles_published }}</div>
+    <div class="hh-meta">Published records</div>
+  </div>
+  <div class="hh-card">
+    <div class="hh-label">Services</div>
+    <div class="hh-value">{{ counts.services_published }}</div>
+    <div class="hh-meta">Published records</div>
+  </div>
+  <div class="hh-card">
+    <div class="hh-label">Industries</div>
+    <div class="hh-value">{{ counts.industries_published }}</div>
+    <div class="hh-meta">Published records</div>
+  </div>
+  <div class="hh-card">
+    <div class="hh-label">Posts</div>
+    <div class="hh-value">{{ counts.posts_published }}</div>
+    <div class="hh-meta">Published records</div>
+  </div>
+  <div class="hh-card">
+    <div class="hh-label">ACP Pages / Dashboards</div>
+    <div class="hh-value">{{ counts.acp_pages_published }} / {{ counts.acp_dashboards_published }}</div>
+    <div class="hh-meta">Published visual docs</div>
+  </div>
+</div>
+
+{% if quick_links %}
+<div class="card">
+  <div class="card-header">
+    <h6 class="mb-0">Content Shortcuts</h6>
+  </div>
+  <div class="card-body">
+    <div class="hh-quick">
+      {% for item in quick_links %}
+      <a href="{{ item.href }}" class="btn btn-sm btn-outline-primary">{{ item.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -229,6 +229,198 @@ def _coerce_bool(value, default=False):
     return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
+def _site_setting_text(key):
+    item = SiteSetting.query.filter_by(key=key).first()
+    if not item or item.value is None:
+        return ''
+    return str(item.value).strip()
+
+
+def _headless_delivery_token_from_request():
+    auth_header = (request.headers.get('Authorization') or '').strip()
+    if auth_header.lower().startswith('bearer '):
+        token = auth_header[7:].strip()
+        if token:
+            return token
+    for header_name in ('X-Delivery-Token', 'X-Headless-Token'):
+        token = (request.headers.get(header_name) or '').strip()
+        if token:
+            return token
+    return ''
+
+
+def _headless_delivery_security():
+    require_token = bool(current_app.config.get('HEADLESS_DELIVERY_REQUIRE_TOKEN', False))
+    require_token_setting = _site_setting_text('headless_delivery_require_token')
+    if require_token_setting:
+        require_token = _coerce_bool(require_token_setting, require_token)
+
+    token = _site_setting_text('headless_delivery_token') or (current_app.config.get('HEADLESS_DELIVERY_TOKEN') or '').strip()
+    return {
+        'require_token': require_token,
+        'token': token,
+    }
+
+
+def _headless_delivery_auth_error():
+    security = _headless_delivery_security()
+    if not security['require_token']:
+        return None
+
+    expected = security['token']
+    if not expected:
+        return {'ok': False, 'error': 'HEADLESS_DELIVERY_TOKEN is required but not configured.'}, 503
+
+    provided = _headless_delivery_token_from_request()
+    if not provided or not secrets.compare_digest(expected, provided):
+        return {'ok': False, 'error': 'Unauthorized.'}, 401
+    return None
+
+
+def _headless_delivery_limits():
+    default_limit = max(1, _safe_int(current_app.config.get('HEADLESS_DELIVERY_DEFAULT_LIMIT'), 24))
+    max_limit = max(default_limit, _safe_int(current_app.config.get('HEADLESS_DELIVERY_MAX_LIMIT'), 100))
+
+    setting_default = _safe_int(_site_setting_text('headless_delivery_default_limit'), default_limit)
+    setting_max = _safe_int(_site_setting_text('headless_delivery_max_limit'), max_limit)
+    if setting_default > 0:
+        default_limit = setting_default
+    if setting_max > 0:
+        max_limit = setting_max
+    if max_limit < default_limit:
+        max_limit = default_limit
+
+    return {
+        'default_limit': default_limit,
+        'max_limit': max_limit,
+    }
+
+
+def _delivery_pagination(query):
+    limits = _headless_delivery_limits()
+    page = max(1, _safe_int(request.args.get('page'), 1))
+    page = min(page, 10000)
+    limit = _safe_int(request.args.get('limit'), limits['default_limit'])
+    limit = max(1, min(limit, limits['max_limit']))
+    paged = query.paginate(page=page, per_page=limit, error_out=False)
+    return paged, {
+        'page': paged.page,
+        'limit': limit,
+        'pages': paged.pages,
+        'total': paged.total,
+        'has_next': paged.has_next,
+        'has_prev': paged.has_prev,
+    }
+
+
+def _delivery_search_query():
+    return clean_text(request.args.get('q', ''), 140).strip()
+
+
+def _compact_excerpt(value, limit=260):
+    text = re.sub(r'\s+', ' ', str(value or '')).strip()
+    if len(text) <= limit:
+        return text
+    safe_limit = max(1, limit - 3)
+    return f"{text[:safe_limit].rstrip()}..."
+
+
+def _serialize_cms_page_item(item):
+    return {
+        'id': item.id,
+        'title': item.title,
+        'slug': item.slug,
+        'excerpt': _compact_excerpt(item.content),
+        'url_path': url_for('main.cms_page', slug=item.slug),
+        'author': item.author.username if getattr(item, 'author', None) else None,
+        'is_published': bool(item.is_published),
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+
+
+def _serialize_cms_article_item(item):
+    return {
+        'id': item.id,
+        'title': item.title,
+        'slug': item.slug,
+        'excerpt': item.excerpt or _compact_excerpt(item.content),
+        'content': item.content,
+        'url_path': url_for('main.cms_article', article_id=item.id),
+        'author': item.author.username if getattr(item, 'author', None) else None,
+        'is_published': bool(item.is_published),
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+    }
+
+
+def _serialize_service_item(item):
+    return {
+        'id': item.id,
+        'title': item.title,
+        'slug': item.slug,
+        'description': item.description,
+        'icon_class': item.icon_class,
+        'service_type': item.service_type,
+        'image': item.image,
+        'is_featured': bool(item.is_featured),
+        'sort_order': item.sort_order,
+        'seo_title': item.seo_title,
+        'seo_description': item.seo_description,
+        'og_image': item.og_image,
+        'workflow_status': item.workflow_status,
+        'url_path': url_for('main.service_detail', slug=item.slug),
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+    }
+
+
+def _serialize_industry_item(item):
+    return {
+        'id': item.id,
+        'title': item.title,
+        'slug': item.slug,
+        'description': item.description,
+        'icon_class': item.icon_class,
+        'hero_description': item.hero_description,
+        'challenges': item.challenges,
+        'solutions': item.solutions,
+        'stats': item.stats,
+        'sort_order': item.sort_order,
+        'seo_title': item.seo_title,
+        'seo_description': item.seo_description,
+        'og_image': item.og_image,
+        'workflow_status': item.workflow_status,
+        'url_path': url_for('main.industry_detail', slug=item.slug),
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+    }
+
+
+def _serialize_post_item(item):
+    return {
+        'id': item.id,
+        'title': item.title,
+        'slug': item.slug,
+        'excerpt': item.excerpt,
+        'content': item.content,
+        'featured_image': item.featured_image,
+        'category': item.category.name if item.category else None,
+        'category_slug': item.category.slug if item.category else None,
+        'seo_title': item.seo_title,
+        'seo_description': item.seo_description,
+        'og_image': item.og_image,
+        'workflow_status': item.workflow_status,
+        'url_path': url_for('main.post', slug=item.slug),
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+        'published_at': item.published_at.isoformat() if item.published_at else None,
+    }
+
+
 SERVICE_PROFILES = {
     'software-development': {
         'meta_description': 'Custom software development in Orange County — from discovery workshops and architecture planning to API integration, agile sprint delivery, DevOps automation, and long-term application support for growing businesses.',
@@ -3147,8 +3339,42 @@ def headless_sync_upsert():
     }, status_code
 
 
+@main_bp.route('/api/delivery')
+def delivery_api_index():
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    security = _headless_delivery_security()
+    limits = _headless_delivery_limits()
+    payload = {
+        'ok': True,
+        'auth': {
+            'required': bool(security['require_token']),
+            'configured': bool(security['token']),
+        },
+        'limits': limits,
+        'collections': {
+            'acp_pages': '/api/delivery/pages/<slug>',
+            'acp_dashboards': '/api/delivery/dashboards/<dashboard_id>',
+            'acp_content_entries': '/api/delivery/content/<content_type_key>/<entry_key>',
+            'acp_theme': '/api/delivery/theme/<token_set_key>',
+            'cms_pages': '/api/delivery/cms/pages',
+            'cms_articles': '/api/delivery/cms/articles',
+            'services': '/api/delivery/services',
+            'industries': '/api/delivery/industries',
+            'posts': '/api/delivery/posts',
+        },
+    }
+    return cached_json_response(payload, max_age=60, s_maxage=120, stale_while_revalidate=60, stale_if_error=300)
+
+
 @main_bp.route('/api/delivery/pages/<slug>')
 def acp_delivery_page(slug):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
     item = AcpPageDocument.query.filter_by(slug=slug, status=WORKFLOW_PUBLISHED).first()
     if not item:
         abort(404)
@@ -3171,6 +3397,10 @@ def acp_delivery_page(slug):
 
 @main_bp.route('/api/delivery/content/<content_type_key>/<entry_key>')
 def acp_delivery_content_entry(content_type_key, entry_key):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
     type_key = clean_text(content_type_key, 120)
     record_key = clean_text(entry_key, 140)
     locale = clean_text(request.args.get('locale', 'en-US'), 20) or 'en-US'
@@ -3222,6 +3452,10 @@ def acp_delivery_theme_default():
 
 @main_bp.route('/api/delivery/theme/<token_set_key>')
 def acp_delivery_theme(token_set_key):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
     key = clean_text(token_set_key, 80)
     if not key:
         abort(404)
@@ -3246,6 +3480,10 @@ def acp_delivery_theme(token_set_key):
 
 @main_bp.route('/api/delivery/dashboards/<dashboard_id>')
 def acp_delivery_dashboard(dashboard_id):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
     item = AcpDashboardDocument.query.filter_by(
         dashboard_id=dashboard_id,
         status=WORKFLOW_PUBLISHED,
@@ -3267,4 +3505,240 @@ def acp_delivery_dashboard(dashboard_id):
         'published_at': item.published_at.isoformat() if item.published_at else None,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
     }
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
+
+
+@main_bp.route('/api/delivery/cms/pages')
+def delivery_cms_pages():
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    search = _delivery_search_query()
+    query = CmsPage.query.filter_by(is_published=True)
+    if search:
+        like = f"%{escape_like(search)}%"
+        query = query.filter(
+            db.or_(
+                CmsPage.title.ilike(like),
+                CmsPage.slug.ilike(like),
+                CmsPage.content.ilike(like),
+            )
+        )
+    query = query.order_by(CmsPage.updated_at.desc(), CmsPage.id.desc())
+    paged, pagination = _delivery_pagination(query)
+    payload = {
+        'items': [_serialize_cms_page_item(item) for item in paged.items],
+        'pagination': pagination,
+        'query': search,
+    }
+    return cached_json_response(payload, max_age=60, s_maxage=120, stale_while_revalidate=60, stale_if_error=300)
+
+
+@main_bp.route('/api/delivery/cms/pages/<slug>')
+def delivery_cms_page(slug):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    normalized_slug = _normalize_slug(slug)
+    item = CmsPage.query.filter_by(slug=normalized_slug, is_published=True).first()
+    if not item:
+        abort(404)
+    payload = _serialize_cms_page_item(item)
+    payload['content'] = item.content
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
+
+
+@main_bp.route('/api/delivery/cms/articles')
+def delivery_cms_articles():
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    search = _delivery_search_query()
+    query = CmsArticle.query.filter_by(is_published=True)
+    if search:
+        like = f"%{escape_like(search)}%"
+        query = query.filter(
+            db.or_(
+                CmsArticle.title.ilike(like),
+                CmsArticle.slug.ilike(like),
+                CmsArticle.excerpt.ilike(like),
+                CmsArticle.content.ilike(like),
+            )
+        )
+    query = query.order_by(CmsArticle.updated_at.desc(), CmsArticle.id.desc())
+    paged, pagination = _delivery_pagination(query)
+    items = []
+    for item in paged.items:
+        row = _serialize_cms_article_item(item)
+        row.pop('content', None)
+        items.append(row)
+    payload = {
+        'items': items,
+        'pagination': pagination,
+        'query': search,
+    }
+    return cached_json_response(payload, max_age=60, s_maxage=120, stale_while_revalidate=60, stale_if_error=300)
+
+
+@main_bp.route('/api/delivery/cms/articles/<slug>')
+def delivery_cms_article(slug):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    normalized_slug = _normalize_slug(slug)
+    item = CmsArticle.query.filter_by(slug=normalized_slug, is_published=True).first()
+    if not item:
+        abort(404)
+    payload = _serialize_cms_article_item(item)
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
+
+
+@main_bp.route('/api/delivery/services')
+def delivery_services():
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    search = _delivery_search_query()
+    query = Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+        db.or_(Service.is_trashed == False, Service.is_trashed == None)
+    )
+    if search:
+        like = f"%{escape_like(search)}%"
+        query = query.filter(
+            db.or_(
+                Service.title.ilike(like),
+                Service.slug.ilike(like),
+                Service.description.ilike(like),
+            )
+        )
+    query = query.order_by(Service.sort_order.asc(), Service.id.asc())
+    paged, pagination = _delivery_pagination(query)
+    payload = {
+        'items': [_serialize_service_item(item) for item in paged.items],
+        'pagination': pagination,
+        'query': search,
+    }
+    return cached_json_response(payload, max_age=60, s_maxage=120, stale_while_revalidate=60, stale_if_error=300)
+
+
+@main_bp.route('/api/delivery/services/<slug>')
+def delivery_service(slug):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    item = Service.query.filter_by(
+        slug=_normalize_slug(slug),
+        workflow_status=WORKFLOW_PUBLISHED,
+    ).filter(
+        db.or_(Service.is_trashed == False, Service.is_trashed == None)
+    ).first()
+    if not item:
+        abort(404)
+    payload = _serialize_service_item(item)
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
+
+
+@main_bp.route('/api/delivery/industries')
+def delivery_industries():
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    search = _delivery_search_query()
+    query = Industry.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+        db.or_(Industry.is_trashed == False, Industry.is_trashed == None)
+    )
+    if search:
+        like = f"%{escape_like(search)}%"
+        query = query.filter(
+            db.or_(
+                Industry.title.ilike(like),
+                Industry.slug.ilike(like),
+                Industry.description.ilike(like),
+            )
+        )
+    query = query.order_by(Industry.sort_order.asc(), Industry.id.asc())
+    paged, pagination = _delivery_pagination(query)
+    payload = {
+        'items': [_serialize_industry_item(item) for item in paged.items],
+        'pagination': pagination,
+        'query': search,
+    }
+    return cached_json_response(payload, max_age=60, s_maxage=120, stale_while_revalidate=60, stale_if_error=300)
+
+
+@main_bp.route('/api/delivery/industries/<slug>')
+def delivery_industry(slug):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    item = Industry.query.filter_by(
+        slug=_normalize_slug(slug),
+        workflow_status=WORKFLOW_PUBLISHED,
+    ).filter(
+        db.or_(Industry.is_trashed == False, Industry.is_trashed == None)
+    ).first()
+    if not item:
+        abort(404)
+    payload = _serialize_industry_item(item)
+    return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)
+
+
+@main_bp.route('/api/delivery/posts')
+def delivery_posts():
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    search = _delivery_search_query()
+    query = Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+        db.or_(Post.is_trashed == False, Post.is_trashed == None)
+    )
+    if search:
+        like = f"%{escape_like(search)}%"
+        query = query.filter(
+            db.or_(
+                Post.title.ilike(like),
+                Post.slug.ilike(like),
+                Post.excerpt.ilike(like),
+                Post.content.ilike(like),
+            )
+        )
+    query = query.order_by(Post.updated_at.desc(), Post.id.desc())
+    paged, pagination = _delivery_pagination(query)
+    items = []
+    for item in paged.items:
+        row = _serialize_post_item(item)
+        row.pop('content', None)
+        items.append(row)
+    payload = {
+        'items': items,
+        'pagination': pagination,
+        'query': search,
+    }
+    return cached_json_response(payload, max_age=60, s_maxage=120, stale_while_revalidate=60, stale_if_error=300)
+
+
+@main_bp.route('/api/delivery/posts/<slug>')
+def delivery_post(slug):
+    auth_error = _headless_delivery_auth_error()
+    if auth_error:
+        return auth_error
+
+    item = Post.query.filter_by(
+        slug=_normalize_slug(slug),
+        workflow_status=WORKFLOW_PUBLISHED,
+    ).filter(
+        db.or_(Post.is_trashed == False, Post.is_trashed == None)
+    ).first()
+    if not item:
+        abort(404)
+    payload = _serialize_post_item(item)
     return cached_json_response(payload, max_age=120, s_maxage=300, stale_while_revalidate=120, stale_if_error=86400)

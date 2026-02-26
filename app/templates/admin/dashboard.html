@@ -163,6 +163,7 @@
       <a href="{{ url_for('admin.support_tickets') }}" class="btn btn-outline-secondary btn-sm">Support Queue</a>
       {% endif %}
       {% if current_user.has_permission('settings:manage') %}
+      <a href="{{ url_for('admin.headless_hub') }}" class="btn btn-outline-secondary btn-sm">Headless Hub</a>
       <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-secondary btn-sm">Settings</a>
       {% endif %}
     </div>

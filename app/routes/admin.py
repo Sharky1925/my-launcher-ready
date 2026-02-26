@@ -369,6 +369,7 @@ ADMIN_PERMISSION_MAP = {
     'admin.security_events': 'security:view',
     'admin.appearance': 'acp:theme:manage',
     'admin.settings': 'settings:manage',
+    'admin.headless_hub': 'settings:manage',
     'admin.users': 'users:manage',
     'admin.user_add': 'users:manage',
     'admin.user_edit': 'users:manage',
@@ -1581,6 +1582,14 @@ def control_center():
             'metric': f'{services_count} services / {industries_count} industries / {media_count} assets',
         },
         {
+            'title': 'Headless API Hub',
+            'description': 'Control delivery API authentication, token policy, and pagination limits.',
+            'icon': 'fa-solid fa-cloud-arrow-down',
+            'href': url_for('admin.headless_hub'),
+            'permission': 'settings:manage',
+            'metric': 'Security + API controls',
+        },
+        {
             'title': 'Component & Widget Registry',
             'description': 'Control allowed building blocks, input schemas, and design guardrails.',
             'icon': 'fa-solid fa-puzzle-piece',
@@ -1667,6 +1676,8 @@ def control_center():
         quick_actions.append({'label': 'New Dashboard', 'href': url_for('admin.acp_dashboard_add'), 'icon': 'fa-solid fa-chart-line'})
     if has_permission(current_user, 'acp:content:manage'):
         quick_actions.append({'label': 'New Content Type', 'href': url_for('admin.acp_content_type_add'), 'icon': 'fa-solid fa-table-list'})
+    if has_permission(current_user, 'settings:manage'):
+        quick_actions.append({'label': 'Headless Hub', 'href': url_for('admin.headless_hub'), 'icon': 'fa-solid fa-cloud-arrow-down'})
     if has_permission(current_user, 'support:manage'):
         quick_actions.append({'label': 'Open Ticket Queue', 'href': url_for('admin.support_tickets'), 'icon': 'fa-solid fa-ticket'})
     if has_permission(current_user, 'acp:mcp:manage'):
@@ -2699,6 +2710,138 @@ def _save_site_setting(key, value):
         setting.value = value
     else:
         db.session.add(SiteSetting(key=key, value=value))
+
+
+def _coerce_bool_setting(value, default=False):
+    if value is None:
+        return default
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+@admin_bp.route('/headless', methods=['GET', 'POST'])
+@login_required
+def headless_hub():
+    config_default_limit = parse_positive_int(current_app.config.get('HEADLESS_DELIVERY_DEFAULT_LIMIT')) or 24
+    config_max_limit = parse_positive_int(current_app.config.get('HEADLESS_DELIVERY_MAX_LIMIT')) or 100
+    if config_max_limit < config_default_limit:
+        config_max_limit = config_default_limit
+
+    if request.method == 'POST':
+        default_limit = parse_positive_int(request.form.get('headless_delivery_default_limit'))
+        max_limit = parse_positive_int(request.form.get('headless_delivery_max_limit'))
+        if default_limit is None:
+            flash('Default API page size must be a positive number.', 'danger')
+            return redirect(url_for('admin.headless_hub'))
+        if max_limit is None:
+            flash('Maximum API page size must be a positive number.', 'danger')
+            return redirect(url_for('admin.headless_hub'))
+        if max_limit < default_limit:
+            flash('Maximum API page size must be greater than or equal to default page size.', 'danger')
+            return redirect(url_for('admin.headless_hub'))
+
+        require_token = request.form.get('headless_delivery_require_token') == '1'
+        token_value = clean_text(request.form.get('headless_delivery_token', ''), 260)
+        clear_token = request.form.get('clear_headless_delivery_token') == '1'
+
+        _save_site_setting('headless_delivery_require_token', '1' if require_token else '0')
+        _save_site_setting('headless_delivery_default_limit', str(default_limit))
+        _save_site_setting('headless_delivery_max_limit', str(max_limit))
+        if clear_token:
+            _save_site_setting('headless_delivery_token', '')
+        elif token_value:
+            _save_site_setting('headless_delivery_token', token_value)
+        db.session.commit()
+        flash('Headless CMS settings saved.', 'success')
+        return redirect(url_for('admin.headless_hub'))
+
+    settings_dict = {s.key: s.value for s in SiteSetting.query.all()}
+    require_token = _coerce_bool_setting(
+        settings_dict.get('headless_delivery_require_token'),
+        bool(current_app.config.get('HEADLESS_DELIVERY_REQUIRE_TOKEN', False)),
+    )
+    site_delivery_token = (settings_dict.get('headless_delivery_token') or '').strip()
+    env_delivery_token = (current_app.config.get('HEADLESS_DELIVERY_TOKEN') or '').strip()
+    effective_delivery_token = site_delivery_token or env_delivery_token
+
+    default_limit = parse_positive_int(settings_dict.get('headless_delivery_default_limit')) or config_default_limit
+    max_limit = parse_positive_int(settings_dict.get('headless_delivery_max_limit')) or config_max_limit
+    if max_limit < default_limit:
+        max_limit = default_limit
+
+    sync_enabled = bool(current_app.config.get('HEADLESS_SYNC_ENABLED', True))
+    sync_token_configured = bool((current_app.config.get('HEADLESS_SYNC_TOKEN') or '').strip())
+    sync_max_items = parse_positive_int(current_app.config.get('HEADLESS_SYNC_MAX_ITEMS')) or 250
+
+    public_base_url = (current_app.config.get('APP_BASE_URL') or '').strip().rstrip('/')
+    if not public_base_url:
+        public_base_url = request.url_root.rstrip('/')
+
+    endpoints = [
+        {'label': 'Delivery API Index', 'path': '/api/delivery'},
+        {'label': 'ACP Visual Pages', 'path': '/api/delivery/pages/<slug>'},
+        {'label': 'ACP Dashboards', 'path': '/api/delivery/dashboards/<dashboard_id>'},
+        {'label': 'ACP Content Entries', 'path': '/api/delivery/content/<content_type_key>/<entry_key>'},
+        {'label': 'ACP Theme Tokens', 'path': '/api/delivery/theme/<token_set_key>'},
+        {'label': 'CMS Pages', 'path': '/api/delivery/cms/pages'},
+        {'label': 'CMS Articles', 'path': '/api/delivery/cms/articles'},
+        {'label': 'Services', 'path': '/api/delivery/services'},
+        {'label': 'Industries', 'path': '/api/delivery/industries'},
+        {'label': 'Posts', 'path': '/api/delivery/posts'},
+    ]
+    for item in endpoints:
+        item['url'] = f"{public_base_url}{item['path']}"
+
+    counts = {
+        'cms_pages_published': CmsPage.query.filter_by(is_published=True).count(),
+        'cms_articles_published': CmsArticle.query.filter_by(is_published=True).count(),
+        'services_published': Service.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+            db.or_(Service.is_trashed == False, Service.is_trashed == None)
+        ).count(),
+        'industries_published': Industry.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+            db.or_(Industry.is_trashed == False, Industry.is_trashed == None)
+        ).count(),
+        'posts_published': Post.query.filter_by(workflow_status=WORKFLOW_PUBLISHED).filter(
+            db.or_(Post.is_trashed == False, Post.is_trashed == None)
+        ).count(),
+        'acp_pages_published': AcpPageDocument.query.filter_by(status=WORKFLOW_PUBLISHED).count(),
+        'acp_dashboards_published': AcpDashboardDocument.query.filter_by(status=WORKFLOW_PUBLISHED).count(),
+    }
+
+    quick_links = []
+    if has_permission(current_user, 'content:manage'):
+        quick_links.extend([
+            {'label': 'CMS Pages', 'href': url_for('admin.cms_pages')},
+            {'label': 'CMS Articles', 'href': url_for('admin.cms_articles')},
+            {'label': 'Services', 'href': url_for('admin.services')},
+            {'label': 'Industries', 'href': url_for('admin.industries')},
+            {'label': 'Posts', 'href': url_for('admin.posts')},
+        ])
+    if has_permission(current_user, 'acp:pages:manage'):
+        quick_links.append({'label': 'ACP Pages', 'href': url_for('admin.acp_pages')})
+    if has_permission(current_user, 'acp:dashboards:manage'):
+        quick_links.append({'label': 'ACP Dashboards', 'href': url_for('admin.acp_dashboards')})
+    if has_permission(current_user, 'acp:content:manage'):
+        quick_links.append({'label': 'ACP Content Entries', 'href': url_for('admin.acp_content_entries')})
+
+    return render_template(
+        'admin/headless_hub.html',
+        settings=settings_dict,
+        require_token=require_token,
+        default_limit=default_limit,
+        max_limit=max_limit,
+        config_default_limit=config_default_limit,
+        config_max_limit=config_max_limit,
+        site_delivery_token=site_delivery_token,
+        env_delivery_token=env_delivery_token,
+        effective_delivery_token=effective_delivery_token,
+        sync_enabled=sync_enabled,
+        sync_token_configured=sync_token_configured,
+        sync_max_items=sync_max_items,
+        endpoints=endpoints,
+        counts=counts,
+        quick_links=quick_links,
+        delivery_auth_warning=require_token and not bool(effective_delivery_token),
+    )
 
 
 @admin_bp.route('/appearance', methods=['GET', 'POST'])
