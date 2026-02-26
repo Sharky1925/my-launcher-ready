@@ -7353,8 +7353,60 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
 }
 
-/* Final desktop navbar CTA alignment override */
-@media (min-width: 992px) {
+/* Mid-desktop safeguard (windowed laptops / shrunk browsers) */
+@media (min-width: 992px) and (max-width: 1279.98px) {
+  .topbar {
+    display: none !important;
+  }
+  .navbar-main .container {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .navbar-main .navbar-brand {
+    flex: 0 0 auto;
+  }
+  .navbar-main .navbar-collapse {
+    order: 3;
+    flex: 1 1 100%;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .navbar-main .navbar-nav {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 2px;
+  }
+  .navbar-main .nav-link {
+    padding: 7px 11px !important;
+    font-size: 0.82rem;
+  }
+  .nav-cta-group {
+    order: 2;
+    margin-left: auto;
+    padding-left: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 100%;
+  }
+  .nav-cta-group .btn-nav-call,
+  .nav-cta-group .btn-nav-quote,
+  .nav-cta-group .btn-nav-remote,
+  .nav-cta-group .btn-nav-cta {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.72rem;
+    gap: 4px;
+  }
+  .nav-cta-group .theme-toggle {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Wide desktop navbar CTA alignment override */
+@media (min-width: 1280px) {
   .navbar-main .container {
     flex-wrap: nowrap;
     gap: 10px;
@@ -7417,7 +7469,7 @@ a.feature-item:hover { color: inherit; text-decoration: none; }
   }
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 1279.98px) {
   .navbar-main .navbar-brand.brand-stack {
     column-gap: 9px;
     row-gap: 2px;
